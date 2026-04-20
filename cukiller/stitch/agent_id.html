@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#1f1f1f",
+                        "on-primary-container": "#a1ff98",
+                        "surface-variant": "#353535",
+                        "surface-tint": "#76dd71",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#b53b6e",
+                        "on-primary-fixed-variant": "#00530f",
+                        "tertiary": "#ffb0c9",
+                        "secondary": "#fea9ff",
+                        "on-secondary-container": "#fb91ff",
+                        "inverse-on-surface": "#303030",
+                        "on-tertiary-container": "#ffe2e9",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#353535",
+                        "on-primary": "#003908",
+                        "surface": "#131313",
+                        "on-secondary-fixed-variant": "#7d008b",
+                        "on-background": "#e2e2e2",
+                        "secondary-fixed": "#ffd6fb",
+                        "primary-fixed": "#92fa8a",
+                        "on-tertiary": "#650034",
+                        "background": "#131313",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#76dd71",
+                        "primary-container": "#007a1b",
+                        "on-secondary-fixed": "#36003d",
+                        "outline-variant": "#3f4a3c",
+                        "surface-container-high": "#2a2a2a",
+                        "on-surface-variant": "#becab8",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-bright": "#393939",
+                        "surface-container-low": "#1b1b1b",
+                        "primary": "#76dd71",
+                        "outline": "#899483",
+                        "surface-dim": "#131313",
+                        "on-secondary": "#580062",
+                        "on-surface": "#e2e2e2",
+                        "on-tertiary-fixed-variant": "#88144b",
+                        "secondary-fixed-dim": "#fea9ff",
+                        "on-primary-fixed": "#002203",
+                        "tertiary-fixed": "#ffd9e3",
+                        "on-tertiary-fixed": "#3e001e",
+                        "inverse-primary": "#006e17",
+                        "inverse-surface": "#e2e2e2",
+                        "secondary-container": "#81008f",
+                        "tertiary-fixed-dim": "#ffb0c9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"]
+                    }
+                },
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #131313;
+            color: #e2e2e2;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glitch-effect-short:active {
+            filter: hue-rotate(90deg);
+            transform: translateX(2px);
+        }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #76dd71;
+            -webkit-box-shadow: 0 0 0px 1000px #1f1f1f inset;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(118, 221, 113, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#0e0e0e] flex justify-between items-center px-6 py-4">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-[#007A1B]">terminal</span>
+        <h1 class="text-xl font-bold text-[#007A1B] uppercase font-['Space_Grotesk'] tracking-widest">CLASSIFIED_REGISTRATION</h1>
+    </div>
+    <div class="hidden md:flex gap-6">
+        <span class="text-[#007A1B] font-['Space_Grotesk'] text-sm tracking-tighter font-bold">ENLIST</span>
+        <span class="text-[#899483] font-['Space_Grotesk'] text-sm tracking-tighter font-bold">DOSSIER</span>
+        <span class="text-[#899483] font-['Space_Grotesk'] text-sm tracking-tighter font-bold">PROTOCOL</span>
+    </div>
+</header>
+<main class="min-h-screen pt-24 pb-32 px-4 md:px-0 flex flex-col items-center">
+    <!-- Progress Signalers -->
+    <div class="w-full max-w-xl mb-12">
+        <div class="flex justify-between items-end mb-2">
+            <span class="font-label text-xs uppercase tracking-[0.2em] text-primary">Status: Initializing Link</span>
+            <span class="font-label text-xs uppercase tracking-[0.2em] text-outline">Phase 01 / 02</span>
+        </div>
+        <div class="flex gap-1 h-2">
+            <div class="flex-1 bg-primary shadow-[0_0_8px_rgba(118,221,113,0.5)]"></div>
+            <div class="flex-1 bg-surface-container-highest"></div>
+        </div>
+    </div>
+    <!-- Registration Dossier Container -->
+    <div class="w-full max-w-xl bg-surface-container relative overflow-hidden">
+        <!-- Scanline Decorative Element -->
+        <div class="scanline"></div>
+        <div class="bg-surface-container-low p-6 flex justify-between items-center border-b border-outline-variant/10">
+            <div class="space-y-1">
+                <h2 class="font-headline text-2xl font-bold text-on-surface uppercase tracking-tight">AGENT_ENROLLMENT</h2>
+                <p class="font-label text-[10px] text-outline uppercase tracking-widest">Clearance Level: Delta-6</p>
+            </div>
+            <span class="material-symbols-outlined text-secondary text-3xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">security</span>
+        </div>
+        <form class="p-8 space-y-10">
+            <!-- Codename Field -->
+            <div class="space-y-2 group">
+                <div class="flex justify-between items-center">
+                    <label class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Agent Name (Codename)</label>
+                    <span class="text-[10px] font-label text-primary/40 uppercase">Required</span>
+                </div>
+                <div class="relative">
+                    <input class="w-full bg-transparent border-b-2 border-outline-variant focus:border-primary focus:ring-0 transition-all font-label text-lg text-primary placeholder:text-outline/30 py-3 uppercase tracking-wider" placeholder="e.g. NEON_FOX" type="text"/>
+                    <div class="absolute right-0 bottom-3">
+                        <span class="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors">fingerprint</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Academic Group Field -->
+            <div class="space-y-2 group">
+                <div class="flex justify-between items-center">
+                    <label class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Academic Group / Sector</label>
+                    <span class="text-[10px] font-label text-primary/40 uppercase">Authentication Link</span>
+                </div>
+                <div class="relative">
+                    <input class="w-full bg-transparent border-b-2 border-outline-variant focus:border-primary focus:ring-0 transition-all font-label text-lg text-primary placeholder:text-outline/30 py-3 uppercase tracking-wider" placeholder="SIGMA-091" type="text"/>
+                    <div class="absolute right-0 bottom-3">
+                        <span class="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors">hub</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Photo Upload Slot -->
+            <div class="space-y-4">
+                <label class="font-label text-xs uppercase tracking-widest text-on-surface-variant">Upload Identification (Biometric Scan)</label>
+                <div class="border-2 border-dashed border-outline-variant aspect-video flex flex-col items-center justify-center relative bg-surface-container-high group cursor-pointer hover:bg-surface-container-highest transition-colors">
+                    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary via-transparent to-transparent"></div>
+                    <span class="material-symbols-outlined text-4xl text-outline group-hover:text-primary transition-colors mb-2">add_a_photo</span>
+                    <p class="font-label text-[10px] uppercase tracking-tighter text-outline group-hover:text-on-surface transition-colors">Drop visual data or click to browse</p>
+                    <input class="absolute inset-0 opacity-0 cursor-pointer" type="file"/>
+                </div>
+            </div>
+            <!-- Action Button -->
+            <button class="w-full bg-primary-container text-on-primary-container py-5 font-headline font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-110 active:scale-[0.98] transition-all glitch-effect-short" type="submit">
+                Proceed to Verification
+                <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </form>
+        <div class="bg-surface-container-lowest p-4">
+            <div class="flex items-center gap-4">
+                <div class="w-2 h-2 bg-primary animate-pulse"></div>
+                <p class="text-[9px] font-label text-outline uppercase leading-relaxed">
+                    Notice: Any falsification of agent credentials will result in immediate extraction from the protocol. Local laws of the digital void apply.
+                </p>
+            </div>
+        </div>
+    </div>
+    <!-- Metadata Cluster -->
+    <div class="mt-12 w-full max-w-xl grid grid-cols-2 gap-4">
+        <div class="bg-surface-container-low p-4 border-l-2 border-secondary">
+            <p class="font-label text-[10px] text-outline uppercase mb-1">Node Connectivity</p>
+            <p class="font-headline text-on-surface font-bold">STABLE_ENCRYPTED</p>
+        </div>
+        <div class="bg-surface-container-low p-4 border-l-2 border-primary">
+            <p class="font-label text-[10px] text-outline uppercase mb-1">Time Remaining</p>
+            <p class="font-headline text-on-surface font-bold">14:59:59</p>
+        </div>
+    </div>
+</main>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-stretch h-16 bg-[#0e0e0e] z-50 border-t-[1px] border-emerald-900/10 shadow-[0_-4px_20px_rgba(0,122,27,0.08)]">
+    <a class="flex flex-col items-center justify-center bg-[#007A1B] text-[#0e0e0e] p-2 h-full flex-1 transition-colors duration-100 glitch-effect-short" href="#">
+        <span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">fingerprint</span>
+        <span class="font-['Space_Grotesk'] text-[10px] uppercase font-bold tracking-tighter">ENLIST</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-[#899483] p-2 flex-1 hover:text-[#007A1B] hover:bg-[#131313] transition-colors duration-100" href="#">
+        <span class="material-symbols-outlined">assignment_ind</span>
+        <span class="font-['Space_Grotesk'] text-[10px] uppercase font-bold tracking-tighter">DOSSIER</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-[#899483] p-2 flex-1 hover:text-[#007A1B] hover:bg-[#131313] transition-colors duration-100" href="#">
+        <span class="material-symbols-outlined">security</span>
+        <span class="font-['Space_Grotesk'] text-[10px] uppercase font-bold tracking-tighter">PROTOCOL</span>
+    </a>
+</nav>
+</body></html>

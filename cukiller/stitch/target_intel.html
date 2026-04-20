@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Ghost Signal - Target Intel</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#e2e2e2",
+                        "on-tertiary": "#650034",
+                        "tertiary-fixed-dim": "#ffb0c9",
+                        "primary-fixed-dim": "#76dd71",
+                        "surface-dim": "#131313",
+                        "on-surface": "#e2e2e2",
+                        "surface-bright": "#393939",
+                        "surface-container": "#1f1f1f",
+                        "on-error": "#690005",
+                        "on-primary-fixed": "#002203",
+                        "secondary-fixed": "#ffd6fb",
+                        "primary-fixed": "#92fa8a",
+                        "on-secondary-container": "#fb91ff",
+                        "on-secondary-fixed": "#36003d",
+                        "error-container": "#93000a",
+                        "on-secondary": "#580062",
+                        "surface-tint": "#76dd71",
+                        "on-surface-variant": "#becab8",
+                        "surface-container-highest": "#353535",
+                        "outline-variant": "#3f4a3c",
+                        "on-tertiary-fixed-variant": "#88144b",
+                        "on-tertiary-fixed": "#3e001e",
+                        "on-error-container": "#ffdad6",
+                        "background": "#131313",
+                        "on-tertiary-container": "#ffe2e9",
+                        "surface": "#131313",
+                        "surface-container-high": "#2a2a2a",
+                        "on-primary": "#003908",
+                        "inverse-primary": "#006e17",
+                        "tertiary-fixed": "#ffd9e3",
+                        "primary": "#76dd71",
+                        "outline": "#899483",
+                        "secondary-container": "#81008f",
+                        "secondary": "#fea9ff",
+                        "on-primary-container": "#a1ff98",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary-fixed-dim": "#fea9ff",
+                        "tertiary": "#ffb0c9",
+                        "surface-container-low": "#1b1b1b",
+                        "tertiary-container": "#b53b6e",
+                        "on-secondary-fixed-variant": "#7d008b",
+                        "on-background": "#e2e2e2",
+                        "inverse-on-surface": "#303030",
+                        "surface-variant": "#353535",
+                        "primary-container": "#007a1b",
+                        "on-primary-fixed-variant": "#00530f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0rem",
+                        "lg": "0rem",
+                        "xl": "0rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanning-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #76dd71, transparent);
+            position: absolute;
+            width: 100%;
+            top: 0;
+            z-index: 10;
+        }
+        .dossier-texture {
+            background-image: radial-gradient(#2a2a2a 0.5px, transparent 0.5px);
+            background-size: 10px 10px;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-[#0e0e0e] dark:bg-[#0e0e0e] flex justify-between items-center w-full px-6 py-4 fixed top-0 z-50">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-[#007A1B] dark:text-[#76dd71]">security</span>
+        <h1 class="font-['Space_Grotesk'] uppercase tracking-widest text-sm text-[#007A1B] font-bold tracking-tighter">GHOST_SIGNAL_V1.0</h1>
+    </div>
+    <div class="w-8 h-8 bg-surface-container-high overflow-hidden">
+        <img alt="agent_profile_identifier" class="w-full h-full object-cover" data-alt="close-up gritty portrait of a covert operative in dark techwear with subtle green rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXUzgWhvIvGw3vIXSYAsCyY8yfYf1fevOWPhJVweizUc4AQTPIf8VPV4_pJ1fcU7Hk4rZwZ-vNdxUfluh-CLiKc8qNlxUL3ZvoIocGFcOhfKiniLV7h67kHBjzoQySKA8XtFQ_YowwRSDzWo7sVWhv-enScxjDhPb-QOv2pBfihlCFeuovUGUfrSSLOsTwnLN-gVZTuSjgq2I_MXQMCMyXB_ZqRbs59qMjAxbqESCUKVyA0T5YJmxM2UqToPTm3qUzL45oqQ9_GZg"/>
+    </div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto min-h-screen relative overflow-hidden">
+    <!-- Background Data Stream Effect -->
+    <div class="fixed inset-0 pointer-events-none opacity-5 dossier-texture z-0"></div>
+    <!-- Section Header -->
+    <div class="mb-10 flex flex-col gap-1">
+        <span class="font-label text-primary text-[10px] tracking-[0.3em] uppercase">Status: In Progress</span>
+        <h2 class="font-headline text-4xl font-bold uppercase tracking-tight text-on-surface">Current Objective</h2>
+        <div class="h-1 w-12 bg-primary mt-2"></div>
+    </div>
+    <!-- Dossier Card -->
+    <div class="relative bg-surface-container-low border-l-4 border-primary-container p-0 overflow-hidden mb-8">
+        <!-- Scanning Line -->
+        <div class="scanning-line opacity-30"></div>
+        <div class="flex flex-col md:flex-row">
+            <!-- Target Photo -->
+            <div class="w-full md:w-48 h-64 md:h-auto bg-surface-container-highest relative group overflow-hidden">
+                <img alt="Agent Raven profile" class="w-full h-full object-cover grayscale contrast-125" data-alt="dramatic film noir style portrait of a man in shadows with sharp features and cold expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDm6G9ZSKvPnaT5iOyg2PtnlML0Ts21HfKT_eWEMkOp8OCfmrxfuijiba_jA5p8w8_gjne3kWc1kcYSjMlta2lkuLUJRoGSD6q-RVYX76jt2ZbsClXs49RKMvTww8QVcqPkeXvRLEqEjNGOPPx4Ml2ghfr9EhE9s21XQl5onvyrUEyQoW2qwtj3Dazk7gNlmDxjhdbSdoyXVHhEV6p5CqxFHgPXyTgyJHcu--2IuXT0wGL3rRj2WnwsJ4x2qdUq6KZz9cZVtcoo0_Y"/>
+                <div class="absolute inset-0 bg-primary-container/20 mix-blend-overlay"></div>
+                <div class="absolute bottom-2 left-2 bg-black/80 px-2 py-1 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 bg-error rounded-full animate-pulse"></span>
+                    <span class="font-label text-[10px] uppercase text-white tracking-widest">Target_Live</span>
+                </div>
+            </div>
+            <!-- Target Data -->
+            <div class="flex-1 p-6 flex flex-col justify-between">
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="flex flex-col gap-1">
+                        <span class="font-label text-[10px] text-outline uppercase tracking-widest">Subject Identifier</span>
+                        <div class="font-headline text-2xl font-bold uppercase text-on-surface tracking-tight">Agent Raven</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-label text-[10px] text-outline uppercase tracking-widest">Operational Group</span>
+                            <div class="font-body text-sm font-medium text-primary">B21-DS-01</div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="font-label text-[10px] text-outline uppercase tracking-widest">Last Sighting</span>
+                            <div class="font-body text-sm font-medium text-on-surface">Campus Central</div>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-outline-variant/30 flex flex-col gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-primary">fingerprint</span>
+                            <span class="font-label text-[10px] text-outline uppercase">Biometric Match: 98.4%</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[14px] text-primary">distance</span>
+                            <span class="font-label text-[10px] text-outline uppercase">Proximity: 1.2km</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Action Section -->
+    <div class="flex flex-col gap-6">
+        <button class="group relative bg-primary-container hover:bg-primary text-black font-headline font-extrabold text-xl py-6 px-8 flex items-center justify-between transition-all active:scale-[0.98]">
+            <span class="uppercase tracking-widest">REPORT DISCOVERY</span>
+            <span class="material-symbols-outlined text-3xl group-active:translate-x-2 transition-transform">target</span>
+            <div class="absolute -top-1 -left-1 w-2 h-2 bg-primary"></div>
+            <div class="absolute -bottom-1 -right-1 w-2 h-2 bg-primary"></div>
+        </button>
+        <!-- Disclaimers -->
+        <div class="bg-surface-container p-4 flex flex-col gap-3">
+            <div class="flex gap-3">
+                <span class="material-symbols-outlined text-error text-xl">warning</span>
+                <div class="flex flex-col gap-1">
+                    <p class="font-label text-[11px] font-bold uppercase text-error tracking-tight">Operational Protocol: No Witnesses</p>
+                    <p class="font-body text-xs text-on-surface-variant leading-relaxed">Engagement must remain covert. Do not expose your presence to civilian assets or non-participating entities during capture sequence.</p>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-3 border-t border-outline-variant/20">
+                <span class="material-symbols-outlined text-outline text-xl">gavel</span>
+                <div class="flex flex-col gap-1">
+                    <p class="font-label text-[11px] font-bold uppercase text-on-surface tracking-tight">Code of Conduct: Respect Boundaries</p>
+                    <p class="font-body text-xs text-on-surface-variant leading-relaxed">Operation strictly confined to designated sector limits. Any breach of private property or physical contact results in immediate extraction and de-ranking.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- System Logs -->
+    <div class="mt-12 opacity-40 font-label text-[9px] uppercase tracking-[0.2em] flex flex-col gap-2">
+        <div class="flex justify-between">
+            <span>&gt; system_handshake_established</span>
+            <span>[ok]</span>
+        </div>
+        <div class="flex justify-between">
+            <span>&gt; scanning_encryption_layers...</span>
+            <span>[complete]</span>
+        </div>
+        <div class="flex justify-between">
+            <span>&gt; location_triangulated_campus_grid_7</span>
+            <span>12:44:02</span>
+        </div>
+    </div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-[#0e0e0e] dark:bg-[#0e0e0e] fixed bottom-0 w-full flex justify-around items-center h-16 z-50 shadow-[0_-4px_20px_rgba(0,122,27,0.1)]">
+    <a class="flex flex-col items-center justify-center text-[#e2e2e2] p-2 opacity-60 hover:bg-[#1f1f1f] active:scale-95 duration-75" href="#">
+        <span class="material-symbols-outlined">account_circle</span>
+        <span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase">DOSSIER</span>
+    </a>
+    <a class="flex flex-col items-center justify-center bg-[#007A1B] text-black p-2 min-w-[64px] transition-all active:scale-95 duration-75" href="#">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">target</span>
+        <span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase">INTEL</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-[#e2e2e2] p-2 opacity-60 hover:bg-[#1f1f1f] active:scale-95 duration-75" href="#">
+        <span class="material-symbols-outlined">leaderboard</span>
+        <span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase">RANK</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-[#e2e2e2] p-2 opacity-60 hover:bg-[#1f1f1f] active:scale-95 duration-75" href="#">
+        <span class="material-symbols-outlined">gavel</span>
+        <span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase">RULES</span>
+    </a>
+</nav>
+</body></html>
