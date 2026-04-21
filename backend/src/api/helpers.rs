@@ -144,6 +144,8 @@ pub fn require_bearer_token(headers: &HeaderMap, state: &AppState) -> Result<Aut
 
     Ok(AuthenticatedUser {
         user_id: decoded.claims.user_id,
+        #[cfg(feature = "telegram-auth")]
+        telegram_user_id: decoded.claims.sub.parse().map_err(|_| ApiError::Unauthorized)?,
     })
 }
 
@@ -211,6 +213,7 @@ pub fn compare_profile_similarity(left: &Value, right: &Value) -> Result<Similar
     })
 }
 
+#[cfg_attr(feature = "telegram-auth", allow(dead_code))]
 pub fn hash_password(password: &str) -> Result<String, ApiError> {
     let salt = SaltString::generate(&mut OsRng);
     let hash = Argon2::default()
@@ -219,6 +222,7 @@ pub fn hash_password(password: &str) -> Result<String, ApiError> {
     Ok(hash.to_string())
 }
 
+#[cfg_attr(feature = "telegram-auth", allow(dead_code))]
 pub fn verify_password(hash: &str, password: &str) -> Result<(), ApiError> {
     let parsed_hash = PasswordHash::new(hash).map_err(|_| ApiError::PasswordHash)?;
     Argon2::default()
@@ -235,7 +239,7 @@ pub fn create_access_token(state: &AppState, auth_user: &AuthUserRecord) -> Resu
         .as_secs() as usize;
 
     let claims = AuthClaims {
-        sub: auth_user.email.clone(),
+        sub: auth_user.login_identifier.clone(),
         user_id: auth_user.user_id,
         auth_user_id: auth_user.auth_user_id,
         exp,

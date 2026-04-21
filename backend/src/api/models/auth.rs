@@ -6,8 +6,11 @@ use crate::api::models::user::UserResponse;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
+    #[cfg(not(feature = "telegram-auth"))]
     pub email: String,
+    #[cfg(not(feature = "telegram-auth"))]
     pub password: String,
+    #[cfg(not(feature = "telegram-auth"))]
     pub telegram_id: i64,
     pub rating: Option<i64>,
     pub agent_name: Option<String>,
@@ -16,7 +19,9 @@ pub struct RegisterRequest {
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
+    #[cfg(not(feature = "telegram-auth"))]
     pub email: String,
+    #[cfg(not(feature = "telegram-auth"))]
     pub password: String,
 }
 
@@ -36,8 +41,9 @@ pub struct AuthResponse {
 pub struct AuthUserRecord {
     pub auth_user_id: Uuid,
     pub user_id: Uuid,
-    pub email: String,
-    pub password_hash: String,
+    pub login_identifier: String,
+    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
+    pub password_hash: Option<String>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -51,6 +57,9 @@ pub struct AuthClaims {
 #[derive(Clone)]
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
+    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
+    #[cfg(feature = "telegram-auth")]
+    pub telegram_user_id: i64,
 }
 
 #[cfg(feature = "telegram-auth")]
