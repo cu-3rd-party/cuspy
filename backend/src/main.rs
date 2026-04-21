@@ -17,7 +17,11 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct AppState {
-    db: PgPool,
+    pub db: PgPool,
+    pub admin_secret: String,
+    pub jwt_secret: String,
+    #[cfg(feature = "telegram-auth")]
+    pub telegram_bot_token: String,
 }
 
 async fn audit_request(State(state): State<AppState>, request: Request, next: Next) -> Response {
@@ -131,7 +135,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     sqlx::migrate!("./migrations").run(&db).await?;
 
-    let state = AppState { db };
+    let state = AppState {
+        db,
+        admin_secret: config.admin_secret,
+        jwt_secret: config.jwt_secret,
+        #[cfg(feature = "telegram-auth")]
+        telegram_bot_token: config.telegram_bot_token,
+    };
     let app = api::router()
         .route("/", axum::routing::get(|| async { "backend up" }))
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))

@@ -5,7 +5,7 @@ create table if not exists "user" (
     agent_name text collate case_insensitive,
     agent_data jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now()
+    updated_at timestamptz
 );
 
 select trigger_updated_at('"user"');

@@ -5,4 +5,14 @@ pub struct Config {
 
     #[clap(long, env, default_value = "0.0.0.0:3000")]
     pub bind_address: std::net::SocketAddr,
+
+    #[clap(long, env)]
+    pub admin_secret: String,
+
+    #[clap(long, env)]
+    pub jwt_secret: String,
+
+    #[cfg(feature = "telegram-auth")]
+    #[clap(long, env)]
+    pub telegram_bot_token: String,
 }
