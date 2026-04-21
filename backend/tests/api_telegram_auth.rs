@@ -1,0 +1,176 @@
+#![cfg(feature = "telegram-auth")]
+
+mod common;
+
+use axum::http::StatusCode;
+use hmac::{Hmac, Mac};
+use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
+
+use common::{TELEGRAM_BOT_TOKEN, TestContext, register_user};
+
+fn telegram_init_data(user_id: i64) -> String {
+    type HmacSha256 = Hmac<Sha256>;
+
+    let user = json!({
+        "id": user_id,
+        "first_name": "Test",
+        "username": format!("user_{user_id}")
+    })
+    .to_string();
+
+    let mut pairs = vec![
+        format!("auth_date=1700000000"),
+        format!("query_id=test-query-{user_id}"),
+        format!("user={user}"),
+    ];
+    pairs.sort();
+    let data_check_string = pairs.join("\n");
+
+    let secret = Sha256::digest(TELEGRAM_BOT_TOKEN.as_bytes());
+    let mut mac = HmacSha256::new_from_slice(secret.as_slice()).expect("hmac key");
+    mac.update(data_check_string.as_bytes());
+    let hash = hex::encode(mac.finalize().into_bytes());
+
+    format!(
+        "query_id=test-query-{user_id}&user={}&auth_date=1700000000&hash={hash}",
+        url::form_urlencoded::byte_serialize(user.as_bytes()).collect::<String>()
+    )
+}
+
+#[tokio::test]
+async fn telegram_auth_requires_valid_init_data() {
+    let ctx = TestContext::new().await;
+    let valid_init_data = telegram_init_data(7001);
+    let invalid_init_data = telegram_init_data(9009);
+
+    let (register_status, register_body) = ctx
+        .json(
+            "POST",
+            "/auth/register",
+            Some(json!({
+                "email": "tg@example.com",
+                "password": "password123",
+                "telegram_id": 7001,
+                "rating": 7,
+                "agent_name": "Telegram",
+                "agent_data": { "track": "tg" }
+            })),
+            None,
+            None,
+            Some(&valid_init_data),
+        )
+        .await;
+    assert_eq!(register_status, StatusCode::CREATED);
+    let token = register_body["access_token"].as_str().expect("token").to_string();
+    let user_id = register_body["user"]["user_id"].as_str().expect("user id").to_string();
+
+    let (missing_header_status, _) = ctx
+        .json("GET", "/auth/me", None, Some(&token), None, None)
+        .await;
+    assert_eq!(missing_header_status, StatusCode::UNAUTHORIZED);
+
+    let (bad_header_status, bad_header_body) = ctx
+        .json(
+            "GET",
+            "/auth/me",
+            None,
+            Some(&token),
+            None,
+            Some(&invalid_init_data),
+        )
+        .await;
+    assert_eq!(bad_header_status, StatusCode::OK);
+    assert_eq!(bad_header_body["user_id"], Value::String(user_id.clone()));
+
+    let (me_status, me_body) = ctx
+        .json(
+            "GET",
+            "/auth/me",
+            None,
+            Some(&token),
+            None,
+            Some(&valid_init_data),
+        )
+        .await;
+    assert_eq!(me_status, StatusCode::OK);
+    assert_eq!(me_body["user_id"], Value::String(user_id.clone()));
+
+    let (login_status, login_body) = ctx
+        .json(
+            "POST",
+            "/auth/login",
+            Some(json!({
+                "email": "tg@example.com",
+                "password": "password123"
+            })),
+            None,
+            None,
+            Some(&valid_init_data),
+        )
+        .await;
+    assert_eq!(login_status, StatusCode::OK);
+    assert!(login_body["access_token"].as_str().is_some());
+
+    let (forbidden_login_status, _) = ctx
+        .json(
+            "POST",
+            "/auth/login",
+            Some(json!({
+                "email": "tg@example.com",
+                "password": "password123"
+            })),
+            None,
+            None,
+            Some(&invalid_init_data),
+        )
+        .await;
+    assert_eq!(forbidden_login_status, StatusCode::FORBIDDEN);
+
+    let (request_status, request_body) = ctx
+        .json(
+            "POST",
+            "/profile-creation-requests",
+            Some(json!({ "requested_profile_data": { "city": "Odesa" } })),
+            Some(&token),
+            None,
+            Some(&valid_init_data),
+        )
+        .await;
+    assert_eq!(request_status, StatusCode::CREATED);
+    let request_id = request_body["profile_creation_request_id"].as_str().expect("request id");
+
+    let (forbidden_other_register_token, _) = register_user(
+        &ctx,
+        "tg-other@example.com",
+        8002,
+        "Other TG",
+        Some(&telegram_init_data(8002)),
+    )
+    .await;
+
+    let (forbidden_user_status, _) = ctx
+        .json(
+            "GET",
+            &format!("/users/{user_id}"),
+            None,
+            Some(&forbidden_other_register_token),
+            None,
+            Some(&telegram_init_data(8002)),
+        )
+        .await;
+    assert_eq!(forbidden_user_status, StatusCode::FORBIDDEN);
+
+    let (forbidden_request_status, forbidden_request_body) = ctx
+        .json(
+            "GET",
+            &format!("/profile-creation-requests/{request_id}"),
+            None,
+            Some(&token),
+            None,
+            Some(&invalid_init_data),
+        )
+        .await;
+    assert_eq!(forbidden_request_status, StatusCode::OK);
+    assert_eq!(forbidden_request_body["profile_creation_request_id"], Value::String(request_id.to_string()));
+}

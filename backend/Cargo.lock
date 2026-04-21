@@ -368,6 +368,7 @@ dependencies = [
  "hex",
  "hmac",
  "http",
+ "http-body-util",
  "jsonwebtoken",
  "log",
  "serde",
