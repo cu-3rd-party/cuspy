@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
 	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 	import { boundariesImage, enlistNav } from '$lib/prototype/data';
 
-	const toggles = [
+	let toggles = $state([
 		{
 			icon: 'front_hand',
 			code: 'SEC_LEVEL_01',
@@ -22,14 +23,22 @@
 			status: m.common_restricted(),
 			active: false
 		}
-	];
+	]);
 
 	let bioStage = $state([0, 1]);
 	let bioStageLen = 5;
 
-	setInterval(() => {
-		bioStage = bioStage.map((value) => (value + 1) % bioStageLen);
-	}, 100);
+	const toggleBoundary = (index: number) => {
+		toggles[index].active = !toggles[index].active;
+	};
+
+	onMount(() => {
+		const interval = window.setInterval(() => {
+			bioStage = bioStage.map((value) => (value + 1) % bioStageLen);
+		}, 100);
+
+		return () => window.clearInterval(interval);
+	});
 </script>
 
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
@@ -51,9 +60,12 @@
 		</section>
 
 		<div class="grid gap-4 md:grid-cols-2">
-			{#each toggles as toggle}
-				<div
-					class="flex flex-col justify-between bg-surface-container p-6 transition-colors hover:bg-surface-container-high"
+			{#each toggles as toggle, index}
+				<button
+					type="button"
+					onclick={() => toggleBoundary(index)}
+					aria-pressed={toggle.active}
+					class="flex flex-col justify-between bg-surface-container p-6 text-left transition-colors hover:bg-surface-container-high"
 				>
 					<div class="mb-8">
 						<div class="mb-4 flex items-start justify-between">
@@ -83,7 +95,7 @@
 							></div>
 						</div>
 					</div>
-				</div>
+				</button>
 			{/each}
 
 			<div
