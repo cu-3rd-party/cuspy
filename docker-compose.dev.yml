@@ -63,5 +63,13 @@ services:
     ports:
       - "4040:4040"
 
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_dev_data:

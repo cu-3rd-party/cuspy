@@ -8,7 +8,7 @@
       <env name="DATABASE_URL" value="postgres://postgres:postgres@127.0.0.1:5432/postgres" />
       <env name="JWT_SECRET" value="sceurQw59NapxPdM" />
       <env name="PUBLIC_WEBAPP_URL" value="https://deity-skeptic-mossy.ngrok-free.dev" />
-      <env name="RUST_LOG" value="debug" />
+      <env name="RUST_LOG" value="info" />
       <env name="TELEGRAM_BOT_TOKEN" value="8496666161:AAEpklhFN1UsYlSrf-QczA5Rp2dB44VZoz4" />
     </envs>
     <option name="emulateTerminal" value="true" />
