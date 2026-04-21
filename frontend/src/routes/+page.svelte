@@ -1,0 +1,230 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
+	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
+	import { enlistNav, heroServerImage } from '$lib/prototype/data';
+
+	let { data } = $props<{
+		data: {
+			verification: Promise<{
+				refId: string;
+				clearance: string;
+				grantedAt: string;
+			}>;
+		};
+	}>();
+
+	const briefingSteps = [
+		'Establish secure cryptographic identity.',
+		'Sync biometric signatures to the global grid.',
+		'Deploy to active theater of operations.'
+	];
+
+	const bufferSegments = 4;
+	let verificationProgress = $state(8);
+	let encryptedBuffer = $state(0);
+	let accessGranted = $state(false);
+
+	$effect(() => {
+		const verification = data.verification;
+
+		verification.then(() => {
+			accessGranted = true;
+			verificationProgress = 100;
+		});
+	});
+
+	onMount(() => {
+		const verificationTimer = window.setInterval(() => {
+			verificationProgress = Math.min(verificationProgress + 3, 88);
+		}, 90);
+
+		const bufferTimer = window.setInterval(() => {
+			encryptedBuffer = Math.min(encryptedBuffer + 1, 100);
+		}, 45);
+
+		return () => {
+			window.clearInterval(verificationTimer);
+			window.clearInterval(bufferTimer);
+		};
+	});
+
+	const activeSegments = (progress: number, total: number) =>
+		Math.max(1, Math.min(total, Math.round((progress / 100) * total)));
+</script>
+
+<TerminalShell topBar={{ title: 'CLASSIFIED_REGISTRATION', icon: 'terminal' }}>
+	<section class="mb-12">
+		<div
+			class="scan-sweep-soft relative flex h-72 items-end overflow-hidden bg-surface-container p-6 sm:p-8"
+		>
+			<img
+				src={heroServerImage}
+				alt="High-tech server rack"
+				class="absolute inset-0 size-full object-cover opacity-40 mix-blend-overlay grayscale"
+			/>
+			<div class="absolute inset-0 bg-linear-to-t from-background to-transparent"></div>
+			<div class="relative z-10 max-w-2xl">
+				<div
+					class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-xs font-bold text-on-primary-container"
+				>
+					SIGNAL ACQUIRED
+				</div>
+				<h2 class="font-headline text-4xl leading-none font-extrabold tracking-tight sm:text-5xl">
+					INITIATING ENLISTMENT PROTOCOL
+				</h2>
+				<div class="mt-4 flex items-center gap-2">
+					<span class="signal-dot size-2 rounded-full bg-primary"></span>
+					<p class="font-label text-sm tracking-[0.3em] text-primary">
+						ENCRYPTED CONNECTION STABLE
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="grid gap-8 md:grid-cols-12">
+		<div class="md:col-span-7">
+			<div class="relative bg-surface-container-low p-8">
+				{#await data.verification}
+					<div
+						class="absolute top-4 right-6 font-label text-[10px] tracking-[0.3em] text-outline-variant/60"
+					>
+						REF_ID: ESTABLISHING
+					</div>
+					<div class="mb-8 space-y-4">
+						<div class="flex items-center gap-2 text-primary">
+							<span class="material-symbols-outlined signal-dot">settings_ethernet</span>
+							<span class="font-headline text-lg font-bold tracking-[0.25em]">VERIFYING SIGNAL</span
+							>
+						</div>
+						<div class="space-y-2">
+							<div
+								class="flex items-center justify-between font-label text-[10px] tracking-[0.25em] text-outline uppercase"
+							>
+								<span>Server-side credential handshake</span>
+								<span>{verificationProgress}%</span>
+							</div>
+							<div class="h-2 bg-surface-container-highest">
+								<div
+									class="h-full bg-linear-to-r from-primary to-primary-container transition-[width] duration-200 ease-out"
+									style={`width:${verificationProgress}%`}
+								></div>
+							</div>
+						</div>
+					</div>
+					<div class="mt-10 grid gap-4 sm:grid-cols-2">
+						<div class="bg-surface-container p-4">
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">Clearance Level</p>
+							<p class="font-headline font-bold text-outline">PENDING CLASSIFICATION</p>
+						</div>
+						<div class="bg-surface-container p-4">
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">Threat Vector</p>
+							<p class="font-headline font-bold">CYBER-INSURGENCY</p>
+						</div>
+					</div>
+				{:then verification}
+					<div
+						class="absolute top-4 right-6 font-label text-[10px] tracking-[0.3em] text-outline-variant"
+					>
+						REF_ID: {verification.refId}
+					</div>
+					<div class="animate-in mb-8 space-y-4">
+						<div class="flex items-center gap-2 text-primary">
+							<span class="material-symbols-outlined signal-dot">verified_user</span>
+							<span class="font-headline text-lg font-bold tracking-[0.25em]">ACCESS GRANTED</span>
+						</div>
+						<div class="space-y-2">
+							<div
+								class="flex items-center justify-between font-label text-[10px] tracking-[0.25em] text-outline uppercase"
+							>
+								<span>Server-side credential handshake</span>
+								<span>100%</span>
+							</div>
+							<div class="h-2 bg-surface-container-highest">
+								<div
+									class="h-full bg-linear-to-r from-primary to-primary-container transition-[width] duration-500 ease-out"
+									style="width:100%"
+								></div>
+							</div>
+						</div>
+					</div>
+					<div class="mt-10 grid gap-4 sm:grid-cols-2">
+						<div class="bg-surface-container p-4 transition-all duration-500 ease-out">
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">Clearance Level</p>
+							<p class="font-headline font-bold text-secondary">{verification.clearance}</p>
+						</div>
+						<div class="bg-surface-container p-4 transition-all duration-500 ease-out">
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">Threat Vector</p>
+							<p class="font-headline font-bold">CYBER-INSURGENCY</p>
+						</div>
+					</div>
+				{/await}
+			</div>
+		</div>
+
+		<div class="md:col-span-5">
+			<div class="flex h-full flex-col justify-between bg-surface-container-high p-6">
+				<div>
+					<h3
+						class="mb-6 font-headline text-xs font-bold tracking-[0.4em] text-on-surface-variant uppercase"
+					>
+						Mission Briefing
+					</h3>
+					<ul class="space-y-4">
+						{#each briefingSteps as step, index}
+							<li class="flex gap-4">
+								<span class="font-label font-bold text-primary">0{index + 1}</span>
+								<span class="flex-1 border-b border-outline-variant/30 pb-2 text-sm">{step}</span>
+							</li>
+						{/each}
+					</ul>
+				</div>
+
+				<div class="mt-8">
+					<a
+						href={resolve('/agent-id')}
+						aria-disabled={!accessGranted}
+						class={`glitch-burst tactical-button flex w-full items-center justify-between px-8 py-5 font-headline font-extrabold tracking-[0.2em] uppercase transition-[filter,transform,brightness,opacity] hover:brightness-110 ${accessGranted ? '' : 'pointer-events-none opacity-50 saturate-0'}`}
+					>
+						<span>START REGISTRATION</span>
+						<span class="material-symbols-outlined">chevron_right</span>
+					</a>
+					<p class="mt-4 text-center font-label text-[10px] tracking-[0.3em] text-outline">
+						{accessGranted
+							? 'SYSTEM BREACH / UNAUTHORIZED ATTEMPTS LOGGED'
+							: 'REGISTRATION TERMINAL LOCKED UNTIL VERIFICATION PASSES'}
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="mt-12">
+		<div class="flex items-center gap-4 bg-surface-container p-1">
+			<div class="bg-secondary-container p-3 text-secondary">
+				<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1"
+					>security</span
+				>
+			</div>
+			<div class="flex-1">
+				<p class="font-label text-xs font-bold tracking-tight text-secondary uppercase">
+					Encrypted Buffer
+				</p>
+				<div class="mt-2 grid grid-cols-4 gap-1">
+					{#each Array.from({ length: bufferSegments }, (_, index) => index) as index}
+						<div class="h-2 overflow-hidden bg-surface-container-highest">
+							<div
+								class={`h-full transition-[width,background-color,box-shadow] duration-300 ease-out ${index < activeSegments(encryptedBuffer, bufferSegments) ? 'bg-secondary shadow-[0_0_14px_rgba(254,169,255,0.28)]' : 'bg-secondary/20'}`}
+								style={`width:${Math.max(0, Math.min(100, encryptedBuffer - index * (100 / bufferSegments)) * bufferSegments)}%`}
+							></div>
+						</div>
+					{/each}
+				</div>
+			</div>
+			<span class="px-4 font-label text-[10px] text-outline transition-all duration-300"
+				>{encryptedBuffer}% READY</span
+			>
+		</div>
+	</section>
+</TerminalShell>

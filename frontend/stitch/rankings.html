@@ -1,0 +1,422 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width, initial-scale=1.0" name="viewport" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+		<script id="tailwind-config">
+			tailwind.config = {
+				darkMode: 'class',
+				theme: {
+					extend: {
+						colors: {
+							error: '#ffb4ab',
+							'inverse-surface': '#e2e2e2',
+							'on-tertiary': '#650034',
+							'tertiary-fixed-dim': '#ffb0c9',
+							'primary-fixed-dim': '#76dd71',
+							'surface-dim': '#131313',
+							'on-surface': '#e2e2e2',
+							'surface-bright': '#393939',
+							'surface-container': '#1f1f1f',
+							'on-error': '#690005',
+							'on-primary-fixed': '#002203',
+							'secondary-fixed': '#ffd6fb',
+							'primary-fixed': '#92fa8a',
+							'on-secondary-container': '#fb91ff',
+							'on-secondary-fixed': '#36003d',
+							'error-container': '#93000a',
+							'on-secondary': '#580062',
+							'surface-tint': '#76dd71',
+							'on-surface-variant': '#becab8',
+							'surface-container-highest': '#353535',
+							'outline-variant': '#3f4a3c',
+							'on-tertiary-fixed-variant': '#88144b',
+							'on-tertiary-fixed': '#3e001e',
+							'on-error-container': '#ffdad6',
+							background: '#131313',
+							'on-tertiary-container': '#ffe2e9',
+							surface: '#131313',
+							'surface-container-high': '#2a2a2a',
+							'on-primary': '#003908',
+							'inverse-primary': '#006e17',
+							'tertiary-fixed': '#ffd9e3',
+							primary: '#76dd71',
+							outline: '#899483',
+							'secondary-container': '#81008f',
+							secondary: '#fea9ff',
+							'on-primary-container': '#a1ff98',
+							'surface-container-lowest': '#0e0e0e',
+							'secondary-fixed-dim': '#fea9ff',
+							tertiary: '#ffb0c9',
+							'surface-container-low': '#1b1b1b',
+							'tertiary-container': '#b53b6e',
+							'on-secondary-fixed-variant': '#7d008b',
+							'on-background': '#e2e2e2',
+							'inverse-on-surface': '#303030',
+							'surface-variant': '#353535',
+							'primary-container': '#007a1b',
+							'on-primary-fixed-variant': '#00530f'
+						},
+						borderRadius: {
+							DEFAULT: '0px',
+							lg: '0px',
+							xl: '0px',
+							full: '9999px'
+						},
+						fontFamily: {
+							headline: ['Space Grotesk'],
+							body: ['Inter'],
+							label: ['Space Grotesk']
+						}
+					}
+				}
+			};
+		</script>
+		<style>
+			.material-symbols-outlined {
+				font-variation-settings:
+					'FILL' 0,
+					'wght' 400,
+					'GRAD' 0,
+					'opsz' 24;
+				vertical-align: middle;
+			}
+			.scan-line {
+				width: 100%;
+				height: 1px;
+				background: rgba(118, 221, 113, 0.1);
+				position: absolute;
+				top: 0;
+				left: 0;
+				pointer-events: none;
+			}
+			body {
+				background-color: #131313;
+				color: #e2e2e2;
+			}
+		</style>
+		<style>
+			body {
+				min-height: max(884px, 100dvh);
+			}
+		</style>
+	</head>
+	<body class="flex min-h-screen flex-col font-body selection:bg-primary selection:text-black">
+		<!-- TopAppBar -->
+		<header
+			class="fixed top-0 z-50 flex w-full items-center justify-between bg-[#0e0e0e] px-6 py-4 font-['Space_Grotesk'] text-sm tracking-widest text-[#007A1B] uppercase"
+		>
+			<div class="flex items-center gap-3">
+				<span class="material-symbols-outlined" data-icon="security">security</span>
+				<span class="font-bold tracking-tighter">GHOST_SIGNAL_V1.0</span>
+			</div>
+			<div class="flex items-center gap-4">
+				<div class="flex flex-col items-end">
+					<span class="font-label text-[10px] opacity-50">STATUS: CONNECTED</span>
+					<span class="font-label text-[10px] text-primary">AGENT_092</span>
+				</div>
+				<img
+					alt="Profile"
+					class="h-8 w-8 border border-primary-container contrast-125 grayscale"
+					data-alt="Grayscale high contrast portrait of a mysterious man in shadows, cyberpunk aesthetic with subtle green lighting"
+					src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeCxJ_aKYtZxcntgqkZWjW6O-Q8Squmf6IhSw3hK0bo-1sjmL-CKywtlfyhDMQUyzZsfzeNrUJe5tNVsrqE0PdZxAKxhs8eiqTMU5_Nbup2k8IqZVlH50GG9PHOwz_FjTWJ5YhpYxRstBerqD5Rm6jrVT1TMgB9aPtlhLjAmDJ4mNRH1i9FcwRKIfvU7wAZCeCd-HQ6dfO3jwUGwO9k69YTFueVgkHoLDdSAfhpyGqsJ41nd9h4HQlTAuNfc_4vIlhxQL-_sawe3Y"
+				/>
+			</div>
+		</header>
+		<!-- Main Content Canvas -->
+		<main class="mx-auto w-full max-w-5xl flex-grow px-4 pt-24 pb-20 md:px-8">
+			<!-- Header Section -->
+			<div class="relative mb-12 border-l-4 border-secondary-container pl-6">
+				<div class="scan-line"></div>
+				<h1
+					class="mb-2 font-headline text-4xl font-bold tracking-tighter text-on-surface uppercase md:text-5xl"
+				>
+					Global Rankings
+				</h1>
+				<div class="flex flex-wrap gap-4 font-label text-[10px] tracking-widest text-outline">
+					<span>SECTOR: OMEGA-7</span>
+					<span class="text-primary">ENCRYPTION: LEVEL_4</span>
+					<span>LAST_SYNC: 04:22:11</span>
+				</div>
+			</div>
+			<!-- Leaderboard Table Container -->
+			<div class="overflow-hidden bg-surface-container-low">
+				<!-- Table Header -->
+				<div
+					class="grid grid-cols-12 gap-2 border-b border-outline-variant bg-surface-container-highest px-6 py-4 font-label text-[10px] tracking-[0.2em] text-outline uppercase"
+				>
+					<div class="col-span-2">Rank</div>
+					<div class="col-span-4 md:col-span-5">Agent Dossier</div>
+					<div class="col-span-3 text-right md:col-span-2">Rating</div>
+					<div class="col-span-3 text-right">Discoveries</div>
+				</div>
+				<!-- Rankings List -->
+				<div class="divide-y divide-outline-variant/10">
+					<!-- Rank 1 -->
+					<div
+						class="group grid grid-cols-12 items-center gap-2 px-6 py-5 transition-colors hover:bg-surface-container"
+					>
+						<div class="col-span-2 font-headline text-2xl font-bold text-secondary-container">
+							01
+						</div>
+						<div class="col-span-4 flex items-center gap-3 md:col-span-5">
+							<div
+								class="relative flex h-10 w-10 items-center justify-center bg-surface-container-highest"
+							>
+								<span class="material-symbols-outlined text-outline" data-icon="account_circle"
+									>account_circle</span
+								>
+								<div class="absolute right-0 bottom-0 h-2 w-2 bg-primary"></div>
+							</div>
+							<div class="flex flex-col">
+								<span class="font-headline font-bold text-on-surface">V_SPECTRE</span>
+								<span class="font-label text-[9px] text-outline uppercase"
+									>SYNDICATE: NEON_RAVEN</span
+								>
+							</div>
+						</div>
+						<div
+							class="col-span-3 text-right font-headline font-medium text-on-surface md:col-span-2"
+						>
+							2,840
+						</div>
+						<div class="col-span-3 text-right font-headline text-on-surface">
+							1,402 <span class="ml-1 text-[9px] text-outline">Раскрытия</span>
+						</div>
+					</div>
+					<!-- Rank 2 -->
+					<div
+						class="grid grid-cols-12 items-center gap-2 px-6 py-5 transition-colors hover:bg-surface-container"
+					>
+						<div class="col-span-2 font-headline text-2xl font-bold text-secondary-container">
+							02
+						</div>
+						<div class="col-span-4 flex items-center gap-3 md:col-span-5">
+							<div
+								class="relative flex h-10 w-10 items-center justify-center bg-surface-container-highest"
+							>
+								<span class="material-symbols-outlined text-outline" data-icon="account_circle"
+									>account_circle</span
+								>
+								<div class="absolute right-0 bottom-0 h-2 w-2 bg-primary"></div>
+							</div>
+							<div class="flex flex-col">
+								<span class="font-headline font-bold text-on-surface">K0_BALT</span>
+								<span class="font-label text-[9px] text-outline uppercase"
+									>SYNDICATE: INDEPENDENT</span
+								>
+							</div>
+						</div>
+						<div
+							class="col-span-3 text-right font-headline font-medium text-on-surface md:col-span-2"
+						>
+							2,715
+						</div>
+						<div class="col-span-3 text-right font-headline text-on-surface">
+							988 <span class="ml-1 text-[9px] text-outline">Раскрытия</span>
+						</div>
+					</div>
+					<!-- User Position (Highlighted) -->
+					<div
+						class="relative grid grid-cols-12 items-center gap-2 border-l-2 border-primary bg-primary-container/10 px-6 py-5"
+					>
+						<div class="pointer-events-none absolute inset-0 bg-primary/5"></div>
+						<div class="col-span-2 font-headline text-2xl font-bold text-primary">12</div>
+						<div class="col-span-4 flex items-center gap-3 md:col-span-5">
+							<div
+								class="relative flex h-10 w-10 items-center justify-center bg-primary-container/20"
+							>
+								<span
+									class="material-symbols-outlined text-primary"
+									data-icon="account_circle"
+									style="font-variation-settings: 'FILL' 1"
+									>account_circle</span
+								>
+								<div class="absolute right-0 bottom-0 h-2 w-2 bg-primary"></div>
+							</div>
+							<div class="flex flex-col">
+								<span class="font-headline font-bold text-primary">AGENT_092</span>
+								<span class="font-label text-[9px] tracking-widest text-primary/70 uppercase"
+									>YOU // ACTIVE SESSION</span
+								>
+							</div>
+						</div>
+						<div
+							class="col-span-3 text-right font-headline font-bold text-on-surface md:col-span-2"
+						>
+							1,942
+						</div>
+						<div class="col-span-3 text-right font-headline text-on-surface">
+							431 <span class="ml-1 text-[9px] text-outline">Раскрытия</span>
+						</div>
+					</div>
+					<!-- Rank 13 -->
+					<div
+						class="grid grid-cols-12 items-center gap-2 px-6 py-5 transition-colors hover:bg-surface-container"
+					>
+						<div class="col-span-2 font-headline text-2xl font-bold text-secondary-container">
+							13
+						</div>
+						<div class="col-span-4 flex items-center gap-3 md:col-span-5">
+							<div
+								class="relative flex h-10 w-10 items-center justify-center bg-surface-container-highest"
+							>
+								<span class="material-symbols-outlined text-outline" data-icon="account_circle"
+									>account_circle</span
+								>
+							</div>
+							<div class="flex flex-col">
+								<span class="font-headline font-bold text-on-surface">NIGHT_O_L</span>
+								<span class="font-label text-[9px] text-outline uppercase"
+									>SYNDICATE: CRYPTIC_CORE</span
+								>
+							</div>
+						</div>
+						<div
+							class="col-span-3 text-right font-headline font-medium text-on-surface md:col-span-2"
+						>
+							1,899
+						</div>
+						<div class="col-span-3 text-right font-headline text-on-surface">
+							428 <span class="ml-1 text-[9px] text-outline">Раскрытия</span>
+						</div>
+					</div>
+					<!-- Rank 14 -->
+					<div
+						class="grid grid-cols-12 items-center gap-2 px-6 py-5 transition-colors hover:bg-surface-container"
+					>
+						<div class="col-span-2 font-headline text-2xl font-bold text-secondary-container">
+							14
+						</div>
+						<div class="col-span-4 flex items-center gap-3 md:col-span-5">
+							<div
+								class="relative flex h-10 w-10 items-center justify-center bg-surface-container-highest"
+							>
+								<span class="material-symbols-outlined text-outline" data-icon="account_circle"
+									>account_circle</span
+								>
+								<div class="absolute right-0 bottom-0 h-2 w-2 bg-primary"></div>
+							</div>
+							<div class="flex flex-col">
+								<span class="font-headline font-bold text-on-surface">S_SHADOW</span>
+								<span class="font-label text-[9px] text-outline uppercase"
+									>SYNDICATE: VOID_RUNNERS</span
+								>
+							</div>
+						</div>
+						<div
+							class="col-span-3 text-right font-headline font-medium text-on-surface md:col-span-2"
+						>
+							1,854
+						</div>
+						<div class="col-span-3 text-right font-headline text-on-surface">
+							412 <span class="ml-1 text-[9px] text-outline">Раскрытия</span>
+						</div>
+					</div>
+				</div>
+				<!-- Footer Meta -->
+				<div
+					class="flex items-center justify-between border-t border-outline-variant/30 bg-surface-container-lowest p-4"
+				>
+					<div class="flex gap-2">
+						<div class="h-2 w-2 animate-pulse bg-primary"></div>
+						<span class="font-label text-[9px] tracking-[0.2em] text-outline uppercase"
+							>Live stream active: 10,442 users online</span
+						>
+					</div>
+					<button
+						class="font-label text-[10px] tracking-widest text-secondary uppercase transition-colors hover:text-on-secondary-container"
+					>
+						View Full Database &gt;
+					</button>
+				</div>
+			</div>
+			<!-- Bento Stats Footer -->
+			<div class="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div class="flex flex-col gap-2 bg-surface-container-high p-6">
+					<span class="font-label text-[10px] tracking-widest text-outline uppercase"
+						>Global Avg Elo</span
+					>
+					<span class="font-headline text-3xl font-bold text-on-surface">1,240</span>
+					<div class="mt-2 h-1 w-full bg-surface-container-highest">
+						<div class="h-full w-[65%] bg-secondary-container"></div>
+					</div>
+				</div>
+				<div class="flex flex-col gap-2 bg-surface-container-high p-6">
+					<span class="font-label text-[10px] tracking-widest text-outline uppercase"
+						>Weekly Discoveries</span
+					>
+					<span class="font-headline text-3xl font-bold text-primary">128,491</span>
+					<span class="text-[10px] font-medium text-primary/60">+14.2% FROM LAST PERIOD</span>
+				</div>
+				<div class="flex flex-col gap-2 bg-secondary-container p-6">
+					<span class="font-label text-[10px] tracking-widest text-on-secondary uppercase"
+						>Target Threshold</span
+					>
+					<span class="font-headline text-3xl font-bold text-black">2,500</span>
+					<span class="text-[10px] font-bold text-black/60">NEXT RANK: ELITE GHOST</span>
+				</div>
+			</div>
+		</main>
+		<!-- BottomNavBar -->
+		<nav
+			class="fixed bottom-0 z-50 flex h-16 w-full items-center justify-around bg-[#0e0e0e] shadow-[0_-4px_20px_rgba(0,122,27,0.1)]"
+		>
+			<a
+				class="flex flex-col items-center justify-center p-2 text-[#e2e2e2] opacity-60 duration-75 hover:bg-[#1f1f1f] active:scale-95"
+				href="#"
+			>
+				<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+				<span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase"
+					>DOSSIER</span
+				>
+			</a>
+			<a
+				class="flex flex-col items-center justify-center p-2 text-[#e2e2e2] opacity-60 duration-75 hover:bg-[#1f1f1f] active:scale-95"
+				href="#"
+			>
+				<span class="material-symbols-outlined" data-icon="target">target</span>
+				<span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase"
+					>INTEL</span
+				>
+			</a>
+			<a
+				class="flex min-w-[64px] flex-col items-center justify-center bg-[#007A1B] p-2 text-black transition-all duration-75 active:scale-95"
+				href="#"
+			>
+				<span
+					class="material-symbols-outlined"
+					data-icon="leaderboard"
+					style="font-variation-settings: 'FILL' 1"
+					>leaderboard</span
+				>
+				<span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase"
+					>RANK</span
+				>
+			</a>
+			<a
+				class="flex flex-col items-center justify-center p-2 text-[#e2e2e2] opacity-60 duration-75 hover:bg-[#1f1f1f] active:scale-95"
+				href="#"
+			>
+				<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+				<span class="font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter uppercase"
+					>RULES</span
+				>
+			</a>
+		</nav>
+	</body>
+</html>

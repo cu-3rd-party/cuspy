@@ -1,0 +1,292 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width, initial-scale=1.0" name="viewport" />
+		<title>Dossier Verification | The Ghost Signal</title>
+		<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<script id="tailwind-config">
+			tailwind.config = {
+				darkMode: 'class',
+				theme: {
+					extend: {
+						colors: {
+							'tertiary-fixed': '#ffd9e3',
+							'surface-container-low': '#1b1b1b',
+							'surface-container-highest': '#353535',
+							'on-tertiary-fixed': '#3e001e',
+							'secondary-fixed-dim': '#fea9ff',
+							outline: '#899483',
+							'on-surface': '#e2e2e2',
+							secondary: '#fea9ff',
+							'surface-container-high': '#2a2a2a',
+							background: '#131313',
+							'on-secondary-container': '#fb91ff',
+							'secondary-container': '#81008f',
+							'primary-container': '#007a1b',
+							'on-primary-fixed': '#002203',
+							'on-error-container': '#ffdad6',
+							'outline-variant': '#3f4a3c',
+							'inverse-surface': '#e2e2e2',
+							'surface-container': '#1f1f1f',
+							'inverse-on-surface': '#303030',
+							'tertiary-fixed-dim': '#ffb0c9',
+							'on-tertiary-container': '#ffe2e9',
+							tertiary: '#ffb0c9',
+							'surface-dim': '#131313',
+							'primary-fixed': '#92fa8a',
+							'on-secondary-fixed-variant': '#7d008b',
+							'secondary-fixed': '#ffd6fb',
+							'on-primary-container': '#a1ff98',
+							'error-container': '#93000a',
+							'inverse-primary': '#006e17',
+							'on-surface-variant': '#becab8',
+							'on-secondary-fixed': '#36003d',
+							'on-tertiary': '#650034',
+							'primary-fixed-dim': '#76dd71',
+							'on-primary-fixed-variant': '#00530f',
+							'on-secondary': '#580062',
+							'surface-variant': '#353535',
+							surface: '#131313',
+							'on-tertiary-fixed-variant': '#88144b',
+							primary: '#76dd71',
+							'surface-bright': '#393939',
+							error: '#ffb4ab',
+							'on-background': '#e2e2e2',
+							'surface-tint': '#76dd71',
+							'surface-container-lowest': '#0e0e0e',
+							'tertiary-container': '#b53b6e',
+							'on-primary': '#003908',
+							'on-error': '#690005'
+						},
+						borderRadius: {
+							DEFAULT: '0px',
+							lg: '0px',
+							xl: '0px',
+							full: '9999px'
+						},
+						fontFamily: {
+							headline: ['Space Grotesk'],
+							body: ['Inter'],
+							label: ['Space Grotesk']
+						}
+					}
+				}
+			};
+		</script>
+		<style>
+			.material-symbols-outlined {
+				font-variation-settings:
+					'FILL' 0,
+					'wght' 400,
+					'GRAD' 0,
+					'opsz' 24;
+			}
+			body {
+				background-color: #131313;
+				color: #e2e2e2;
+				font-family: 'Inter', sans-serif;
+			}
+			.scanning-line {
+				height: 2px;
+				width: 100%;
+				background: linear-gradient(90deg, transparent, #76dd71, transparent);
+				position: absolute;
+				top: 0;
+				left: 0;
+				pointer-events: none;
+			}
+		</style>
+		<style>
+			body {
+				min-height: max(884px, 100dvh);
+			}
+		</style>
+	</head>
+	<body class="flex min-h-screen flex-col">
+		<!-- TopAppBar -->
+		<header
+			class="fixed top-0 z-50 flex h-16 w-full items-center justify-between bg-black px-4 font-['Space_Grotesk'] tracking-tighter text-[#007A1B] uppercase shadow-[0px_4px_20px_rgba(0,122,27,0.1)]"
+		>
+			<div class="flex items-center gap-4">
+				<button
+					class="material-symbols-outlined p-2 transition-colors hover:bg-[#1f1f1f] active:translate-x-[-2px] active:skew-x-1"
+				>
+					arrow_back
+				</button>
+				<h1 class="font-bold tracking-[0.2em] text-[#007A1B]">VERIFY_DOSSIER</h1>
+			</div>
+			<div class="flex items-center gap-4">
+				<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1"
+					>security</span
+				>
+			</div>
+		</header>
+		<main class="mx-auto mt-20 w-full max-w-4xl flex-grow px-6 pb-24">
+			<!-- Classified Header Section -->
+			<section class="mb-8 border-l-4 border-primary bg-surface-container-lowest p-4">
+				<div class="mb-2 flex items-start justify-between">
+					<span class="font-headline text-[10px] font-bold tracking-[0.3em] text-primary uppercase"
+						>CLASSIFIED_INTEL</span
+					>
+					<span
+						class="font-headline text-[10px] font-bold tracking-widest text-on-surface-variant uppercase"
+						>TS-S/SCI-O-91</span
+					>
+				</div>
+				<div class="grid grid-cols-2 gap-4">
+					<div class="space-y-1">
+						<p class="font-label text-[10px] text-outline uppercase">Timestamp</p>
+						<p class="font-headline text-sm font-bold">2024-05-14 // 04:12:09_UTC</p>
+					</div>
+					<div class="space-y-1 text-right">
+						<p class="font-label text-[10px] text-outline uppercase">Agent ID</p>
+						<p class="font-headline text-sm font-bold text-secondary">AG-004-FOX-SIGMA</p>
+					</div>
+				</div>
+			</section>
+			<!-- Bento Grid for Agent Preview -->
+			<div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+				<!-- Biometric Photo -->
+				<div class="relative h-64 overflow-hidden bg-surface-container md:col-span-1 md:h-full">
+					<img
+						class="h-full w-full object-cover opacity-60 grayscale transition-all duration-500 hover:grayscale-0"
+						data-alt="close-up biometric scan of a person's face in dark lighting with digital data overlays and green grid lines"
+						src="https://lh3.googleusercontent.com/aida-public/AB6AXuASn-ohXf3Umktly1O3QUTDhFXzGZ-L2pD4dcZOxaf1hsOU3UNCHMYEEnjL3pzo09RgDGW7zvRFj9C2bkNbZHSd_QDxzbVP9fqJAns3fIrUWk0ZwP-djIgIWhNfWFYw1i49ShpcaVcPFAQFgGu7IjGuNzLdVBnILGz_5vVWE25JeYpW98gX65zQ0TCag44JhJ1tx6R4_NT_BJb8xTLAHiV4FF5Ln7y7M0n0BqUBY6PqBaBcwE9UTS009SGkmVHopokLQTQQzfBqEUM"
+					/>
+					<div
+						class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"
+					></div>
+					<div class="absolute bottom-2 left-2 flex items-center gap-2">
+						<span class="material-symbols-outlined text-xs text-primary">smart_card_reader</span>
+						<span class="font-label text-[10px] text-primary">BIO_LINK_ACTIVE</span>
+					</div>
+					<!-- Scanning Line Effect -->
+					<div class="absolute inset-0 overflow-hidden opacity-30">
+						<div class="h-full w-full animate-pulse border-t border-primary/20"></div>
+					</div>
+				</div>
+				<!-- Agent Identity Info -->
+				<div class="space-y-4 md:col-span-2">
+					<div
+						class="flex flex-col justify-center border-t border-r border-outline-variant/20 bg-surface-container p-6"
+					>
+						<p class="mb-1 font-label text-[10px] text-outline uppercase">Assigned Codename</p>
+						<h2 class="font-headline text-4xl font-extrabold tracking-tighter text-on-surface">
+							NEON_FOX
+						</h2>
+					</div>
+					<div class="grid grid-cols-2 gap-4">
+						<div class="border-b border-l border-outline-variant/20 bg-surface-container p-6">
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">Academic Group</p>
+							<h3 class="font-headline text-xl font-bold text-secondary">SIGMA-091</h3>
+						</div>
+						<div class="flex items-center justify-center bg-surface-container p-6">
+							<div class="text-center">
+								<span
+									class="material-symbols-outlined mb-2 text-3xl text-primary"
+									style="font-variation-settings: 'FILL' 1"
+									>shield_with_heart</span
+								>
+								<p class="font-label text-[10px] text-outline uppercase">Clearance: Level 4</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Operational Boundaries Summary -->
+			<section class="mb-12">
+				<h3
+					class="mb-4 flex items-center gap-2 font-headline text-sm font-bold tracking-[0.2em] text-primary"
+				>
+					<span class="material-symbols-outlined text-sm">settings_input_component</span>
+					OPERATIONAL_BOUNDARIES
+				</h3>
+				<div class="grid grid-cols-1 gap-px bg-outline-variant/20 md:grid-cols-2">
+					<!-- Row 1 -->
+					<div class="flex items-center justify-between bg-surface-container p-4">
+						<span class="font-body text-sm font-medium">Physical Contact</span>
+						<span
+							class="bg-primary-container/20 px-3 py-1 font-label text-[10px] font-bold text-primary"
+							>AUTHORIZED</span
+						>
+					</div>
+					<div class="flex items-center justify-between bg-surface-container p-4">
+						<span class="font-body text-sm font-medium text-on-surface-variant"
+							>Hugs &amp; Close Proximity</span
+						>
+						<span
+							class="bg-secondary-container/20 px-3 py-1 font-label text-[10px] font-bold text-secondary"
+							>RESTRICTED</span
+						>
+					</div>
+					<!-- Row 2 -->
+					<div class="flex items-center justify-between bg-surface-container p-4">
+						<span class="font-body text-sm font-medium">Combat Simulation</span>
+						<span
+							class="bg-primary-container/20 px-3 py-1 font-label text-[10px] font-bold text-primary"
+							>AUTHORIZED</span
+						>
+					</div>
+					<div class="flex items-center justify-between bg-surface-container p-4">
+						<span class="font-body text-sm font-medium">Verbal Interrogation</span>
+						<span
+							class="bg-primary-container/20 px-3 py-1 font-label text-[10px] font-bold text-primary"
+							>AUTHORIZED</span
+						>
+					</div>
+				</div>
+			</section>
+			<!-- Footer Warning -->
+			<footer
+				class="relative mb-24 border border-dashed border-error/30 bg-surface-container-low p-6 text-center"
+			>
+				<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-surface px-4">
+					<span class="material-symbols-outlined text-xl text-error">warning</span>
+				</div>
+				<p class="mb-2 font-label text-[10px] font-bold tracking-widest text-error uppercase">
+					Legal Notice / Article 4.C
+				</p>
+				<p class="mx-auto max-w-lg font-body text-xs leading-relaxed text-on-surface-variant">
+					All data entered into the DOSSIER system is subject to immediate verification. Falsifying
+					biometric records, codenames, or operational boundaries is a Class-A violation of the
+					Intelligence Protocol. Unauthorized access or deceptive entries will result in immediate
+					network expulsion and asset termination.
+				</p>
+			</footer>
+			<!-- Submit Button -->
+			<div
+				class="fixed bottom-0 left-0 w-full bg-gradient-to-t from-background via-background to-transparent p-4 pt-12"
+			>
+				<div class="mx-auto max-w-4xl">
+					<button
+						class="flex h-16 w-full items-center justify-center gap-3 bg-primary-container font-headline font-bold tracking-[0.2em] text-on-primary-container uppercase shadow-[0px_0px_20px_rgba(0,122,27,0.4)] transition-all active:translate-x-[-2px] active:skew-x-1"
+					>
+						SUBMIT FOR ADMIN APPROVAL
+						<span class="material-symbols-outlined">arrow_forward</span>
+					</button>
+				</div>
+			</div>
+		</main>
+		<!-- Background decorative element -->
+		<div
+			class="pointer-events-none fixed inset-0 z-[-1] opacity-[0.03]"
+			style="
+				background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCv2CUtxXkJd2OEOKlV_HiDI0RAFGx5q8LsQiiHZqkrdr7D-NIpFNdMD-Zp-Q-LYpBfM_A7Ak1yHqc4UNPQZgNmk0Ku2SXdAZrvV-lumf0Uuamoq9esukwyq_Ie95nVXCXtEg6WtadoOUNIIl2L1ykg8eJ1Npx4u8x56P3YMirdhfkUHp4d3KHIHcpu6riVUfaEvxd0KkLEBfNZLhSJrjlKdW5kNxDsyK8G_tsg_pqtNVrMb-IlvGOJ9ZeOvy5u-IleKEPOOieMFO4');
+			"
+		></div>
+	</body>
+</html>

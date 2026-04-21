@@ -1,0 +1,360 @@
+<!doctype html>
+
+<html class="dark" lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta content="width=device-width, initial-scale=1.0" name="viewport" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+			rel="stylesheet"
+		/>
+		<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+		<script id="tailwind-config">
+			tailwind.config = {
+				darkMode: 'class',
+				theme: {
+					extend: {
+						colors: {
+							'surface-container': '#1f1f1f',
+							'on-primary-container': '#a1ff98',
+							'surface-variant': '#353535',
+							'surface-tint': '#76dd71',
+							'on-error-container': '#ffdad6',
+							'tertiary-container': '#b53b6e',
+							'on-primary-fixed-variant': '#00530f',
+							tertiary: '#ffb0c9',
+							secondary: '#fea9ff',
+							'on-secondary-container': '#fb91ff',
+							'inverse-on-surface': '#303030',
+							'on-tertiary-container': '#ffe2e9',
+							'on-error': '#690005',
+							'surface-container-highest': '#353535',
+							'on-primary': '#003908',
+							surface: '#131313',
+							'on-secondary-fixed-variant': '#7d008b',
+							'on-background': '#e2e2e2',
+							'secondary-fixed': '#ffd6fb',
+							'primary-fixed': '#92fa8a',
+							'on-tertiary': '#650034',
+							background: '#131313',
+							error: '#ffb4ab',
+							'primary-fixed-dim': '#76dd71',
+							'primary-container': '#007a1b',
+							'on-secondary-fixed': '#36003d',
+							'outline-variant': '#3f4a3c',
+							'surface-container-high': '#2a2a2a',
+							'on-surface-variant': '#becab8',
+							'error-container': '#93000a',
+							'surface-container-lowest': '#0e0e0e',
+							'surface-bright': '#393939',
+							'surface-container-low': '#1b1b1b',
+							primary: '#76dd71',
+							outline: '#899483',
+							'surface-dim': '#131313',
+							'on-secondary': '#580062',
+							'on-surface': '#e2e2e2',
+							'on-tertiary-fixed-variant': '#88144b',
+							'secondary-fixed-dim': '#fea9ff',
+							'on-primary-fixed': '#002203',
+							'tertiary-fixed': '#ffd9e3',
+							'on-tertiary-fixed': '#3e001e',
+							'inverse-primary': '#006e17',
+							'inverse-surface': '#e2e2e2',
+							'secondary-container': '#81008f',
+							'tertiary-fixed-dim': '#ffb0c9'
+						},
+						borderRadius: {
+							DEFAULT: '0px',
+							lg: '0px',
+							xl: '0px',
+							full: '9999px'
+						},
+						fontFamily: {
+							headline: ['Space Grotesk'],
+							body: ['Inter'],
+							label: ['Space Grotesk']
+						}
+					}
+				}
+			};
+		</script>
+		<style>
+			.material-symbols-outlined {
+				font-variation-settings:
+					'FILL' 0,
+					'wght' 400,
+					'GRAD' 0,
+					'opsz' 24;
+			}
+			.glitch-effect-short:active {
+				filter: hue-rotate(90deg);
+				transform: translateX(-2px);
+			}
+			body {
+				background-color: #131313;
+				color: #e2e2e2;
+			}
+			/* Custom scrollbar for terminal feel */
+			::-webkit-scrollbar {
+				width: 4px;
+			}
+			::-webkit-scrollbar-track {
+				background: #0e0e0e;
+			}
+			::-webkit-scrollbar-thumb {
+				background: #007a1b;
+			}
+		</style>
+		<style>
+			body {
+				min-height: max(884px, 100dvh);
+			}
+		</style>
+	</head>
+	<body class="font-body selection:bg-primary-container selection:text-on-primary-container">
+		<!-- Top Navigation Anchor -->
+		<header
+			class="docked full-width flat no shadows fixed top-0 z-50 flex w-full items-center justify-between bg-[#0e0e0e] bg-[#131313] px-6 py-4 font-['Space_Grotesk'] tracking-widest text-[#007A1B] uppercase"
+		>
+			<div class="flex items-center gap-3">
+				<span class="material-symbols-outlined text-2xl">terminal</span>
+				<span class="text-xl font-bold text-[#007A1B] uppercase">CLASSIFIED_REGISTRATION</span>
+			</div>
+			<div class="hidden gap-8 text-sm md:flex">
+				<span class="border-b border-[#007A1B] text-[#007A1B]">ENLIST</span>
+				<span class="cursor-pointer text-[#899483] transition-colors hover:text-[#007A1B]"
+					>DOSSIER</span
+				>
+				<span class="cursor-pointer text-[#899483] transition-colors hover:text-[#007A1B]"
+					>PROTOCOL</span
+				>
+			</div>
+		</header>
+		<main class="mx-auto min-h-screen max-w-4xl px-4 pt-24 pb-32 md:px-8">
+			<!-- Progress Indicator -->
+			<div class="mb-12">
+				<div class="mb-2 flex items-end justify-between">
+					<span class="font-label text-xs tracking-tighter text-outline uppercase"
+						>Registration Progress</span
+					>
+					<span class="font-label text-sm font-bold text-primary">PHASE 02 / 02</span>
+				</div>
+				<div class="flex h-2 gap-1">
+					<div class="flex-1 bg-primary-container shadow-[0_0_10px_rgba(118,221,113,0.3)]"></div>
+					<div class="flex-1 bg-primary-container shadow-[0_0_15px_rgba(118,221,113,0.5)]"></div>
+				</div>
+			</div>
+			<!-- Section Header -->
+			<div class="mb-10">
+				<h1
+					class="mb-2 font-headline text-4xl font-bold tracking-tight text-on-background uppercase md:text-6xl"
+				>
+					OPERATIONAL BOUNDARIES
+				</h1>
+				<p class="max-w-xl border-l-2 border-secondary-container py-1 pl-4 text-outline italic">
+					Define your physical limits for the field. Unauthorized breach of these parameters
+					triggers automatic neutralisation of the encounter.
+				</p>
+			</div>
+			<!-- Settings Interface (Bento Style) -->
+			<div class="mb-12 grid grid-cols-1 gap-4 md:grid-cols-2">
+				<!-- Contact Setting Card -->
+				<div
+					class="group flex flex-col justify-between bg-surface-container p-6 transition-colors hover:bg-surface-container-high"
+				>
+					<div class="mb-8">
+						<div class="mb-4 flex items-start justify-between">
+							<span
+								class="material-symbols-outlined text-3xl text-secondary"
+								data-weight="fill"
+								style="font-variation-settings: 'FILL' 1"
+								>front_hand</span
+							>
+							<span
+								class="bg-surface-container-low px-2 py-1 font-label text-[10px] tracking-widest text-outline uppercase"
+								>SEC_LEVEL_01</span
+							>
+						</div>
+						<h3 class="mb-2 font-headline text-xl font-bold text-on-surface uppercase">
+							Physical Contact Allowed
+						</h3>
+						<p class="text-sm text-on-surface-variant">
+							Formal and social physical interactions including handshakes, shoulder pats, or brief
+							proximity work.
+						</p>
+					</div>
+					<div class="flex items-center justify-between">
+						<span class="font-label text-xs tracking-widest text-outline uppercase"
+							>STATUS: <span class="text-primary">AUTHORIZED</span></span
+						>
+						<label class="relative inline-flex cursor-pointer items-center">
+							<input checked="" class="peer sr-only" type="checkbox" />
+							<div
+								class="h-6 w-12 bg-surface-container-highest ring-1 ring-outline-variant transition-all peer-checked:bg-primary-container peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:bg-on-surface after:transition-all after:content-[''] peer-checked:after:translate-x-6"
+							></div>
+						</label>
+					</div>
+				</div>
+				<!-- Intimacy Setting Card -->
+				<div
+					class="group flex flex-col justify-between bg-surface-container p-6 transition-colors hover:bg-surface-container-high"
+				>
+					<div class="mb-8">
+						<div class="mb-4 flex items-start justify-between">
+							<span class="material-symbols-outlined text-3xl text-secondary">groups</span>
+							<span
+								class="bg-surface-container-low px-2 py-1 font-label text-[10px] tracking-widest text-outline uppercase"
+								>SEC_LEVEL_02</span
+							>
+						</div>
+						<h3 class="mb-2 font-headline text-xl font-bold text-on-surface uppercase">
+							Hugs &amp; Close Proximity
+						</h3>
+						<p class="text-sm text-on-surface-variant">
+							Willingness to engage in platonic embrace or sustained close-quarters tactical
+							collaboration.
+						</p>
+					</div>
+					<div class="flex items-center justify-between">
+						<span class="font-label text-xs tracking-widest text-outline uppercase"
+							>STATUS: <span class="text-error">RESTRICTED</span></span
+						>
+						<label class="relative inline-flex cursor-pointer items-center">
+							<input class="peer sr-only" type="checkbox" />
+							<div
+								class="h-6 w-12 bg-surface-container-highest ring-1 ring-outline-variant transition-all peer-checked:bg-primary-container peer-focus:outline-none after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:bg-on-surface after:transition-all after:content-[''] peer-checked:after:translate-x-6"
+							></div>
+						</label>
+					</div>
+				</div>
+				<!-- Warning Card -->
+				<div
+					class="flex items-center gap-6 border-l-4 border-secondary bg-secondary-container/10 p-6 md:col-span-2"
+				>
+					<span class="material-symbols-outlined animate-pulse text-4xl text-secondary"
+						>warning</span
+					>
+					<div>
+						<h4 class="font-headline font-bold tracking-tight text-secondary uppercase">
+							CRITICAL ENFORCEMENT PROTOCOL
+						</h4>
+						<p class="text-sm font-medium text-on-surface-variant">
+							Violating boundaries results in immediate expulsion from the collective. No appeals,
+							no second attempts. Data is final.
+						</p>
+					</div>
+				</div>
+				<!-- Metadata / Dossier Summary -->
+				<div
+					class="flex flex-col gap-4 border border-outline-variant/15 bg-surface-container-lowest p-6"
+				>
+					<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+						<span class="font-label text-[10px] text-outline uppercase">Agent_ID</span>
+						<span class="font-label text-[10px] text-primary uppercase">RX-9042-ALFA</span>
+					</div>
+					<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+						<span class="font-label text-[10px] text-outline uppercase">Consent_Hash</span>
+						<span class="font-label text-[10px] text-secondary uppercase">E92_D77_01X</span>
+					</div>
+					<div class="flex justify-between border-b border-outline-variant/30 pb-2">
+						<span class="font-label text-[10px] text-outline uppercase">Timestamp</span>
+						<span class="font-label text-[10px] text-on-surface uppercase"
+							>2024-05-21 14:02:11</span
+						>
+					</div>
+				</div>
+				<!-- Terminal Image Overlay -->
+				<div class="relative h-40 min-h-[160px] overflow-hidden bg-surface-container md:h-full">
+					<img
+						alt="Cybernetic data interface"
+						class="absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-overlay"
+						data-alt="high-tech computer terminal screen with green data lines, digital code rain, and glowing emerald circuitry on dark background"
+						src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuEZLWnSjtB4ZrMuyVRfFVn_xQTMR0jLQ-G8mbSluh2FJpeQySFhcv_Bnz9EFMWQhrmCe08rSLiLdHNGKJjttFu4MHV0jow5EmSSGj2_5dG4i2IIKkz6d-f3b23SpK0usVFFt77W4YdUgjhn-U5tv2GyGU0pFzsIZxOwUYgt7FR1cz1n3Y4AqmZGjFy9yz6RINZ3PPzk99mfBH-UnfQaGscOc_mfMI-6kY9P6GOcUBhfYPa5fP6rW6FbuaMLvr1Q9ZSa7S3kjGDYA"
+					/>
+					<div
+						class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"
+					></div>
+					<div class="absolute bottom-4 left-4">
+						<span class="mb-1 block font-label text-[10px] text-primary-fixed"
+							>SCANNING_BIO_RHYTHMS</span
+						>
+						<div class="flex gap-0.5">
+							<div class="h-1 w-4 bg-primary"></div>
+							<div class="h-1 w-4 bg-primary"></div>
+							<div class="h-1 w-4 bg-primary"></div>
+							<div class="h-1 w-4 bg-surface-container-highest"></div>
+							<div class="h-1 w-4 bg-surface-container-highest"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Tactical Trigger Button -->
+			<div class="flex flex-col items-center gap-4 md:flex-row">
+				<button
+					class="glitch-effect-short group flex w-full flex-1 items-center justify-center gap-4 bg-primary-container px-10 py-5 font-headline text-xl font-extrabold text-on-primary-container shadow-[0_0_20px_rgba(0,122,27,0.2)] transition-all hover:bg-primary active:scale-95 md:w-auto"
+				>
+					FINALIZE DOSSIER
+					<span class="material-symbols-outlined transition-transform group-hover:translate-x-2"
+						>double_arrow</span
+					>
+				</button>
+				<button
+					class="w-full px-8 py-5 font-label text-sm tracking-widest text-outline uppercase transition-colors hover:text-on-surface md:w-auto"
+				>
+					RETRACT APPLICATION
+				</button>
+			</div>
+		</main>
+		<!-- Bottom Navigation Shell (Only for top-level, but kept as required by hierarchy rules) -->
+		<nav
+			class="fixed bottom-0 left-0 z-50 flex h-16 w-full items-stretch justify-around border-t-[1px] border-emerald-900/10 bg-[#0e0e0e] font-['Space_Grotesk'] text-[10px] font-bold tracking-tighter text-[#007A1B] uppercase shadow-[0_-4px_20px_rgba(0,122,27,0.08)]"
+		>
+			<a
+				class="flex h-full flex-1 flex-col items-center justify-center bg-[#007A1B] p-2 text-[#0e0e0e]"
+				href="#"
+			>
+				<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1"
+					>fingerprint</span
+				>
+				<span>ENLIST</span>
+			</a>
+			<a
+				class="flex flex-1 flex-col items-center justify-center p-2 text-[#899483] transition-colors hover:bg-[#131313] hover:text-[#007A1B]"
+				href="#"
+			>
+				<span class="material-symbols-outlined">assignment_ind</span>
+				<span>DOSSIER</span>
+			</a>
+			<a
+				class="flex flex-1 flex-col items-center justify-center p-2 text-[#899483] transition-colors hover:bg-[#131313] hover:text-[#007A1B]"
+				href="#"
+			>
+				<span class="material-symbols-outlined">security</span>
+				<span>PROTOCOL</span>
+			</a>
+		</nav>
+		<!-- Scanning Line Animation Effect (CSS only) -->
+		<div
+			class="pointer-events-none fixed top-0 left-0 z-50 h-1 w-full bg-primary/20 opacity-30 shadow-[0_0_15px_rgba(118,221,113,0.4)]"
+			style="animation: scan 8s linear infinite"
+		></div>
+		<style>
+			@keyframes scan {
+				0% {
+					top: 0;
+				}
+				100% {
+					top: 100vh;
+				}
+			}
+		</style>
+	</body>
+</html>
