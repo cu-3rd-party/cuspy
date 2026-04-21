@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages.js';
 	import Icon from '$lib/prototype/Icon.svelte';
 	import type { TopBarConfig } from '$lib/prototype/data';
 
@@ -41,7 +42,7 @@
 			<div class="size-10 overflow-hidden bg-surface-container-highest">
 				<img
 					src={config.avatar}
-					alt="Agent avatar"
+					alt={m.top_bar_agent_avatar_alt()}
 					class="size-full object-cover contrast-125 grayscale"
 				/>
 			</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages.js';
 	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 	import { boundariesImage, enlistNav } from '$lib/prototype/data';
@@ -8,33 +9,32 @@
 		{
 			icon: 'front_hand',
 			code: 'SEC_LEVEL_01',
-			title: 'Physical Contact Allowed',
-			copy: 'Formal and social physical interactions including handshakes, shoulder pats, or brief proximity work.',
-			status: 'AUTHORIZED',
+			title: m.boundaries_physical_contact_title(),
+			copy: m.boundaries_physical_contact_copy(),
+			status: m.common_authorized(),
 			active: true
 		},
 		{
 			icon: 'groups',
 			code: 'SEC_LEVEL_02',
-			title: 'Hugs & Close Proximity',
-			copy: 'Willingness to engage in platonic embrace or sustained close-quarters tactical collaboration.',
-			status: 'RESTRICTED',
+			title: m.boundaries_hugs_title(),
+			copy: m.boundaries_hugs_copy(),
+			status: m.common_restricted(),
 			active: false
 		}
 	];
 </script>
 
-<TerminalShell topBar={{ title: 'CLASSIFIED_REGISTRATION', icon: 'terminal' }} nav={enlistNav}>
+<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
 	<div class="mx-auto max-w-4xl">
-		<ProgressBar current={2} total={2} label="Registration Progress" status="PHASE 02 / 02" />
+		<ProgressBar current={2} total={2} label={m.boundaries_progress_label()} status={m.boundaries_progress_status()} />
 
 		<section class="mt-12 mb-10">
 			<h1 class="font-headline text-4xl font-bold tracking-tight uppercase sm:text-6xl">
-				OPERATIONAL BOUNDARIES
+				{m.boundaries_title()}
 			</h1>
 			<p class="mt-4 max-w-xl border-l-2 border-secondary-container pl-4 text-outline italic">
-				Define your physical limits for the field. Unauthorized breach of these parameters triggers
-				automatic neutralisation of the encounter.
+				{m.boundaries_intro()}
 			</p>
 		</section>
 
@@ -59,7 +59,7 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="font-label text-xs tracking-[0.2em] text-outline uppercase"
-							>STATUS: <span class={toggle.active ? 'text-primary' : 'text-error'}
+							>{m.common_status()}: <span class={toggle.active ? 'text-primary' : 'text-error'}
 								>{toggle.status}</span
 							></span
 						>
@@ -80,17 +80,16 @@
 				<span class="material-symbols-outlined signal-dot text-4xl text-secondary">warning</span>
 				<div>
 					<h4 class="font-headline font-bold text-secondary uppercase">
-						CRITICAL ENFORCEMENT PROTOCOL
+						{m.boundaries_critical_protocol()}
 					</h4>
 					<p class="text-sm text-on-surface-variant">
-						Violating boundaries results in immediate expulsion from the collective. No appeals, no
-						second attempts.
+						{m.boundaries_critical_copy()}
 					</p>
 				</div>
 			</div>
 
 			<div class="bg-surface-container-lowest p-6">
-				{#each [['Agent_ID', 'RX-9042-ALFA', 'primary'], ['Consent_Hash', 'E92_D77_01X', 'secondary'], ['Timestamp', '2024-05-21 14:02:11', 'on-surface']] as [label, value, tone]}
+				{#each [[m.boundaries_agent_id(), 'RX-9042-ALFA', 'primary'], [m.boundaries_consent_hash(), 'E92_D77_01X', 'secondary'], [m.common_timestamp(), '2024-05-21 14:02:11', 'on-surface']] as [label, value, tone]}
 					<div
 						class="flex justify-between border-b border-outline-variant/30 py-3 first:pt-0 last:border-b-0 last:pb-0"
 					>
@@ -106,13 +105,13 @@
 			<div class="relative min-h-40 overflow-hidden bg-surface-container">
 				<img
 					src={boundariesImage}
-					alt="Data interface"
+					alt={m.boundaries_image_alt()}
 					class="absolute inset-0 size-full object-cover opacity-40 mix-blend-overlay"
 				/>
 				<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
 				<div class="absolute bottom-4 left-4">
 					<span class="mb-1 block font-label text-[10px] text-primary-fixed"
-						>SCANNING_BIO_RHYTHMS</span
+						>{m.boundaries_scanning_bio_rhythms()}</span
 					>
 					<div class="segment-bar grid-cols-5">
 						<span class="active"></span><span class="active"></span><span class="active"
@@ -127,7 +126,7 @@
 				href={resolve('/dossier-verification')}
 				class="glitch-burst press-scale tactical-button group flex flex-1 items-center justify-center gap-4 px-10 py-5 font-headline text-xl font-extrabold uppercase shadow-[0_0_20px_rgba(0,122,27,0.2)] transition-all hover:bg-primary"
 			>
-				FINALIZE DOSSIER
+				{m.boundaries_finalize_dossier()}
 				<span class="material-symbols-outlined group-hover-slide">double_arrow</span>
 			</a>
 			<!--			<a href={resolve('/')} class="px-8 py-5 font-label text-sm uppercase tracking-[0.3em] text-outline transition-colors hover:text-on-surface">RETRACT APPLICATION</a>-->

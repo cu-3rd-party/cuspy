@@ -1,3 +1,5 @@
+import { m } from '$lib/paraglide/messages.js';
+
 export type TopBarConfig = {
 	title: string;
 	icon: string;
@@ -19,28 +21,28 @@ export type BottomNavItem = {
 export const enlistNav: BottomNavItem[] = [
 	{
 		href: '/agent-id',
-		label: 'ID',
+		label: m.nav_id(),
 		icon: 'fingerprint',
 		group: 'enlist',
 		match: 'prefix',
 		fill: true
 	},
-	{ href: '/operational-boundaries', label: 'BOUNDARIES', icon: 'assignment_ind', group: 'enlist' },
-	{ href: '/dossier-verification', label: 'VERIFY', icon: 'security', group: 'enlist' }
+	{ href: '/operational-boundaries', label: m.nav_boundaries(), icon: 'assignment_ind', group: 'enlist' },
+	{ href: '/dossier-verification', label: m.nav_verify(), icon: 'security', group: 'enlist' }
 ];
 
 export const dossierNav: BottomNavItem[] = [
 	{
 		href: '/dossier',
-		label: 'DOSSIER',
+		label: m.nav_dossier(),
 		icon: 'account_circle',
 		group: 'dossier',
 		match: 'prefix',
 		fill: true
 	},
-	{ href: '/target-intel', label: 'INTEL', icon: 'target', group: 'dossier' },
-	{ href: '/rankings', label: 'RANK', icon: 'leaderboard', group: 'dossier' },
-	{ href: '/', label: 'RULES', icon: 'gavel', group: 'dossier' }
+	{ href: '/target-intel', label: m.nav_intel(), icon: 'target', group: 'dossier' },
+	{ href: '/rankings', label: m.nav_rank(), icon: 'leaderboard', group: 'dossier' },
+	{ href: '/', label: m.nav_rules(), icon: 'gavel', group: 'dossier' }
 ];
 
 export const agentAvatar =
@@ -64,7 +66,7 @@ export const roster = [
 	{
 		rank: '12',
 		name: 'AGENT_092',
-		syndicate: 'YOU // ACTIVE SESSION',
+		syndicate: 'ACTIVE_SESSION',
 		rating: '1,942',
 		discoveries: '431',
 		active: true

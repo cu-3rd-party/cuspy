@@ -1,21 +1,22 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages.js';
 	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 	import { enlistNav } from '$lib/prototype/data';
 </script>
 
-<TerminalShell topBar={{ title: 'CLASSIFIED_REGISTRATION', icon: 'terminal' }} nav={enlistNav}>
+<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
 	<div class="mx-auto max-w-xl">
-		<ProgressBar current={1} total={2} label="Status: Initializing Link" status="Phase 01 / 02" />
+		<ProgressBar current={1} total={2} label={m.agent_id_progress_label()} status={m.agent_id_progress_status()} />
 
 		<section class="scan-sweep relative mt-12 overflow-hidden bg-surface-container">
 			<div class="bg-surface-container-low p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<h2 class="font-headline text-2xl font-bold uppercase">AGENT_ENROLLMENT</h2>
+						<h2 class="font-headline text-2xl font-bold uppercase">{m.agent_id_title()}</h2>
 						<p class="mt-1 font-label text-[10px] tracking-[0.3em] text-outline uppercase">
-							Clearance Level: Delta-6
+							{m.agent_id_clearance_level()}
 						</p>
 					</div>
 					<span
@@ -29,22 +30,22 @@
 				<div class="space-y-2">
 					<div class="flex items-center justify-between">
 						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-							Agent Name (Codename)
+							{m.agent_id_codename_label()}
 						</p>
-						<span class="font-label text-[10px] text-primary/40 uppercase">Required</span>
+						<span class="font-label text-[10px] text-primary/40 uppercase">{m.common_required()}</span>
 					</div>
 					<input
 						class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-3 font-label text-lg tracking-[0.2em] text-primary transition-all placeholder:text-outline/30 focus:border-primary focus:ring-0"
-						placeholder="e.g. NEON_FOX"
+						placeholder={m.agent_id_codename_placeholder()}
 					/>
 				</div>
 
 				<div class="space-y-2">
 					<div class="flex items-center justify-between">
 						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-							Academic Group / Sector
+							{m.agent_id_group_label()}
 						</p>
-						<span class="font-label text-[10px] text-primary/40 uppercase">Authentication Link</span
+						<span class="font-label text-[10px] text-primary/40 uppercase">{m.agent_id_authentication_link()}</span
 						>
 					</div>
 					<input
@@ -55,7 +56,7 @@
 
 				<div class="space-y-4">
 					<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-						Upload Identification (Biometric Scan)
+						{m.agent_id_upload_label()}
 					</p>
 					<div
 						class="group relative flex aspect-video cursor-pointer flex-col items-center justify-center border-2 border-dashed border-outline-variant bg-surface-container-high transition-colors hover:bg-surface-container-highest"
@@ -67,7 +68,7 @@
 						<p
 							class="font-label text-[10px] tracking-tight text-outline uppercase transition-colors group-hover:text-on-surface"
 						>
-							Drop visual data or click to browse
+							{m.agent_id_upload_hint()}
 						</p>
 						<input type="file" class="absolute inset-0 opacity-0" />
 					</div>
@@ -77,7 +78,7 @@
 					class="glitch-burst tactical-button flex w-full items-center justify-center gap-3 px-6 py-5 font-headline font-bold tracking-[0.3em] uppercase transition-[filter,transform,brightness] hover:brightness-110 active:scale-[0.98]"
 					type="submit"
 				>
-					Proceed
+					{m.common_proceed()}
 					<span class="material-symbols-outlined">arrow_forward</span>
 				</button>
 			</form>
@@ -88,8 +89,7 @@
 				>
 					<span class="signal-dot mt-1 size-2 bg-primary"></span>
 					<span
-						>Any falsification of agent credentials will result in immediate extraction from the
-						protocol.</span
+						>{m.agent_id_falsification_notice()}</span
 					>
 				</p>
 			</div>
@@ -97,11 +97,11 @@
 
 		<div class="mt-10 grid gap-4 sm:grid-cols-2">
 			<div class="border-l-2 border-secondary bg-surface-container-low p-4">
-				<p class="mb-1 font-label text-[10px] text-outline uppercase">Node Connectivity</p>
-				<p class="font-headline font-bold">STABLE_ENCRYPTED</p>
+				<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.agent_id_node_connectivity()}</p>
+				<p class="font-headline font-bold">{m.agent_id_stable_encrypted()}</p>
 			</div>
 			<div class="border-l-2 border-primary bg-surface-container-low p-4">
-				<p class="mb-1 font-label text-[10px] text-outline uppercase">Time Remaining</p>
+				<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.agent_id_time_remaining()}</p>
 				<p class="font-headline font-bold">14:59:59</p>
 			</div>
 		</div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { m } from '$lib/paraglide/messages.js';
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 	import { enlistNav, heroServerImage } from '$lib/prototype/data';
 
@@ -15,9 +16,9 @@
 	}>();
 
 	const briefingSteps = [
-		'Establish secure cryptographic identity.',
-		'Sync biometric signatures to the global grid.',
-		'Deploy to active theater of operations.'
+		m.home_briefing_step_1(),
+		m.home_briefing_step_2(),
+		m.home_briefing_step_3()
 	];
 
 	const bufferSegments = 4;
@@ -53,14 +54,14 @@
 		Math.max(1, Math.min(total, Math.round((progress / 100) * total)));
 </script>
 
-<TerminalShell topBar={{ title: 'CLASSIFIED_REGISTRATION', icon: 'terminal' }}>
+<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}>
 	<section class="mb-12">
 		<div
 			class="scan-sweep-soft relative flex h-72 items-end overflow-hidden bg-surface-container p-6 sm:p-8"
 		>
 			<img
 				src={heroServerImage}
-				alt="High-tech server rack"
+				alt={m.home_hero_image_alt()}
 				class="absolute inset-0 size-full object-cover opacity-40 mix-blend-overlay grayscale"
 			/>
 			<div class="absolute inset-0 bg-linear-to-t from-background to-transparent"></div>
@@ -68,15 +69,15 @@
 				<div
 					class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-xs font-bold text-on-primary-container"
 				>
-					SIGNAL ACQUIRED
+					{m.home_signal_acquired()}
 				</div>
 				<h2 class="font-headline text-4xl leading-none font-extrabold tracking-tight sm:text-5xl">
-					INITIATING ENLISTMENT PROTOCOL
+					{m.home_initiating_enlistment_protocol()}
 				</h2>
 				<div class="mt-4 flex items-center gap-2">
 					<span class="signal-dot size-2 rounded-full bg-primary"></span>
 					<p class="font-label text-sm tracking-[0.3em] text-primary">
-						ENCRYPTED CONNECTION STABLE
+						{m.home_encrypted_connection_stable()}
 					</p>
 				</div>
 			</div>
@@ -90,19 +91,19 @@
 					<div
 						class="absolute top-4 right-6 font-label text-[10px] tracking-[0.3em] text-outline-variant/60"
 					>
-						REF_ID: ESTABLISHING
+						{m.home_ref_id_establishing()}
 					</div>
 					<div class="mb-8 space-y-4">
 						<div class="flex items-center gap-2 text-primary">
 							<span class="material-symbols-outlined signal-dot">settings_ethernet</span>
-							<span class="font-headline text-lg font-bold tracking-[0.25em]">VERIFYING SIGNAL</span
+							<span class="font-headline text-lg font-bold tracking-[0.25em]">{m.home_verifying_signal()}</span
 							>
 						</div>
 						<div class="space-y-2">
 							<div
 								class="flex items-center justify-between font-label text-[10px] tracking-[0.25em] text-outline uppercase"
 							>
-								<span>Server-side credential handshake</span>
+								<span>{m.home_server_side_credential_handshake()}</span>
 								<span>{verificationProgress}%</span>
 							</div>
 							<div class="h-2 bg-surface-container-highest">
@@ -115,12 +116,12 @@
 					</div>
 					<div class="mt-10 grid gap-4 sm:grid-cols-2">
 						<div class="bg-surface-container p-4">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">Clearance Level</p>
-							<p class="font-headline font-bold text-outline">PENDING CLASSIFICATION</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_clearance_level()}</p>
+							<p class="font-headline font-bold text-outline">{m.home_pending_classification()}</p>
 						</div>
 						<div class="bg-surface-container p-4">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">Threat Vector</p>
-							<p class="font-headline font-bold">CYBER-INSURGENCY</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_threat_vector()}</p>
+							<p class="font-headline font-bold">{m.home_cyber_insurgency()}</p>
 						</div>
 					</div>
 				{:then verification}
@@ -132,13 +133,13 @@
 					<div class="animate-in mb-8 space-y-4">
 						<div class="flex items-center gap-2 text-primary">
 							<span class="material-symbols-outlined signal-dot">verified_user</span>
-							<span class="font-headline text-lg font-bold tracking-[0.25em]">ACCESS GRANTED</span>
+							<span class="font-headline text-lg font-bold tracking-[0.25em]">{m.home_access_granted()}</span>
 						</div>
 						<div class="space-y-2">
 							<div
 								class="flex items-center justify-between font-label text-[10px] tracking-[0.25em] text-outline uppercase"
 							>
-								<span>Server-side credential handshake</span>
+								<span>{m.home_server_side_credential_handshake()}</span>
 								<span>100%</span>
 							</div>
 							<div class="h-2 bg-surface-container-highest">
@@ -151,12 +152,12 @@
 					</div>
 					<div class="mt-10 grid gap-4 sm:grid-cols-2">
 						<div class="bg-surface-container p-4 transition-all duration-500 ease-out">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">Clearance Level</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_clearance_level()}</p>
 							<p class="font-headline font-bold text-secondary">{verification.clearance}</p>
 						</div>
 						<div class="bg-surface-container p-4 transition-all duration-500 ease-out">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">Threat Vector</p>
-							<p class="font-headline font-bold">CYBER-INSURGENCY</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_threat_vector()}</p>
+							<p class="font-headline font-bold">{m.home_cyber_insurgency()}</p>
 						</div>
 					</div>
 				{/await}
@@ -169,7 +170,7 @@
 					<h3
 						class="mb-6 font-headline text-xs font-bold tracking-[0.4em] text-on-surface-variant uppercase"
 					>
-						Mission Briefing
+						{m.home_mission_briefing()}
 					</h3>
 					<ul class="space-y-4">
 						{#each briefingSteps as step, index}
@@ -187,13 +188,13 @@
 						aria-disabled={!accessGranted}
 						class={`glitch-burst tactical-button flex w-full items-center justify-between px-8 py-5 font-headline font-extrabold tracking-[0.2em] uppercase transition-[filter,transform,brightness,opacity] hover:brightness-110 ${accessGranted ? '' : 'pointer-events-none opacity-50 saturate-0'}`}
 					>
-						<span>START REGISTRATION</span>
+						<span>{m.home_start_registration()}</span>
 						<span class="material-symbols-outlined">chevron_right</span>
 					</a>
 					<p class="mt-4 text-center font-label text-[10px] tracking-[0.3em] text-outline">
 						{accessGranted
-							? 'SYSTEM BREACH / UNAUTHORIZED ATTEMPTS LOGGED'
-							: 'REGISTRATION TERMINAL LOCKED UNTIL VERIFICATION PASSES'}
+							? m.home_system_breach_logged()
+							: m.home_registration_terminal_locked()}
 					</p>
 				</div>
 			</div>
@@ -209,7 +210,7 @@
 			</div>
 			<div class="flex-1">
 				<p class="font-label text-xs font-bold tracking-tight text-secondary uppercase">
-					Encrypted Buffer
+					{m.home_encrypted_buffer()}
 				</p>
 				<div class="mt-2 grid grid-cols-4 gap-1">
 					{#each Array.from({ length: bufferSegments }, (_, index) => index) as index}
@@ -223,7 +224,7 @@
 				</div>
 			</div>
 			<span class="px-4 font-label text-[10px] text-outline transition-all duration-300"
-				>{encryptedBuffer}% READY</span
+				>{m.home_buffer_ready({ percent: String(encryptedBuffer) })}</span
 			>
 		</div>
 	</section>
