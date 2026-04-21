@@ -4,6 +4,7 @@
 	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 	import { enlistNav } from '$lib/prototype/data';
+	import Countdown from "$lib/prototype/Countdown.svelte";
 </script>
 
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
@@ -108,12 +109,7 @@
 				</p>
 				<p class="font-headline font-bold">{m.agent_id_stable_encrypted()}</p>
 			</div>
-			<div class="border-l-2 border-primary bg-surface-container-low p-4">
-				<p class="mb-1 font-label text-[10px] text-outline uppercase">
-					{m.agent_id_time_remaining()}
-				</p>
-				<p class="font-headline font-bold">14:59:59</p>
-			</div>
+			<Countdown timeRemaining={new Date(0, 0, 0, 0, 15, 0, 0)}></Countdown>
 		</div>
 	</div>
 </TerminalShell>
