@@ -13,7 +13,7 @@
 </script>
 
 <TerminalShell
-	topBar={{ title: m.dossier_verification_topbar_title(), icon: 'security', backHref: '/agent-id' }}
+	topBar={{ title: m.dossier_verification_topbar_title(), icon: 'security' }}
 	nav={enlistNav}
 >
 	<div class="mx-auto max-w-4xl">
