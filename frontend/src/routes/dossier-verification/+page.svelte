@@ -9,14 +9,14 @@
 		loadDossierDraft,
 		type DossierDraft
 	} from '$lib/prototype/dossierDraft';
-	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
+	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav, verificationImage } from '$lib/prototype/data';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let profileImage = $derived(draft.agentId.identificationImage || verificationImage);
 
 	const statusTone = (active: boolean) => (active ? 'primary' : 'secondary');
- 
+
 	let boundaries = $derived([
 		[
 			m.dossier_verification_physical_contact(),
@@ -96,14 +96,18 @@
 					<p class="mb-1 font-label text-[10px] text-outline uppercase">
 						{m.dossier_verification_assigned_codename()}
 					</p>
-					<h2 class="font-headline text-4xl font-extrabold tracking-tight">{draft.agentId.codename || 'NEON_FOX'}</h2>
+					<h2 class="font-headline text-4xl font-extrabold tracking-tight">
+						{draft.agentId.codename || 'NEON_FOX'}
+					</h2>
 				</div>
 				<div class="grid gap-4 sm:grid-cols-2">
 					<div class="bg-surface-container p-6">
 						<p class="mb-1 font-label text-[10px] text-outline uppercase">
 							{m.dossier_verification_academic_group()}
 						</p>
-						<h3 class="font-headline text-xl font-bold text-secondary">{draft.agentId.academicGroup || 'SIGMA-091'}</h3>
+						<h3 class="font-headline text-xl font-bold text-secondary">
+							{draft.agentId.academicGroup || 'SIGMA-091'}
+						</h3>
 					</div>
 					<div class="flex items-center justify-center bg-surface-container p-6 text-center">
 						<div>

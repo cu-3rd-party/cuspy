@@ -9,11 +9,11 @@
 		saveDossierDraft,
 		type DossierDraft
 	} from '$lib/prototype/dossierDraft';
-	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
-	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
+	import ProgressBar from '$lib/components/ProgressBar.svelte';
+	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav } from '$lib/prototype/data';
-	import Countdown from '$lib/prototype/Countdown.svelte';
-	import NodeConnectivity from '$lib/prototype/NodeConnectivity.svelte';
+	import Countdown from '$lib/components/Countdown.svelte';
+	import NodeConnectivity from '$lib/components/NodeConnectivity.svelte';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let uploadError = $state(false);
@@ -99,7 +99,9 @@
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
 	<div class="mx-auto max-w-xl">
 		{#if invalidUploadMessage}
-			<div class="fixed top-24 right-4 left-4 z-[60] mx-auto max-w-sm bg-error px-4 py-3 text-center font-label text-[11px] font-bold tracking-[0.2em] text-white uppercase shadow-[0_0_24px_rgba(186,26,26,0.45)] sm:left-auto">
+			<div
+				class="fixed top-24 right-4 left-4 z-[60] mx-auto max-w-sm bg-error px-4 py-3 text-center font-label text-[11px] font-bold tracking-[0.2em] text-white uppercase shadow-[0_0_24px_rgba(186,26,26,0.45)] sm:left-auto"
+			>
 				{invalidUploadMessage}
 			</div>
 		{/if}
@@ -177,8 +179,12 @@
 						{/if}
 
 						{#if uploadError}
-							<div class="pointer-events-none absolute inset-3 rounded-full border border-error/60 animate-[spin_3s_linear_infinite]"></div>
-							<div class="pointer-events-none absolute inset-6 rounded-full border-2 border-transparent border-t-error animate-[spin_1.8s_linear_infinite]"></div>
+							<div
+								class="pointer-events-none absolute inset-3 animate-[spin_3s_linear_infinite] rounded-full border border-error/60"
+							></div>
+							<div
+								class="pointer-events-none absolute inset-6 animate-[spin_1.8s_linear_infinite] rounded-full border-2 border-transparent border-t-error"
+							></div>
 						{/if}
 
 						<span
@@ -190,7 +196,11 @@
 						>
 							{m.agent_id_upload_hint()}
 						</p>
-						<input type="file" class="absolute inset-0 opacity-0" onchange={handleIdentificationChange} />
+						<input
+							type="file"
+							class="absolute inset-0 opacity-0"
+							onchange={handleIdentificationChange}
+						/>
 					</div>
 					{#if draft.agentId.identificationName}
 						<p class="font-label text-[10px] text-primary uppercase">

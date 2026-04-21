@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { loadDossierDraft } from '$lib/prototype/dossierDraft';
-	import Icon from '$lib/prototype/Icon.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { BottomNavItem } from '$lib/prototype/data';
 
 	let { items } = $props<{ items: BottomNavItem[] }>();
@@ -31,7 +31,8 @@
 		return 1;
 	};
 
-	const isLocked = (item: BottomNavItem) => item.group === 'enlist' && unlockedStep < getRequiredStep(item);
+	const isLocked = (item: BottomNavItem) =>
+		item.group === 'enlist' && unlockedStep < getRequiredStep(item);
 
 	onMount(() => {
 		if (!browser) {

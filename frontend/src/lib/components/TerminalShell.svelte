@@ -1,6 +1,6 @@
 <script lang="ts">
-	import BottomNav from '$lib/prototype/BottomNav.svelte';
-	import TopBar from '$lib/prototype/TopBar.svelte';
+	import BottomNav from '$lib/components/BottomNav.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
 	import type { BottomNavItem, TopBarConfig } from '$lib/prototype/data';
 
 	let { topBar, nav, children } = $props<{

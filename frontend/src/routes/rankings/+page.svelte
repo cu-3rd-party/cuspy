@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
-	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
+	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { agentAvatar, dossierNav, roster } from '$lib/prototype/data';
 </script>
 

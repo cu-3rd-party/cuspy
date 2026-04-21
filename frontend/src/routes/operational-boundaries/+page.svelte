@@ -9,8 +9,8 @@
 		saveDossierDraft,
 		type DossierDraft
 	} from '$lib/prototype/dossierDraft';
-	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
-	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
+	import ProgressBar from '$lib/components/ProgressBar.svelte';
+	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { boundariesImage, enlistNav } from '$lib/prototype/data';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());

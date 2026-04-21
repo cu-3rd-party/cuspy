@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
-	import Icon from '$lib/prototype/Icon.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { TopBarConfig } from '$lib/prototype/data';
 
 	let { config } = $props<{ config: TopBarConfig }>();
