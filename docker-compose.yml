@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:18beta2
+    environment:
+      POSTGRES_DB: cukiller
+      POSTGRES_USER: cukiller
+      POSTGRES_PASSWORD: cukiller
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cukiller -d cukiller"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgres://cukiller:cukiller@postgres:5432/cukiller
+      BIND_ADDRESS: 0.0.0.0:3000
+      RUST_LOG: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4173
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "4173:4173"
+
+volumes:
+  postgres_data:
