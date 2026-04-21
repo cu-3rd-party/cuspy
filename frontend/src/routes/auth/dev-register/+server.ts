@@ -13,8 +13,18 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		body: JSON.stringify(payload)
 	});
 
-	cookies.set('backend-access-token', response.access_token, { path: '/', httpOnly: false, sameSite: 'lax' });
-	cookies.set('session-user', JSON.stringify(response.user), { path: '/', httpOnly: false, sameSite: 'lax' });
+	cookies.set('backend-access-token', response.access_token, {
+		path: '/',
+		httpOnly: false,
+		sameSite: 'none',
+		secure: true
+	});
+	cookies.set('session-user', JSON.stringify(response.user), {
+		path: '/',
+		httpOnly: false,
+		sameSite: 'none',
+		secure: true
+	});
 
 	return json(response);
 };
