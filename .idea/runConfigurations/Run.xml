@@ -3,13 +3,13 @@
     <option name="command" value="run" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$/backend" />
     <envs>
-      <env name="DATABASE_URL" value="postgres://postgres:postgres@127.0.0.1:5432/postgres" />
-      <env name="BIND_ADDRESS" value="0.0.0.0:3000" />
-      <env name="RUST_LOG" value="info" />
       <env name="ADMIN_SECRET" value="SYPFxEfqgmaRV6kw" />
+      <env name="BIND_ADDRESS" value="0.0.0.0:3000" />
+      <env name="DATABASE_URL" value="postgres://postgres:postgres@127.0.0.1:5432/postgres" />
       <env name="JWT_SECRET" value="sceurQw59NapxPdM" />
-      <env name="TELEGRAM_BOT_TOKEN" value="8496666161:AAEpklhFN1UsYlSrf-QczA5Rp2dB44VZoz4" />
       <env name="PUBLIC_WEBAPP_URL" value="https://deity-skeptic-mossy.ngrok-free.dev" />
+      <env name="RUST_LOG" value="debug" />
+      <env name="TELEGRAM_BOT_TOKEN" value="8496666161:AAEpklhFN1UsYlSrf-QczA5Rp2dB44VZoz4" />
     </envs>
     <option name="emulateTerminal" value="true" />
     <option name="channel" value="DEFAULT" />

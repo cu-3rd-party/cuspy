@@ -29,6 +29,7 @@ pub struct AppState {
 pub fn build_app(state: AppState) -> Router {
     api::router()
         .route("/", axum::routing::get(|| async { "backend up" }))
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
         .with_state(state)
 }

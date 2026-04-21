@@ -69,7 +69,7 @@ pub async fn register(
     .fetch_one(&mut *tx)
     .await?;
 
-    let auth_user = sqlx::query_as::<_, AuthUserRecord>(
+    let auth_user = match sqlx::query_as::<_, AuthUserRecord>(
         r#"
         insert into auth_user (auth_user_id, user_id, login_identifier, password_hash)
         values ($1, $2, $3, $4)
@@ -78,10 +78,17 @@ pub async fn register(
     )
     .bind(Uuid::now_v7())
     .bind(user_id)
-    .bind(login_identifier)
+    .bind(login_identifier.clone())
     .bind(password_hash)
     .fetch_one(&mut *tx)
-    .await?;
+    .await
+    {
+        Ok(user) => user,
+        Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
+            return Err(ApiError::BadRequest(format!("user with identifier {login_identifier} already exists")));
+        }
+        Err(e) => return Err(e.into()),
+    };
 
     tx.commit().await?;
 
