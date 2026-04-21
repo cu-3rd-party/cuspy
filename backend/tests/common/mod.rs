@@ -10,7 +10,8 @@ use axum::{
 use cukiller_backend::{AppState, build_app};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
-use sqlx::{Row, postgres::PgPoolOptions};
+use sqlx::postgres::PgPoolOptions;
+use sqlx::Row;
 use tower::ServiceExt;
 
 pub const ADMIN_SECRET: &str = "test-admin-secret";
@@ -123,6 +124,8 @@ impl TestContext {
             jwt_secret: JWT_SECRET.to_string(),
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
+            #[cfg(feature = "telegram-auth")]
+            public_webapp_url: "https://test.example.com".to_string(),
         };
 
         Self {

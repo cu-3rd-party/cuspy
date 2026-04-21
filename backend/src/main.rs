@@ -54,7 +54,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db,
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,
+        #[cfg(feature = "telegram-auth")]
         telegram_bot_token: config.telegram_bot_token.clone(),
+        #[cfg(feature = "telegram-auth")]
         public_webapp_url: config.public_webapp_url.clone(),
     };
     let app = build_app(state);

@@ -1,0 +1,27 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command" nameIsGenerated="true">
+    <option name="command" value="run" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$/backend" />
+    <envs>
+      <env name="DATABASE_URL" value="postgres://cukiller:EuHUfC8ktVQc5W6N@127.0.0.1:5432/cukiller" />
+      <env name="BIND_ADDRESS" value="0.0.0.0:3000" />
+      <env name="RUST_LOG" value="info" />
+      <env name="ADMIN_SECRET" value="SYPFxEfqgmaRV6kw" />
+      <env name="JWT_SECRET" value="sceurQw59NapxPdM" />
+      <env name="TELEGRAM_BOT_TOKEN" value="8496666161:AAEpklhFN1UsYlSrf-QczA5Rp2dB44VZoz4" />
+      <env name="PUBLIC_WEBAPP_URL" value="https://deity-skeptic-mossy.ngrok-free.dev" />
+    </envs>
+    <option name="emulateTerminal" value="true" />
+    <option name="channel" value="DEFAULT" />
+    <option name="requiredFeatures" value="true" />
+    <option name="allFeatures" value="false" />
+    <option name="withSudo" value="false" />
+    <option name="buildTarget" value="REMOTE" />
+    <option name="backtrace" value="SHORT" />
+    <option name="isRedirectInput" value="false" />
+    <option name="redirectInputPath" value="" />
+    <method v="2">
+      <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+    </method>
+  </configuration>
+</component>

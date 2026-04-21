@@ -112,7 +112,7 @@ async fn telegram_auth_requires_valid_init_data() {
     assert_eq!(login_status, StatusCode::OK);
     assert!(login_body["access_token"].as_str().is_some());
 
-    let (forbidden_login_status, _) = ctx
+    let (unauthorized_login_status, _) = ctx
         .json(
             "POST",
             "/auth/login",
@@ -125,7 +125,7 @@ async fn telegram_auth_requires_valid_init_data() {
             Some(&invalid_init_data),
         )
         .await;
-    assert_eq!(forbidden_login_status, StatusCode::FORBIDDEN);
+    assert_eq!(unauthorized_login_status, StatusCode::UNAUTHORIZED);
 
     let (request_status, request_body) = ctx
         .json(
