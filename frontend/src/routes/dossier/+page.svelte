@@ -20,7 +20,9 @@
 				<span class="mb-2 block font-headline text-xs tracking-[0.3em] text-primary/60 uppercase"
 					>{m.dossier_subject_dossier()}</span
 				>
-				<h2 class="font-headline text-5xl font-bold tracking-tight sm:text-7xl">{m.dossier_agent_sokolov()}</h2>
+				<h2 class="font-headline text-5xl font-bold tracking-tight sm:text-7xl">
+					{m.dossier_agent_sokolov()}
+				</h2>
 				<div class="mt-2 flex items-center gap-4">
 					<span
 						class="bg-primary-container px-3 py-1 font-headline text-xs font-bold tracking-[0.2em] text-on-primary-container"
@@ -32,7 +34,9 @@
 				</div>
 			</div>
 			<div class="text-right">
-				<div class="font-headline text-[10px] tracking-[0.2em] text-outline uppercase">{m.dossier_current_authorization()}</div>
+				<div class="font-headline text-[10px] tracking-[0.2em] text-outline uppercase">
+					{m.dossier_current_authorization()}
+				</div>
 				<div class="font-headline text-2xl font-bold tracking-tight text-secondary">
 					{m.dossier_clearance_level_4()}
 				</div>
@@ -55,12 +59,16 @@
 				>
 				<div class="mb-8 flex items-center gap-8">
 					<div>
-						<div class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase">{m.dossier_current_tier()}</div>
+						<div class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase">
+							{m.dossier_current_tier()}
+						</div>
 						<div class="font-headline text-4xl font-bold">{m.dossier_silver_iv()}</div>
 					</div>
 					<div class="h-12 w-px bg-outline-variant/30"></div>
 					<div>
-						<div class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase">{m.dossier_elo_rating()}</div>
+						<div class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase">
+							{m.dossier_elo_rating()}
+						</div>
 						<div class="font-headline text-4xl font-bold text-primary">1450</div>
 					</div>
 				</div>
@@ -70,7 +78,9 @@
 					<span class="font-headline text-[10px] tracking-[0.2em] uppercase"
 						>{m.dossier_experience_progress()}</span
 					>
-					<span class="font-headline text-xs font-bold text-primary">{m.dossier_progress_to_gold()}</span>
+					<span class="font-headline text-xs font-bold text-primary"
+						>{m.dossier_progress_to_gold()}</span
+					>
 				</div>
 				<div class="segment-bar grid-cols-6">
 					<span class="active"></span><span class="active"></span><span class="active"></span><span

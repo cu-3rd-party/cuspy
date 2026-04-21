@@ -8,7 +8,12 @@
 
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
 	<div class="mx-auto max-w-xl">
-		<ProgressBar current={1} total={2} label={m.agent_id_progress_label()} status={m.agent_id_progress_status()} />
+		<ProgressBar
+			current={1}
+			total={2}
+			label={m.agent_id_progress_label()}
+			status={m.agent_id_progress_status()}
+		/>
 
 		<section class="scan-sweep relative mt-12 overflow-hidden bg-surface-container">
 			<div class="bg-surface-container-low p-6">
@@ -32,7 +37,9 @@
 						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
 							{m.agent_id_codename_label()}
 						</p>
-						<span class="font-label text-[10px] text-primary/40 uppercase">{m.common_required()}</span>
+						<span class="font-label text-[10px] text-primary/40 uppercase"
+							>{m.common_required()}</span
+						>
 					</div>
 					<input
 						class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-3 font-label text-lg tracking-[0.2em] text-primary transition-all placeholder:text-outline/30 focus:border-primary focus:ring-0"
@@ -45,7 +52,8 @@
 						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
 							{m.agent_id_group_label()}
 						</p>
-						<span class="font-label text-[10px] text-primary/40 uppercase">{m.agent_id_authentication_link()}</span
+						<span class="font-label text-[10px] text-primary/40 uppercase"
+							>{m.agent_id_authentication_link()}</span
 						>
 					</div>
 					<input
@@ -88,20 +96,22 @@
 					class="flex items-start gap-4 font-label text-[9px] leading-relaxed text-outline uppercase"
 				>
 					<span class="signal-dot mt-1 size-2 bg-primary"></span>
-					<span
-						>{m.agent_id_falsification_notice()}</span
-					>
+					<span>{m.agent_id_falsification_notice()}</span>
 				</p>
 			</div>
 		</section>
 
 		<div class="mt-10 grid gap-4 sm:grid-cols-2">
 			<div class="border-l-2 border-secondary bg-surface-container-low p-4">
-				<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.agent_id_node_connectivity()}</p>
+				<p class="mb-1 font-label text-[10px] text-outline uppercase">
+					{m.agent_id_node_connectivity()}
+				</p>
 				<p class="font-headline font-bold">{m.agent_id_stable_encrypted()}</p>
 			</div>
 			<div class="border-l-2 border-primary bg-surface-container-low p-4">
-				<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.agent_id_time_remaining()}</p>
+				<p class="mb-1 font-label text-[10px] text-outline uppercase">
+					{m.agent_id_time_remaining()}
+				</p>
 				<p class="font-headline font-bold">14:59:59</p>
 			</div>
 		</div>

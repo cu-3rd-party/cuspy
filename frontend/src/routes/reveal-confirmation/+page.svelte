@@ -3,7 +3,13 @@
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 </script>
 
-<TerminalShell topBar={{ title: m.reveal_topbar_title(), icon: 'warning', subtitle: m.reveal_priority_one_alert() }}>
+<TerminalShell
+	topBar={{
+		title: m.reveal_topbar_title(),
+		icon: 'warning',
+		subtitle: m.reveal_priority_one_alert()
+	}}
+>
 	<div class="pointer-events-none fixed inset-0 overflow-hidden">
 		<div
 			class="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-error-container/10 blur-[120px]"
@@ -42,7 +48,9 @@
 				<div class="space-y-6">
 					<div class="flex items-start justify-between gap-4">
 						<p class="max-w-md font-headline text-xl leading-relaxed md:text-2xl">
-							<span class="bg-secondary-container/20 px-1 text-secondary">{m.reveal_agent_x()}</span> {m.reveal_claims_revealed_you()}
+							<span class="bg-secondary-container/20 px-1 text-secondary">{m.reveal_agent_x()}</span
+							>
+							{m.reveal_claims_revealed_you()}
 						</p>
 						<span class="material-symbols-outlined text-outline-variant">fingerprint</span>
 					</div>
@@ -70,9 +78,8 @@
 							style="font-variation-settings:'FILL' 1">lock_person</span
 						>
 						<p class="font-label text-[11px] leading-tight text-outline uppercase">
-							{m.reveal_immediate_action_prefix()} <span
-								class="font-bold text-error">{m.reveal_automatic_network_expulsion()}</span
-							>.
+							{m.reveal_immediate_action_prefix()}
+							<span class="font-bold text-error">{m.reveal_automatic_network_expulsion()}</span>.
 						</p>
 					</div>
 				</div>
@@ -104,11 +111,14 @@
 			>
 				<div class="mb-8 flex items-center justify-between">
 					<span class="material-symbols-outlined group-hover-tilt text-secondary">gavel</span>
-					<span class="font-label text-[10px] text-outline uppercase">{m.reveal_code_contest()}</span>
+					<span class="font-label text-[10px] text-outline uppercase"
+						>{m.reveal_code_contest()}</span
+					>
 				</div>
 				<span class="font-headline text-xl font-bold uppercase">{m.reveal_dispute_claim()}</span>
 				<p class="mt-2 font-label text-[10px] text-on-surface-variant uppercase">
-					{m.reveal_initiate_mediation()}</p>
+					{m.reveal_initiate_mediation()}
+				</p>
 			</button>
 		</div>
 

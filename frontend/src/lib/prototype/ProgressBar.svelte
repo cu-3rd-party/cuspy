@@ -14,7 +14,24 @@
 	</div>
 	<div class="segment-bar h-3" style={`grid-template-columns: repeat(${total}, minmax(0, 1fr));`}>
 		{#each Array.from({ length: total }, (_, index) => index) as index}
-			<span class:active={index < current}></span>
+			<span class:active={index < current} class:pulsing-element={index === current-1}></span>
 		{/each}
 	</div>
 </div>
+
+<style>
+	@keyframes completion-pulse {
+		0%, 100% {
+			opacity: 1.00;
+			box-shadow: 0 0 8px var(--color-primary-fixed);
+		}
+		50% {
+			opacity: 0.82;
+			box-shadow: 0 0 18px var(--color-primary-container);
+		}
+	}
+
+	.pulsing-element {
+		animation: completion-pulse 1.5s ease-in-out infinite;
+	}
+</style>

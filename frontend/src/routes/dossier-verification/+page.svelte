@@ -33,7 +33,9 @@
 					<p class="font-headline text-sm font-bold">2024-05-14 // 04:12:09_UTC</p>
 				</div>
 				<div class="text-right">
-					<p class="font-label text-[10px] text-outline uppercase">{m.dossier_verification_agent_id()}</p>
+					<p class="font-label text-[10px] text-outline uppercase">
+						{m.dossier_verification_agent_id()}
+					</p>
 					<p class="font-headline text-sm font-bold text-secondary">AG-004-FOX-SIGMA</p>
 				</div>
 			</div>
@@ -58,12 +60,16 @@
 
 			<div class="space-y-4 md:col-span-2">
 				<div class="bg-surface-container p-6">
-						<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.dossier_verification_assigned_codename()}</p>
+					<p class="mb-1 font-label text-[10px] text-outline uppercase">
+						{m.dossier_verification_assigned_codename()}
+					</p>
 					<h2 class="font-headline text-4xl font-extrabold tracking-tight">NEON_FOX</h2>
 				</div>
 				<div class="grid gap-4 sm:grid-cols-2">
 					<div class="bg-surface-container p-6">
-						<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.dossier_verification_academic_group()}</p>
+						<p class="mb-1 font-label text-[10px] text-outline uppercase">
+							{m.dossier_verification_academic_group()}
+						</p>
 						<h3 class="font-headline text-xl font-bold text-secondary">SIGMA-091</h3>
 					</div>
 					<div class="flex items-center justify-center bg-surface-container p-6 text-center">
@@ -72,7 +78,9 @@
 								class="material-symbols-outlined mb-2 text-3xl text-primary"
 								style="font-variation-settings:'FILL' 1">shield_with_heart</span
 							>
-							<p class="font-label text-[10px] text-outline uppercase">{m.dossier_verification_clearance_level_4()}</p>
+							<p class="font-label text-[10px] text-outline uppercase">
+								{m.dossier_verification_clearance_level_4()}
+							</p>
 						</div>
 					</div>
 				</div>

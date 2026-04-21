@@ -5,7 +5,12 @@
 </script>
 
 <TerminalShell
-	topBar={{ title: m.dossier_topbar_title(), icon: 'security', meta: m.rankings_topbar_meta(), avatar: agentAvatar }}
+	topBar={{
+		title: m.dossier_topbar_title(),
+		icon: 'security',
+		meta: m.rankings_topbar_meta(),
+		avatar: agentAvatar
+	}}
 	nav={dossierNav}
 >
 	<div class="mx-auto max-w-5xl">
@@ -104,10 +109,14 @@
 					>{m.rankings_weekly_discoveries()}</span
 				>
 				<div class="mt-2 font-headline text-3xl font-bold text-primary">128,491</div>
-				<div class="mt-2 text-[10px] font-medium text-primary/60">{m.rankings_from_last_period()}</div>
+				<div class="mt-2 text-[10px] font-medium text-primary/60">
+					{m.rankings_from_last_period()}
+				</div>
 			</div>
 			<div class="bg-secondary-container p-6 text-black">
-				<span class="font-label text-[10px] tracking-[0.2em] uppercase">{m.rankings_target_threshold()}</span>
+				<span class="font-label text-[10px] tracking-[0.2em] uppercase"
+					>{m.rankings_target_threshold()}</span
+				>
 				<div class="mt-2 font-headline text-3xl font-bold">2,500</div>
 				<div class="mt-2 text-[10px] font-bold">{m.rankings_next_rank()}</div>
 			</div>

@@ -27,7 +27,12 @@ export const enlistNav: BottomNavItem[] = [
 		match: 'prefix',
 		fill: true
 	},
-	{ href: '/operational-boundaries', label: m.nav_boundaries(), icon: 'assignment_ind', group: 'enlist' },
+	{
+		href: '/operational-boundaries',
+		label: m.nav_boundaries(),
+		icon: 'assignment_ind',
+		group: 'enlist'
+	},
 	{ href: '/dossier-verification', label: m.nav_verify(), icon: 'security', group: 'enlist' }
 ];
 

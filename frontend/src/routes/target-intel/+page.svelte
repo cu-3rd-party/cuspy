@@ -55,14 +55,14 @@
 						<div class="grid gap-4 sm:grid-cols-2">
 							<div>
 								<span class="font-label text-[10px] tracking-[0.2em] text-outline uppercase"
-								>{m.target_intel_operational_group()}</span
+									>{m.target_intel_operational_group()}</span
 								>
 								<div class="text-sm font-medium text-primary">B21-DS-01</div>
 							</div>
 							<div>
 								<span class="font-label text-[10px] tracking-[0.2em] text-outline uppercase"
-								>{m.target_intel_last_sighting()}</span
-							>
+									>{m.target_intel_last_sighting()}</span
+								>
 								<div class="text-sm font-medium">{m.target_intel_campus_central()}</div>
 							</div>
 						</div>

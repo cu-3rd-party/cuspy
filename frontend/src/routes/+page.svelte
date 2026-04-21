@@ -96,7 +96,8 @@
 					<div class="mb-8 space-y-4">
 						<div class="flex items-center gap-2 text-primary">
 							<span class="material-symbols-outlined signal-dot">settings_ethernet</span>
-							<span class="font-headline text-lg font-bold tracking-[0.25em]">{m.home_verifying_signal()}</span
+							<span class="font-headline text-lg font-bold tracking-[0.25em]"
+								>{m.home_verifying_signal()}</span
 							>
 						</div>
 						<div class="space-y-2">
@@ -116,11 +117,15 @@
 					</div>
 					<div class="mt-10 grid gap-4 sm:grid-cols-2">
 						<div class="bg-surface-container p-4">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_clearance_level()}</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">
+								{m.home_clearance_level()}
+							</p>
 							<p class="font-headline font-bold text-outline">{m.home_pending_classification()}</p>
 						</div>
 						<div class="bg-surface-container p-4">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_threat_vector()}</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">
+								{m.home_threat_vector()}
+							</p>
 							<p class="font-headline font-bold">{m.home_cyber_insurgency()}</p>
 						</div>
 					</div>
@@ -133,7 +138,9 @@
 					<div class="animate-in mb-8 space-y-4">
 						<div class="flex items-center gap-2 text-primary">
 							<span class="material-symbols-outlined signal-dot">verified_user</span>
-							<span class="font-headline text-lg font-bold tracking-[0.25em]">{m.home_access_granted()}</span>
+							<span class="font-headline text-lg font-bold tracking-[0.25em]"
+								>{m.home_access_granted()}</span
+							>
 						</div>
 						<div class="space-y-2">
 							<div
@@ -152,11 +159,15 @@
 					</div>
 					<div class="mt-10 grid gap-4 sm:grid-cols-2">
 						<div class="bg-surface-container p-4 transition-all duration-500 ease-out">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_clearance_level()}</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">
+								{m.home_clearance_level()}
+							</p>
 							<p class="font-headline font-bold text-secondary">{verification.clearance}</p>
 						</div>
 						<div class="bg-surface-container p-4 transition-all duration-500 ease-out">
-							<p class="mb-1 font-label text-[10px] text-outline uppercase">{m.home_threat_vector()}</p>
+							<p class="mb-1 font-label text-[10px] text-outline uppercase">
+								{m.home_threat_vector()}
+							</p>
 							<p class="font-headline font-bold">{m.home_cyber_insurgency()}</p>
 						</div>
 					</div>
@@ -192,9 +203,7 @@
 						<span class="material-symbols-outlined">chevron_right</span>
 					</a>
 					<p class="mt-4 text-center font-label text-[10px] tracking-[0.3em] text-outline">
-						{accessGranted
-							? m.home_system_breach_logged()
-							: m.home_registration_terminal_locked()}
+						{accessGranted ? m.home_system_breach_logged() : m.home_registration_terminal_locked()}
 					</p>
 				</div>
 			</div>

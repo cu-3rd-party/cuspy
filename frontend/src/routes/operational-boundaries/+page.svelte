@@ -23,11 +23,23 @@
 			active: false
 		}
 	];
+
+	let bioStage = $state([0, 1]);
+	let bioStageLen = 5;
+
+	setInterval(() => {
+		bioStage = bioStage.map((value) => (value + 1) % bioStageLen);
+	}, 100);
 </script>
 
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
 	<div class="mx-auto max-w-4xl">
-		<ProgressBar current={2} total={2} label={m.boundaries_progress_label()} status={m.boundaries_progress_status()} />
+		<ProgressBar
+			current={2}
+			total={2}
+			label={m.boundaries_progress_label()}
+			status={m.boundaries_progress_status()}
+		/>
 
 		<section class="mt-12 mb-10">
 			<h1 class="font-headline text-4xl font-bold tracking-tight uppercase sm:text-6xl">
@@ -59,15 +71,15 @@
 					</div>
 					<div class="flex items-center justify-between">
 						<span class="font-label text-xs tracking-[0.2em] text-outline uppercase"
-							>{m.common_status()}: <span class={toggle.active ? 'text-primary' : 'text-error'}
-								>{toggle.status}</span
+							>{m.common_status()}:
+							<span class={toggle.active ? 'text-primary' : 'text-error'}>{toggle.status}</span
 							></span
 						>
 						<div
 							class={`relative h-6 w-12 ${toggle.active ? 'bg-primary-container' : 'bg-surface-container-highest'} ring-1 ring-outline-variant`}
 						>
 							<div
-								class={`absolute top-[2px] size-5 bg-on-surface transition-all ${toggle.active ? 'left-[26px]' : 'left-[2px]'}`}
+								class={`absolute top-0.5 size-5 bg-on-surface transition-all ${toggle.active ? 'left-6.5' : 'left-0.5'}`}
 							></div>
 						</div>
 					</div>
@@ -108,14 +120,15 @@
 					alt={m.boundaries_image_alt()}
 					class="absolute inset-0 size-full object-cover opacity-40 mix-blend-overlay"
 				/>
-				<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+				<div class="absolute inset-0 bg-linear-to-t from-surface-container to-transparent"></div>
 				<div class="absolute bottom-4 left-4">
 					<span class="mb-1 block font-label text-[10px] text-primary-fixed"
 						>{m.boundaries_scanning_bio_rhythms()}</span
 					>
-					<div class="segment-bar grid-cols-5">
-						<span class="active"></span><span class="active"></span><span class="active"
-						></span><span></span><span></span>
+					<div class="animated-stage-grid">
+						{#each Array.from({ length: bioStageLen }, (_, index) => index) as index}
+							<span class:active={bioStage.includes(index)}></span>
+						{/each}
 					</div>
 				</div>
 			</div>

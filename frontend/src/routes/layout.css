@@ -319,3 +319,24 @@
 		opacity: 1;
 	}
 }
+
+.animated-stage-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 0.25rem;
+}
+
+.animated-stage-grid > span {
+	height: 0.25rem;
+	background: var(--color-surface-container-highest);
+	transition:
+		background-color 0.35s ease,
+		box-shadow 0.35s ease,
+		transform 0.35s ease;
+}
+
+.animated-stage-grid > span.active {
+	background: var(--color-primary);
+	box-shadow: 0 0 12px rgb(118 221 113 / 0.35);
+	transform: scaleY(1.2);
+}
