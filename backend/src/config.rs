@@ -12,7 +12,9 @@ pub struct Config {
     #[clap(long, env)]
     pub jwt_secret: String,
 
-    #[cfg(feature = "telegram-auth")]
     #[clap(long, env)]
     pub telegram_bot_token: String,
+
+    #[clap(long, env)]
+    pub public_webapp_url: String,
 }

@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { readAccessToken } from '$lib/auth/session';
 	import { m } from '$lib/paraglide/messages.js';
 	import {
 		canAccessStep,
@@ -11,9 +12,12 @@
 	} from '$lib/prototype/dossierDraft';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav, verificationImage } from '$lib/prototype/data';
+	import { sessionUser } from '$lib/stores/session';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let profileImage = $derived(draft.agentId.identificationImage || verificationImage);
+	let submitError = $state('');
+	let isSubmitting = $state(false);
 
 	const statusTone = (active: boolean) => (active ? 'primary' : 'secondary');
 
@@ -40,8 +44,72 @@
 	});
 
 	const handleSubmit = async () => {
-		clearDossierDraft();
-		await goto(resolve('/dossier'));
+		const token = readAccessToken();
+		if (!token) {
+			submitError = 'Missing session token';
+			return;
+		}
+
+		isSubmitting = true;
+		submitError = '';
+
+		try {
+			const response = await fetch('/profile-creation-requests', {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					requested_profile_data: {
+						codename: draft.agentId.codename,
+						academicGroup: draft.agentId.academicGroup,
+						academicLevel: draft.agentId.academicLevel,
+						courseNumber: draft.agentId.courseNumber,
+						bachelorTrack: draft.agentId.bachelorTrack,
+						identificationName: draft.agentId.identificationName,
+						identificationImage: draft.agentId.identificationImage,
+						boundaries: {
+							physicalContact: draft.boundaries.physicalContact,
+							hugsCloseProximity: draft.boundaries.hugsCloseProximity
+						}
+					}
+				})
+			});
+
+			if (!response.ok) {
+				const payload = await response.json().catch(() => ({ error: 'Request failed' }));
+				throw new Error(payload.error ?? 'Request failed');
+			}
+
+			clearDossierDraft();
+			sessionUser.update((current) =>
+				current
+					? {
+						...current,
+						agent_name: draft.agentId.codename,
+						agent_data: {
+							...current.agent_data,
+							codename: draft.agentId.codename,
+							academicGroup: draft.agentId.academicGroup,
+							academicLevel: draft.agentId.academicLevel,
+							courseNumber: draft.agentId.courseNumber,
+							bachelorTrack: draft.agentId.bachelorTrack,
+							boundaries: {
+								physicalContact: draft.boundaries.physicalContact,
+								hugsCloseProximity: draft.boundaries.hugsCloseProximity
+							}
+						}
+					}
+					: current
+			);
+
+			await goto(resolve('/dossier'));
+		} catch (error) {
+			submitError = error instanceof Error ? error.message : 'Failed to submit profile';
+		} finally {
+			isSubmitting = false;
+		}
 	};
 </script>
 
@@ -155,6 +223,12 @@
 			</p>
 		</footer>
 
+		{#if submitError}
+			<div class="mb-6 bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase">
+				{submitError}
+			</div>
+		{/if}
+
 		<div
 			class="fixed inset-x-0 bottom-15 bg-gradient-to-t from-background via-background to-transparent px-4 pt-12 pb-4"
 		>
@@ -162,9 +236,10 @@
 				<button
 					type="button"
 					onclick={handleSubmit}
+					disabled={isSubmitting}
 					class="press-shift tactical-button flex h-16 w-full items-center justify-center gap-3 font-headline font-bold tracking-[0.2em] uppercase shadow-[0_0_20px_rgba(0,122,27,0.4)] transition-transform"
 				>
-					{m.dossier_verification_submit_for_approval()}
+					{isSubmitting ? 'Submitting' : m.dossier_verification_submit_for_approval()}
 					<span class="material-symbols-outlined">arrow_forward</span>
 				</button>
 			</div>

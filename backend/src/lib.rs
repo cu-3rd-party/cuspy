@@ -20,8 +20,8 @@ pub struct AppState {
     pub db: PgPool,
     pub admin_secret: String,
     pub jwt_secret: String,
-    #[cfg(feature = "telegram-auth")]
     pub telegram_bot_token: String,
+    pub public_webapp_url: String,
 }
 
 pub fn build_app(state: AppState) -> Router {

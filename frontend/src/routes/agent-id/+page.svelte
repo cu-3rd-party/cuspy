@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { writeAccessToken } from '$lib/auth/session';
 	import { m } from '$lib/paraglide/messages.js';
 	import {
 		isAgentIdComplete,
@@ -10,14 +11,18 @@
 		type DossierDraft
 	} from '$lib/prototype/dossierDraft';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
+	import AgentPersonalInfo from '$lib/components/AgentPersonalInfo.svelte';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav } from '$lib/prototype/data';
 	import Countdown from '$lib/components/Countdown.svelte';
 	import NodeConnectivity from '$lib/components/NodeConnectivity.svelte';
+	import { sessionUser } from '$lib/stores/session';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let uploadError = $state(false);
 	let invalidUploadMessage = $state('');
+	let submitError = $state('');
+	let isSubmitting = $state(false);
 	let popupTimeout: number | undefined;
 
 	const academicLevels = [
@@ -132,8 +137,48 @@
 			return;
 		}
 
-		draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
-		await goto(resolve('/operational-boundaries'));
+		isSubmitting = true;
+		submitError = '';
+
+		try {
+			const response = await fetch('/auth/dev-register', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					email: `${draft.agentId.codename.toLowerCase()}@dev.local`,
+					password: 'password123',
+					telegram_id: Date.now(),
+					rating: 0,
+					agent_name: draft.agentId.codename,
+					agent_data: {
+						codename: draft.agentId.codename,
+						academicGroup: draft.agentId.academicGroup,
+						academicLevel: draft.agentId.academicLevel,
+						courseNumber: draft.agentId.courseNumber,
+						bachelorTrack: draft.agentId.bachelorTrack,
+						identificationName: draft.agentId.identificationName,
+						identificationImage: draft.agentId.identificationImage
+					}
+				})
+			});
+
+			if (!response.ok) {
+				const payload = await response.json().catch(() => ({ error: 'Request failed' }));
+				throw new Error(payload.error ?? 'Request failed');
+			}
+
+			const payload = await response.json();
+			writeAccessToken(payload.access_token);
+			sessionUser.set(payload.user);
+
+			draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
+			await goto(resolve('/operational-boundaries'));
+		} catch (error) {
+			submitError = error instanceof Error ? error.message : 'Failed to register';
+		} finally {
+			isSubmitting = false;
+		}
+
 	};
 </script>
 
@@ -144,6 +189,12 @@
 				class="fixed top-24 right-4 left-4 z-[60] mx-auto max-w-sm bg-error px-4 py-3 text-center font-label text-[11px] font-bold tracking-[0.2em] text-white uppercase shadow-[0_0_24px_rgba(186,26,26,0.45)] sm:left-auto"
 			>
 				{invalidUploadMessage}
+			</div>
+		{/if}
+
+		{#if submitError}
+			<div class="mt-4 bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase">
+				{submitError}
 			</div>
 		{/if}
 
@@ -171,21 +222,7 @@
 			</div>
 
 			<form class="space-y-10 p-8" onsubmit={handleSubmit}>
-				<div class="space-y-2">
-					<div class="flex items-center justify-between">
-						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-							{m.agent_id_codename_label()}
-						</p>
-						<span class="font-label text-[10px] text-primary/40 uppercase"
-							>{m.common_required()}</span
-						>
-					</div>
-					<input
-						class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-3 font-label text-lg tracking-[0.2em] text-primary transition-all placeholder:text-outline/30 focus:border-primary focus:ring-0"
-						placeholder={m.agent_id_codename_placeholder()}
-						bind:value={draft.agentId.codename}
-					/>
-				</div>
+				<AgentPersonalInfo {handleIdentificationChange} uploadError={uploadError} agentId={draft.agentId} />
 
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
@@ -244,10 +281,10 @@
 
 				{#if showBachelorTrack}
 					<div class="space-y-4">
-						<div class="flex items-center justify-between">
-							<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-								{m.bachelor_track()}
-							</p>
+					<div class="flex items-center justify-between">
+						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
+							{m.agent_id_bachelor_track()}
+						</p>
 							<span class="font-label text-[10px] text-primary/40 uppercase"
 								>{m.common_required()}</span
 							>
@@ -278,59 +315,12 @@
 					</div>
 				{/if}
 
-				<div class="space-y-4">
-					<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-						{m.agent_id_upload_label()}
-					</p>
-					<div
-						class={`group relative flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center overflow-hidden border-2 border-dashed bg-surface-container-high transition-colors hover:bg-surface-container-highest ${uploadError ? 'border-error' : 'border-outline-variant'}`}
-					>
-						{#if draft.agentId.identificationImage}
-							<img
-								src={draft.agentId.identificationImage}
-								alt={draft.agentId.identificationName}
-								class="absolute inset-0 size-full object-cover object-center"
-							/>
-							<div class="absolute inset-0 bg-black/25"></div>
-						{/if}
-
-						{#if uploadError}
-							<div
-								class="pointer-events-none absolute inset-3 animate-[spin_3s_linear_infinite] rounded-full border border-error/60"
-							></div>
-							<div
-								class="pointer-events-none absolute inset-6 animate-[spin_1.8s_linear_infinite] rounded-full border-2 border-transparent border-t-error"
-							></div>
-						{/if}
-
-						<span
-							class={`material-symbols-outlined mb-2 text-4xl transition-colors group-hover:text-primary ${draft.agentId.identificationImage ? 'relative z-10 text-white' : 'text-outline'}`}
-							>add_a_photo</span
-						>
-						<p
-							class={`font-label text-[10px] tracking-tight uppercase transition-colors group-hover:text-on-surface ${draft.agentId.identificationImage ? 'relative z-10 text-white' : 'text-outline'}`}
-						>
-							{m.agent_id_upload_hint()}
-						</p>
-						<input
-							type="file"
-							class="absolute inset-0 opacity-0"
-							onchange={handleIdentificationChange}
-						/>
-					</div>
-					{#if draft.agentId.identificationName}
-						<p class="font-label text-[10px] text-primary uppercase">
-							{draft.agentId.identificationName}
-						</p>
-					{/if}
-				</div>
-
 				<button
 					class={`glitch-burst tactical-button flex w-full items-center justify-center gap-3 px-6 py-5 font-headline font-bold tracking-[0.3em] uppercase transition-[filter,transform,brightness,opacity] ${isAgentIdComplete(draft) ? 'hover:brightness-110 active:scale-[0.98]' : 'pointer-events-none opacity-50 saturate-0'}`}
 					type="submit"
 					disabled={!isAgentIdComplete(draft)}
 				>
-					{m.common_proceed()}
+					{isSubmitting ? 'Processing' : m.common_proceed()}
 					<span class="material-symbols-outlined">arrow_forward</span>
 				</button>
 			</form>

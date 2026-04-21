@@ -2,11 +2,17 @@
 	import type { Pathname } from '$app/types';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
+	import { sessionUser } from '$lib/stores/session';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
-	let { children } = $props();
+	let { data, children } = $props();
+
+	onMount(() => {
+		sessionUser.set(data.sessionUser ?? null);
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>

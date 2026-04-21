@@ -85,7 +85,6 @@ export const clearDossierDraft = () => {
 
 export const isAgentIdComplete = (draft: DossierDraft) =>
 	draft.agentId.codename.trim().length > 0 &&
-	draft.agentId.academicGroup.trim().length > 0 &&
 	draft.agentId.academicLevel !== '' &&
 	(draft.agentId.academicLevel === 'bachelor'
 		? ['1', '2', '3', '4'].includes(draft.agentId.courseNumber)

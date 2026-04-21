@@ -3,6 +3,11 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { agentAvatar, dossierNav } from '$lib/prototype/data';
+	import { sessionUser } from '$lib/stores/session';
+
+	let user = $derived($sessionUser);
+	let codename = $derived((user?.agent_data?.codename as string | undefined) || user?.agent_name || 'AGENT');
+	let clearance = $derived(user?.rating ? `Rating ${user.rating}` : m.dossier_clearance_level_4());
 </script>
 
 <TerminalShell
@@ -21,7 +26,7 @@
 					>{m.dossier_subject_dossier()}</span
 				>
 				<h2 class="font-headline text-5xl font-bold tracking-tight sm:text-7xl">
-					{m.dossier_agent_sokolov()}
+					{codename}
 				</h2>
 				<div class="mt-2 flex items-center gap-4">
 					<span
@@ -38,7 +43,7 @@
 					{m.dossier_current_authorization()}
 				</div>
 				<div class="font-headline text-2xl font-bold tracking-tight text-secondary">
-					{m.dossier_clearance_level_4()}
+					{clearance}
 				</div>
 			</div>
 		</div>

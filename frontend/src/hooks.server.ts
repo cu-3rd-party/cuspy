@@ -14,4 +14,18 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 		});
 	});
 
-export const handle: Handle = handleParaglide;
+const handleSession: Handle = async ({ event, resolve }) => {
+	event.locals.accessToken = event.cookies.get('backend-access-token') ?? null;
+	event.locals.sessionUser = event.cookies.get('session-user')
+		? JSON.parse(event.cookies.get('session-user')!)
+		: null;
+
+	return resolve(event);
+};
+
+export const handle: Handle = async ({ event, resolve }) =>
+	handleParaglide({
+		event,
+		resolve: (localizedEvent, opts) =>
+			handleSession({ event: localizedEvent, resolve: (sessionEvent) => resolve(sessionEvent, opts) })
+	});
