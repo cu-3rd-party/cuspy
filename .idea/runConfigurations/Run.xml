@@ -3,7 +3,7 @@
     <option name="command" value="run" />
     <option name="workingDirectory" value="file://$PROJECT_DIR$/backend" />
     <envs>
-      <env name="DATABASE_URL" value="postgres://cukiller:EuHUfC8ktVQc5W6N@127.0.0.1:5432/cukiller" />
+      <env name="DATABASE_URL" value="postgres://postgres:postgres@127.0.0.1:5432/postgres" />
       <env name="BIND_ADDRESS" value="0.0.0.0:3000" />
       <env name="RUST_LOG" value="info" />
       <env name="ADMIN_SECRET" value="SYPFxEfqgmaRV6kw" />

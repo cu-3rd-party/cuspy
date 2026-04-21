@@ -19,12 +19,6 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		sameSite: 'none',
 		secure: true
 	});
-	cookies.set('session-user', JSON.stringify(response.user), {
-		path: '/',
-		httpOnly: false,
-		sameSite: 'none',
-		secure: true
-	});
 
 	return json(response);
 };

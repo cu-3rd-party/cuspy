@@ -10,6 +10,10 @@
 
 	let { data, children } = $props();
 
+	const pageRef = (locale: "en" | "ru" | undefined) => { // TODO(@pxc1984) 22 Apr 2026: unhardcode the languages
+		return localizeHref(page.url.pathname, { locale }) as Pathname;
+	}
+
 	onMount(() => {
 		sessionUser.set(data.sessionUser ?? null);
 	});
@@ -20,6 +24,6 @@
 
 <div style="display:none">
 	{#each locales as locale (locale)}
-		<a href={resolve(localizeHref(page.url.pathname, { locale }) as Pathname)}>{locale}</a>
+		<a href={resolve(pageRef(locale))}>{locale}</a>
 	{/each}
 </div>
