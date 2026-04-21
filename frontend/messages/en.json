@@ -54,6 +54,7 @@
 	"agent_id_authentication_link": "Authentication link",
 	"agent_id_upload_label": "Upload identification (biometric scan)",
 	"agent_id_upload_hint": "Drop visual data or click to browse",
+	"agent_id_upload_invalid_image": "Upload failed. Please try again with an image file.",
 	"agent_id_falsification_notice": "Any falsification of agent credentials will result in immediate extraction from the protocol.",
 	"agent_id_node_connectivity": "Node connectivity",
 	"agent_id_stable_encrypted": "Stable encrypted",

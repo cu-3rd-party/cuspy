@@ -54,6 +54,7 @@
 	"agent_id_authentication_link": "Ссылка аутентификации",
 	"agent_id_upload_label": "Загрузите идентификацию (биометрический скан)",
 	"agent_id_upload_hint": "Перетащите изображение или нажмите для выбора",
+	"agent_id_upload_invalid_image": "Загрузка не удалась. Попробуйте снова и выберите файл изображения.",
 	"agent_id_falsification_notice": "Любая подделка данных агента приведёт к немедленному исключению из протокола.",
 	"agent_id_node_connectivity": "Связность узла",
 	"agent_id_stable_encrypted": "Стабильно / зашифровано",

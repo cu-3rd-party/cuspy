@@ -1,11 +1,19 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
+	import {
+		canAccessStep,
+		loadDossierDraft,
+		saveDossierDraft,
+		type DossierDraft
+	} from '$lib/prototype/dossierDraft';
 	import ProgressBar from '$lib/prototype/ProgressBar.svelte';
 	import TerminalShell from '$lib/prototype/TerminalShell.svelte';
 	import { boundariesImage, enlistNav } from '$lib/prototype/data';
 
+	let draft = $state<DossierDraft>(loadDossierDraft());
 	let toggles = $state([
 		{
 			icon: 'front_hand',
@@ -33,12 +41,33 @@
 	};
 
 	onMount(() => {
+		draft = loadDossierDraft();
+		if (!canAccessStep(draft, 2)) {
+			goto(resolve('/agent-id'), { replaceState: true });
+			return;
+		}
+
+		toggles[0].active = draft.boundaries.physicalContact;
+		toggles[1].active = draft.boundaries.hugsCloseProximity;
+
 		const interval = window.setInterval(() => {
 			bioStage = bioStage.map((value) => (value + 1) % bioStageLen);
 		}, 100);
 
 		return () => window.clearInterval(interval);
 	});
+
+	$effect(() => {
+		draft.boundaries.physicalContact = toggles[0].active;
+		draft.boundaries.hugsCloseProximity = toggles[1].active;
+		saveDossierDraft(draft);
+	});
+
+	const handleSubmit = async () => {
+		draft.unlockedStep = Math.max(draft.unlockedStep, 3) as DossierDraft['unlockedStep'];
+		saveDossierDraft(draft);
+		await goto(resolve('/dossier-verification'));
+	};
 </script>
 
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
@@ -147,13 +176,14 @@
 		</div>
 
 		<div class="mt-8 flex flex-col gap-4 md:flex-row md:items-center">
-			<a
-				href={resolve('/dossier-verification')}
+			<button
+				type="button"
+				onclick={handleSubmit}
 				class="glitch-burst press-scale tactical-button group flex flex-1 items-center justify-center gap-4 px-10 py-5 font-headline text-xl font-extrabold uppercase shadow-[0_0_20px_rgba(0,122,27,0.2)] transition-all hover:bg-primary"
 			>
 				{m.boundaries_finalize_dossier()}
 				<span class="material-symbols-outlined group-hover-slide">double_arrow</span>
-			</a>
+			</button>
 			<!--			<a href={resolve('/')} class="px-8 py-5 font-label text-sm uppercase tracking-[0.3em] text-outline transition-colors hover:text-on-surface">RETRACT APPLICATION</a>-->
 		</div>
 	</div>
