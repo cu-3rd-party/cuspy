@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
 
-    let { timeRemaining }: { timeRemaining: Date } = $props();
-	let seconds = $derived(timeRemaining.getMinutes() * 60 + timeRemaining.getSeconds())
+	let { timeRemaining }: { timeRemaining: Date } = $props();
+	let seconds = $derived(timeRemaining.getMinutes() * 60 + timeRemaining.getSeconds());
 
 	setInterval(() => {
 		if (seconds <= 0) {
 			return;
 		}
 		seconds -= 1;
-	}, 1000)
-
+	}, 1000);
 </script>
 
 <div class="border-l-2 border-primary bg-surface-container-low p-4" class:finish={seconds === 0}>
@@ -18,7 +17,9 @@
 		{m.agent_id_time_remaining()}
 	</p>
 	<p class="font-headline font-bold">
-		{Math.floor(seconds / 60).toString().padStart(2, '0')}:{(seconds % 60).toString().padStart(2, '0')}
+		{Math.floor(seconds / 60)
+			.toString()
+			.padStart(2, '0')}:{(seconds % 60).toString().padStart(2, '0')}
 	</p>
 </div>
 
