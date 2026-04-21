@@ -4,6 +4,9 @@ export type DossierDraft = {
 	agentId: {
 		codename: string;
 		academicGroup: string;
+		academicLevel: 'bachelor' | 'master' | 'other' | '';
+		courseNumber: '1' | '2' | '3' | '4' | '';
+		bachelorTrack: 'development' | 'ai' | 'business' | '';
 		identificationName: string;
 		identificationImage: string;
 	};
@@ -20,6 +23,9 @@ export const createDefaultDossierDraft = (): DossierDraft => ({
 	agentId: {
 		codename: '',
 		academicGroup: '',
+		academicLevel: '',
+		courseNumber: '',
+		bachelorTrack: '',
 		identificationName: '',
 		identificationImage: ''
 	},
@@ -80,6 +86,21 @@ export const clearDossierDraft = () => {
 export const isAgentIdComplete = (draft: DossierDraft) =>
 	draft.agentId.codename.trim().length > 0 &&
 	draft.agentId.academicGroup.trim().length > 0 &&
+	draft.agentId.academicLevel !== '' &&
+	(draft.agentId.academicLevel === 'bachelor'
+		? ['1', '2', '3', '4'].includes(draft.agentId.courseNumber)
+		: true) &&
+	(draft.agentId.academicLevel === 'master'
+		? ['1', '2'].includes(draft.agentId.courseNumber)
+		: true) &&
+	(draft.agentId.academicLevel === 'other' ? draft.agentId.courseNumber === '' : true) &&
+	(draft.agentId.academicLevel === 'bachelor' && Number(draft.agentId.courseNumber) >= 2
+		? draft.agentId.bachelorTrack !== ''
+		: true) &&
+	(draft.agentId.academicLevel === 'bachelor' || draft.agentId.academicLevel === 'master'
+		? draft.agentId.courseNumber !== ''
+		: draft.agentId.academicLevel === 'other') &&
+	(draft.agentId.academicLevel !== 'bachelor' ? draft.agentId.bachelorTrack === '' : true) &&
 	draft.agentId.identificationName.trim().length > 0 &&
 	draft.agentId.identificationImage.trim().length > 0;
 

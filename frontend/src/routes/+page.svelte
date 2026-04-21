@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav, heroServerImage } from '$lib/prototype/data';
 
@@ -20,11 +21,16 @@
 		m.home_briefing_step_2(),
 		m.home_briefing_step_3()
 	];
+	const languageOptions: Array<{ value: Locale; label: string }> = [
+		{ value: 'en', label: 'EN' },
+		{ value: 'ru', label: 'RU' }
+	];
 
 	const bufferSegments = 4;
 	let verificationProgress = $state(8);
 	let encryptedBuffer = $state(0);
 	let accessGranted = $state(false);
+	let currentLocale = $state(getLocale());
 
 	$effect(() => {
 		const verification = data.verification;
@@ -36,6 +42,8 @@
 	});
 
 	onMount(() => {
+		currentLocale = getLocale();
+
 		const verificationTimer = window.setInterval(() => {
 			verificationProgress = Math.min(verificationProgress + 3, 88);
 		}, 90);
@@ -52,6 +60,13 @@
 
 	const activeSegments = (progress: number, total: number) =>
 		Math.max(1, Math.min(total, Math.round((progress / 100) * total)));
+
+	const switchLanguage = (locale: Locale) => {
+		if (locale === currentLocale) return;
+
+		currentLocale = locale;
+		void setLocale(locale);
+	};
 </script>
 
 <TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}>
@@ -65,6 +80,25 @@
 				class="absolute inset-0 size-full object-cover opacity-40 mix-blend-overlay grayscale"
 			/>
 			<div class="absolute inset-0 bg-linear-to-t from-background to-transparent"></div>
+			<div
+				class="absolute top-4 right-4 z-20 flex items-center gap-1 bg-background/70 p-1 backdrop-blur-sm"
+			>
+				{#each languageOptions as option (option.value)}
+					<button
+						type="button"
+						onclick={() => switchLanguage(option.value)}
+						class={[
+							'px-3 py-1 font-label text-[10px] font-bold tracking-[0.25em] transition-colors',
+							currentLocale === option.value
+								? 'bg-primary text-on-primary'
+								: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
+						]}
+						aria-pressed={currentLocale === option.value}
+					>
+						{option.label}
+					</button>
+				{/each}
+			</div>
 			<div class="relative z-10 max-w-2xl">
 				<div
 					class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-xs font-bold text-on-primary-container"

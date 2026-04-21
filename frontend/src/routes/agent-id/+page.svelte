@@ -20,6 +20,37 @@
 	let invalidUploadMessage = $state('');
 	let popupTimeout: number | undefined;
 
+	const academicLevels = [
+		{ value: 'bachelor', label: m.agent_id_bachelor() },
+		{ value: 'master', label: m.agent_id_master() },
+		{ value: 'other', label: m.agent_id_worker() }
+	] as const;
+
+	const bachelorTracks = [
+		{ value: 'development', label: m.agent_id_development() },
+		{ value: 'ai', label: m.agent_id_ai() },
+		{ value: 'business', label: m.agent_id_buisness() }
+	] as const;
+
+	let courseOptions = $derived.by(() => {
+		if (draft.agentId.academicLevel === 'bachelor') {
+			return ['1', '2', '3', '4'] as const;
+		}
+
+		if (draft.agentId.academicLevel === 'master') {
+			return ['1', '2'] as const;
+		}
+
+		return [] as const;
+	});
+
+	let showCourseNumber = $derived(
+		draft.agentId.academicLevel === 'bachelor' || draft.agentId.academicLevel === 'master'
+	);
+	let showBachelorTrack = $derived(
+		draft.agentId.academicLevel === 'bachelor' && Number(draft.agentId.courseNumber) >= 2
+	);
+
 	onMount(() => {
 		draft = loadDossierDraft();
 
@@ -32,6 +63,16 @@
 
 	$effect(() => {
 		saveDossierDraft(draft);
+	});
+
+	$effect(() => {
+		if (!courseOptions.includes(draft.agentId.courseNumber as never)) {
+			draft.agentId.courseNumber = '';
+		}
+
+		if (draft.agentId.academicLevel !== 'bachelor' || Number(draft.agentId.courseNumber) < 2) {
+			draft.agentId.bachelorTrack = '';
+		}
 	});
 
 	const showUploadError = () => {
@@ -146,21 +187,96 @@
 					/>
 				</div>
 
-				<div class="space-y-2">
+				<div class="space-y-4">
 					<div class="flex items-center justify-between">
 						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-							{m.agent_id_group_label()}
+							{m.agent_id_academic_level()}
 						</p>
 						<span class="font-label text-[10px] text-primary/40 uppercase"
-							>{m.agent_id_authentication_link()}</span
+							>{m.common_required()}</span
 						>
 					</div>
-					<input
-						class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-3 font-label text-lg tracking-[0.2em] text-primary transition-all placeholder:text-outline/30 focus:border-primary focus:ring-0"
-						placeholder="SIGMA-091"
-						bind:value={draft.agentId.academicGroup}
-					/>
+					<div class="grid gap-3 sm:grid-cols-3">
+						{#each academicLevels as level}
+							<label
+								class={[
+									'flex cursor-pointer items-center justify-between border px-4 py-3 transition-colors',
+									draft.agentId.academicLevel === level.value
+										? 'border-primary bg-primary/10 text-primary'
+										: 'border-outline-variant bg-surface-container-low text-on-surface'
+								]}
+							>
+								<span class="font-label text-[11px] tracking-[0.16em] uppercase">{level.label}</span
+								>
+								<input
+									type="radio"
+									name="academicLevel"
+									class="sr-only"
+									value={level.value}
+									bind:group={draft.agentId.academicLevel}
+								/>
+							</label>
+						{/each}
+					</div>
 				</div>
+
+				{#if showCourseNumber}
+					<div class="space-y-2">
+						<div class="flex items-center justify-between">
+							<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
+								{m.course_number()}
+							</p>
+							<span class="font-label text-[10px] text-primary/40 uppercase"
+								>{m.common_required()}</span
+							>
+						</div>
+						<select
+							class="w-full border-0 border-b-2 border-outline-variant bg-transparent px-0 py-3 font-label text-lg tracking-[0.2em] text-primary transition-all focus:border-primary focus:ring-0"
+							bind:value={draft.agentId.courseNumber}
+						>
+							<option value="">Select course</option>
+							{#each courseOptions as course}
+								<option value={course}>{course}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
+				{#if showBachelorTrack}
+					<div class="space-y-4">
+						<div class="flex items-center justify-between">
+							<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
+								{m.bachelor_track()}
+							</p>
+							<span class="font-label text-[10px] text-primary/40 uppercase"
+								>{m.common_required()}</span
+							>
+						</div>
+						<div class="grid gap-3 sm:grid-cols-3">
+							{#each bachelorTracks as track}
+								<label
+									class={[
+										'flex cursor-pointer items-center justify-between border px-4 py-3 transition-colors',
+										draft.agentId.bachelorTrack === track.value
+											? 'border-primary bg-primary/10 text-primary'
+											: 'border-outline-variant bg-surface-container-low text-on-surface'
+									]}
+								>
+									<span class="font-label text-[11px] tracking-[0.16em] uppercase"
+										>{track.label}</span
+									>
+									<input
+										type="radio"
+										name="bachelorTrack"
+										class="sr-only"
+										value={track.value}
+										bind:group={draft.agentId.bachelorTrack}
+									/>
+								</label>
+							{/each}
+						</div>
+					</div>
+				{/if}
 
 				<div class="space-y-4">
 					<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">

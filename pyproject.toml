@@ -1,0 +1,13 @@
+[project]
+name = "cukiller2"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+sync-locales = "tools/sync_frontend_locales.py"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.11",
+]

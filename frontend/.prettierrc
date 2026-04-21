@@ -10,6 +10,14 @@
 			"options": {
 				"parser": "svelte"
 			}
+		},
+		{
+			"files": "messages/*.json",
+			"options": {
+				"useTabs": false,
+				"tabWidth": 2,
+				"printWidth": 1
+			}
 		}
 	],
 	"tailwindStylesheet": "./src/routes/layout.css"
