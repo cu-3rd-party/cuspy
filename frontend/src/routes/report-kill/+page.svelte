@@ -20,18 +20,18 @@
 			<div class="md:col-span-4 space-y-6">
 				<section class="bg-surface-container-low p-6 space-y-8">
 					<div>
-						<label class="block text-[10px] font-label font-bold text-primary tracking-widest uppercase mb-4">TARGET_IDENTIFIER</label>
-						<select class="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3 transition-all appearance-none">
+						<label for="target-identifier" class="mb-4 block text-[10px] font-label font-bold tracking-widest text-primary uppercase">TARGET_IDENTIFIER</label>
+						<select id="target-identifier" class="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3 transition-all appearance-none">
 							<option>VAL-772_SYNDICATE_HEAD</option>
 							<option>RAZOR_WIND_ENFORCER</option>
 						</select>
 					</div>
 					<div>
-						<label class="block text-[10px] font-label font-bold text-primary tracking-widest uppercase mb-4">TIME_OF_INCIDENT</label>
-						<input class="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3" type="text" value="2023.10.24 // 03:44:12 UTC" readonly />
+						<label for="incident-time" class="mb-4 block text-[10px] font-label font-bold tracking-widest text-primary uppercase">TIME_OF_INCIDENT</label>
+						<input id="incident-time" class="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3" type="text" value="2023.10.24 // 03:44:12 UTC" readonly />
 					</div>
-					<div>
-						<label class="block text-[10px] font-label font-bold text-primary tracking-widest uppercase mb-4">LOCATION_COORDINATES</label>
+					<div aria-labelledby="location-coordinates-label">
+						<div id="location-coordinates-label" class="mb-4 block text-[10px] font-label font-bold tracking-widest text-primary uppercase">LOCATION_COORDINATES</div>
 						<div class="flex items-center gap-4 bg-surface-container p-4 border-l-2 border-primary mb-4">
 							<Icon name="location_on" class="text-primary-container" />
 							<div class="font-label text-sm tracking-tighter uppercase">
@@ -63,8 +63,8 @@
 				</section>
 
 				<section class="bg-surface-container-low p-8">
-					<label class="block text-[10px] font-label font-bold text-secondary tracking-[0.3em] uppercase mb-4">MODUS_OPERANDI</label>
-					<textarea class="w-full bg-surface-container-lowest border-0 border-l-2 border-secondary focus:border-secondary-fixed-dim focus:ring-0 text-on-background font-body text-sm p-4 h-32" placeholder="Document the protocol specifics..."></textarea>
+					<label for="modus-operandi" class="mb-4 block text-[10px] font-label font-bold tracking-[0.3em] text-secondary uppercase">MODUS_OPERANDI</label>
+					<textarea id="modus-operandi" class="w-full bg-surface-container-lowest border-0 border-l-2 border-secondary focus:border-secondary-fixed-dim focus:ring-0 text-on-background font-body text-sm p-4 h-32" placeholder="Document the protocol specifics..."></textarea>
 					<div class="mt-8 flex items-center justify-between">
 						<label class="flex items-center gap-3 cursor-pointer">
 							<input type="checkbox" class="sr-only peer" />

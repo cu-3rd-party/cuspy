@@ -28,7 +28,7 @@
 			return roster;
 		}
 
-		return data.rankings.map((entry, index) => ({
+		return data.rankings.map((entry: RankingEntry, index: number) => ({
 			rank: String(index + 1).padStart(2, '0'),
 			name: entry.agent_name ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
 			syndicate: entry.user_id === activeUserId ? 'ACTIVE_SESSION' : 'CONFIRMED_OPERATIVE',
@@ -40,13 +40,21 @@
 	let averageRating = $derived(
 		data.rankings?.length
 			? numberFormat.format(
-					Math.round(data.rankings.reduce((total, entry) => total + entry.rating, 0) / data.rankings.length)
+					Math.round(
+						data.rankings.reduce((total: number, entry: RankingEntry) => total + entry.rating, 0) /
+							data.rankings.length
+					)
 				)
 			: '1,240'
 	);
 	let totalDiscoveries = $derived(
 		data.rankings?.length
-			? numberFormat.format(data.rankings.reduce((total, entry) => total + entry.approved_kills, 0))
+			? numberFormat.format(
+					data.rankings.reduce(
+						(total: number, entry: RankingEntry) => total + entry.approved_kills,
+						0
+					)
+				)
 			: '128,491'
 	);
 </script>

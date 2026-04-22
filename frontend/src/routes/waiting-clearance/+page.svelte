@@ -22,12 +22,12 @@
 	);
 	const quickLinks = [
 		{
-			href: '/target-intel',
+			href: '/target-intel' as const,
 			label: 'Open target intel',
 			copy: 'Gameplay unlocked while command reviews profile packet.'
 		},
 		{
-			href: '/rankings',
+			href: '/rankings' as const,
 			label: 'Monitor rankings',
 			copy: 'Track live ladder movement during review window.'
 		},
@@ -87,7 +87,7 @@
 
 		<section class="grid gap-4 md:grid-cols-3">
 			{#each quickLinks as item (item.href)}
-				<a href={resolve(item.href)} class="bg-surface-container-low p-6 transition-colors hover:bg-surface-container">
+				<a href={item.href} class="bg-surface-container-low p-6 transition-colors hover:bg-surface-container">
 					<div class="font-headline text-sm font-bold uppercase">{item.label}</div>
 					<p class="mt-3 text-sm leading-relaxed text-on-surface-variant">{item.copy}</p>
 				</a>

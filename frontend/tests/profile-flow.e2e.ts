@@ -16,3 +16,11 @@ test('approved user lands directly on game', async ({ page, context }) => {
 	await expect(page).toHaveURL(/target-intel/);
 	await expect(page.getByText('Current objective')).toBeVisible();
 });
+
+test('rejected user lands on profile edit flow', async ({ page, context }) => {
+	await context.addCookies([{ name: 'backend-access-token', value: 'rejected-token', url: 'http://127.0.0.1:4173' }]);
+	await page.goto('http://127.0.0.1:4173/');
+
+	await expect(page).toHaveURL(/agent-id\?mode=edit/);
+	await expect(page.getByRole('heading', { name: 'Agent enrollment' })).toBeVisible();
+});

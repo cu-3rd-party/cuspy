@@ -6,9 +6,9 @@
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav, heroServerImage } from '$lib/prototype/data';
-	import type { LayoutData } from './$types';
+	import type { PageProps } from './$types';
 
-	let { data }: LayoutData = $props();
+	let { data }: PageProps = $props();
 
 	const flow = $derived(data.sessionFlow ?? null);
 	const isGuest = $derived(!flow || flow.status === 'guest');

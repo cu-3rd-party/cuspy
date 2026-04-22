@@ -25,6 +25,16 @@ const users = {
 		is_admin: false,
 		created_at: '1',
 		updated_at: null
+	},
+	rejected: {
+		user_id: 'user-rejected',
+		telegram_id: 303,
+		rating: 990,
+		agent_name: 'Rejected Agent',
+		agent_data: { codename: 'REJECTED_AGENT' },
+		is_admin: false,
+		created_at: '1',
+		updated_at: null
 	}
 };
 
@@ -52,6 +62,18 @@ const profileRequests = {
 			created_at: '1710000000',
 			updated_at: '1710000100'
 		}
+	],
+	rejected: [
+		{
+			profile_creation_request_id: 'request-rejected',
+			user_id: 'user-rejected',
+			requested_profile_data: { codename: 'REJECTED_AGENT' },
+			status: 'rejected',
+			reviewer_note: 'Need clearer identification image.',
+			reviewed_at: '1710000200',
+			created_at: '1710000000',
+			updated_at: '1710000200'
+		}
 	]
 };
 
@@ -62,12 +84,14 @@ const server = http.createServer((request, response) => {
 	if (request.url === '/auth/me') {
 		if (token === 'pending-token') return json(response, 200, users.pending);
 		if (token === 'approved-token') return json(response, 200, users.approved);
+		if (token === 'rejected-token') return json(response, 200, users.rejected);
 		return json(response, 401, { error: 'unauthorized' });
 	}
 
 	if (request.url === '/profile-creation-requests') {
 		if (token === 'pending-token') return json(response, 200, profileRequests.pending);
 		if (token === 'approved-token') return json(response, 200, profileRequests.approved);
+		if (token === 'rejected-token') return json(response, 200, profileRequests.rejected);
 		return json(response, 200, []);
 	}
 

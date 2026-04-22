@@ -9,7 +9,7 @@ vi.mock('$lib/server/backend', () => ({
 describe('rankings page server load', () => {
 	it('loads rankings for gameplay-ready users', async () => {
 		const { load } = await import('../../routes/rankings/+page.server');
-		const result = await load({
+		const result = (await load({
 			parent: async () => ({
 				sessionFlow: {
 					status: 'pending',
@@ -23,7 +23,7 @@ describe('rankings page server load', () => {
 			}),
 			request: new Request('http://localhost/rankings'),
 			cookies: { get: () => 'token' }
-		} as never);
+		} as never)) as unknown as { rankings: Array<unknown>; sessionFlow: { status: string } };
 
 		expect(result.rankings).toHaveLength(1);
 		expect(result.sessionFlow.status).toBe('pending');
