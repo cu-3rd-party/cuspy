@@ -1,0 +1,748 @@
+openapi: 3.0.3
+info:
+  title: Cukiller API
+  description: API for the Cukiller game backend.
+  version: 1.0.0
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AgentProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        photo_url:
+          type: string
+        about:
+          type: string
+        is_admin:
+          type: boolean
+        approval_status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+
+    RegisterRequest:
+      type: object
+      required: [username, password, name]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        photo_url:
+          type: string
+        about:
+          type: string
+
+    ReportKillRequest:
+      type: object
+      required: [victim_id]
+      properties:
+        victim_id:
+          type: string
+          format: uuid
+        evidence_url:
+          type: string
+        location_details:
+          type: string
+
+    ConfirmKillRequest:
+      type: object
+      required: [confirmed]
+      properties:
+        confirmed:
+          type: boolean
+
+    ModerateKillRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [APPROVE, REJECT]
+        reason:
+          type: string
+
+    KillEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        killer_id:
+          type: string
+          format: uuid
+        victim_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [REPORTED, CONFIRMED, APPROVED, REJECTED]
+        reported_at:
+          type: string
+          format: date-time
+        confirmed_at:
+          type: string
+          format: date-time
+        moderated_at:
+          type: string
+          format: date-time
+
+    RankingEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        agent_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        rating:
+          type: number
+
+    UserStats:
+      type: object
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+        kills:
+          type: integer
+        deaths:
+          type: integer
+        rating:
+          type: number
+
+    Target:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        photo_url:
+          type: string
+
+    TargetSelectionRequest:
+      type: object
+      required: [target_id]
+      properties:
+        target_id:
+          type: string
+          format: uuid
+
+    Objective:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        reward_gold:
+          type: integer
+        reward_perk_id:
+          type: string
+          format: uuid
+
+    ObjectiveCompletionRequest:
+      type: object
+      required: [objective_id]
+      properties:
+        objective_id:
+          type: string
+          format: uuid
+        evidence_url:
+          type: string
+
+    Chest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        rarity:
+          type: string
+        location:
+          type: string
+
+    LootItem:
+      type: object
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        type:
+          type: string
+          enum: [GOLD, PERK, COSMETIC]
+        value:
+          type: string
+
+    ChestOpenResponse:
+      type: object
+      properties:
+        loot:
+          type: array
+          items:
+            $ref: '#/components/schemas/LootItem'
+
+    Perk:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        duration_hours:
+          type: integer
+
+    PerkActivationRequest:
+      type: object
+      required: [perk_id]
+      properties:
+        perk_id:
+          type: string
+          format: uuid
+
+    Inventory:
+      type: object
+      properties:
+        gold:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LootItem'
+        active_perks:
+          type: array
+          items:
+            type: object
+            properties:
+              perk_id:
+                type: string
+                format: uuid
+              expires_at:
+                type: string
+                format: date-time
+
+    UserUpdateAdminRequest:
+      type: object
+      properties:
+        is_admin:
+          type: boolean
+        is_banned:
+          type: boolean
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, ELIMINATED]
+
+    GlobalEventRequest:
+      type: object
+      required: [event_type]
+      properties:
+        event_type:
+          type: string
+          enum: [GLOBAL_TARGET, NIGHT_HUNT, POINT_BOOST]
+        target_id:
+          type: string
+          format: uuid
+        duration_hours:
+          type: integer
+        payload:
+          type: object
+
+    GlobalEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        target_id:
+          type: string
+          format: uuid
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new agent (Pending Admin Approval)
+      description: Registers a new agent. The account remains in PENDING status until an admin approves the enlistment.
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Agent created
+        '400':
+          description: Invalid input
+
+  /api/auth/login:
+    post:
+      summary: Authenticate and receive JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Unauthorized
+
+  /api/user/me:
+    get:
+      summary: Get current authenticated agent's profile
+      tags: [User]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentProfile'
+    put:
+      summary: Update agent's personal details (Pending Admin Approval)
+      description: Updates agent's profile. Changes are staged and require admin approval before becoming public.
+      tags: [User]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentProfile'
+
+  /api/kills:
+    get:
+      summary: List all approved kills
+      tags: [Kills]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of kills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KillEvent'
+    post:
+      summary: Report a new kill event
+      tags: [Kills]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportKillRequest'
+      responses:
+        '201':
+          description: Kill reported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KillEvent'
+
+  /api/kills/my-pending:
+    get:
+      summary: Get kill events awaiting current user's confirmation
+      tags: [Kills]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of pending kills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KillEvent'
+
+  /api/kills/{kill_id}/confirm:
+    post:
+      summary: Confirm a kill
+      tags: [Kills]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: kill_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmKillRequest'
+      responses:
+        '200':
+          description: Confirmation processed
+        '403':
+          description: Forbidden
+
+  /api/kills/{kill_id}/moderate:
+    post:
+      summary: Approve or reject a kill event (Admin only)
+      tags: [Kills]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: kill_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModerateKillRequest'
+      responses:
+        '200':
+          description: Moderation processed
+        '403':
+          description: Forbidden
+
+  /api/rankings:
+    get:
+      summary: Get the global leaderboard
+      tags: [Stats]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Global rankings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RankingEntry'
+
+  /api/stats/user/{user_id}:
+    get:
+      summary: Get lifetime statistics for an agent
+      tags: [Stats]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+
+  /api/targets:
+    get:
+      summary: Get current targets for the agent
+      tags: [Targets]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of targets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Target'
+    post:
+      summary: Select a target (Tinder-like selection)
+      tags: [Targets]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetSelectionRequest'
+      responses:
+        '200':
+          description: Target selected successfully
+
+  /api/objectives:
+    get:
+      summary: List available non-kill objectives
+      tags: [Tasks]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of objectives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Objective'
+    post:
+      summary: Complete an objective
+      tags: [Tasks]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectiveCompletionRequest'
+      responses:
+        '200':
+          description: Objective submitted for verification
+
+  /api/chests:
+    get:
+      summary: List available treasure chests
+      tags: [Rewards]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of chests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chest'
+    post:
+      summary: Open a treasure chest
+      tags: [Rewards]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chest_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Chest opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChestOpenResponse'
+
+  /api/perks:
+    get:
+      summary: List available perks for activation
+      tags: [Rewards]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of perks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Perk'
+    post:
+      summary: Activate a perk
+      tags: [Rewards]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerkActivationRequest'
+      responses:
+        '200':
+          description: Perk activated successfully
+
+  /api/inventory:
+    get:
+      summary: Get current agent's inventory and active perks
+      tags: [Rewards]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Inventory retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inventory'
+
+  /api/targets/{target_id}:
+    get:
+      summary: Get detailed dossier for a specific target
+      tags: [Targets]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: target_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Target dossier retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Target'
+        '404':
+          description: Target not found
+
+  /api/admin/users/{user_id}:
+    put:
+      summary: Manage agent status (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateAdminRequest'
+      responses:
+        '200':
+          description: User updated successfully
+        '403':
+          description: Forbidden
+
+  /api/admin/events:
+    get:
+      summary: List active global events (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of active events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GlobalEvent'
+    post:
+      summary: Trigger a global event (Admin only)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalEventRequest'
+      responses:
+        '201':
+          description: Event triggered successfully
+        '403':
+          description: Forbidden
