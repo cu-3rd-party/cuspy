@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CUKILLER // PROTOCOL - SYSTEM INTERFACE</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/history@5/umd/history.development.js"></script>
+    <script src="https://unpkg.com/react-router@6.3.0/umd/react-router.development.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6.3.0/umd/react-router-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#fea9ff",
+                        "error-container": "#93000a",
+                        "on-primary-fixed": "#002203",
+                        "tertiary": "#ffb0c9",
+                        "surface-container-low": "#1b1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "primary-container": "#007a1b",
+                        "primary": "#76dd71",
+                        "inverse-primary": "#006e17",
+                        "error": "#ffb4ab",
+                        "secondary-container": "#81008f",
+                        "on-primary-container": "#a1ff98",
+                        "surface": "#131313",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-dim": "#131313",
+                        "on-tertiary-fixed-variant": "#88144b",
+                        "on-tertiary-container": "#ffe2e9",
+                        "on-secondary-fixed": "#36003d",
+                        "on-tertiary": "#650034",
+                        "on-secondary": "#580062",
+                        "on-background": "#e2e2e2",
+                        "background": "#131313",
+                        "on-primary-fixed-variant": "#00530f",
+                        "outline-variant": "#3f4a3c",
+                        "on-error-container": "#ffdad6",
+                        "outline": "#899483",
+                        "on-surface-variant": "#becab8",
+                        "tertiary-container": "#b53b6e",
+                        "surface-container": "#1f1f1f",
+                        "tertiary-fixed": "#ffd9e3",
+                        "surface-bright": "#393939",
+                        "primary-fixed-dim": "#76dd71",
+                        "on-secondary-container": "#fb91ff",
+                        "on-secondary-fixed-variant": "#7d008b",
+                        "tertiary-fixed-dim": "#ffb0c9",
+                        "secondary": "#fea9ff",
+                        "on-primary": "#003908",
+                        "on-tertiary-fixed": "#3e001e",
+                        "inverse-on-surface": "#303030",
+                        "on-surface": "#e2e2e2",
+                        "secondary-fixed": "#ffd6fb",
+                        "inverse-surface": "#e2e2e2",
+                        "surface-variant": "#353535",
+                        "surface-tint": "#76dd71",
+                        "surface-container-highest": "#353535",
+                        "primary-fixed": "#92fa8a",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "8px",
+                        "lg": "12px",
+                        "xl": "16px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Space Grotesk"],
+                        "display": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #131313;
+            color: #e2e2e2;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        .technical-grid {
+            background-image: linear-gradient(rgba(0, 122, 27, 0.05) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(0, 122, 27, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 122, 27, 0.05) 51%, transparent 100%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+        .scan-line-anim {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #007A1B, transparent);
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0.3;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            from { top: 0%; }
+            to { top: 100%; }
+        }
+        .blip { box-shadow: 0 0 10px #76dd71; }
+        .redacted { background-color: #e2e2e2; color: transparent; user-select: none; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0e0e0e; }
+        ::-webkit-scrollbar-thumb { background: #007A1B; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background selection:bg-primary/30">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+        const { MemoryRouter, Routes, Route, Link, useNavigate, useLocation } = ReactRouterDOM;
+
+        // --- Common Components ---
+
+        const Header = () => {
+            const navigate = useNavigate();
+            return (
+                <header className="bg-[#0e0e0e] text-[#007A1B] font-headline uppercase tracking-tighter fixed top-0 left-0 z-[100] flex justify-between items-center w-full px-6 py-4 shadow-[0_0_15px_rgba(0,122,27,0.1)]">
+                    <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/')}>
+                        <span className="material-symbols-outlined text-[#007A1B]">terminal</span>
+                        <h1 className="text-xl font-bold tracking-[0.2em]">CUKILLER // PROTOCOL</h1>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <nav className="hidden md:flex gap-8 text-[12px] font-bold tracking-[0.1em]">
+                            <Link className="text-[#007A1B] hover:bg-[#1f1f1f] transition-colors p-1" to="/moderation">ENCRYPTED_COMMS</Link>
+                            <Link className="text-[#e2e2e2] hover:bg-[#1f1f1f] transition-colors p-1" to="/events">NETWORK_STATUS</Link>
+                        </nav>
+                        <div className="flex items-center gap-2 bg-surface-container px-3 py-1">
+                            <span className="material-symbols-outlined text-primary text-sm">payments</span>
+                            <span className="font-label text-sm font-bold tracking-widest text-primary">45,200G</span>
+                        </div>
+                        <span className="material-symbols-outlined text-[#007A1B] active:skew-x-2 transition-transform cursor-pointer">settings</span>
+                    </div>
+                </header>
+            );
+        };
+
+        const Sidebar = () => {
+            const location = useLocation();
+            const navItems = [
+                { path: '/moderation', label: 'MODERATION', icon: 'verified_user' },
+                { path: '/surveillance', label: 'DATABASE', icon: 'group' },
+                { path: '/events', label: 'GLOBAL_EVENTS', icon: 'language' }
+            ];
+
+            return (
+                <aside className="hidden lg:flex flex-col h-[calc(100vh-64px)] w-80 bg-[#131313] shadow-[20px_0_60px_rgba(129,0,143,0.08)] p-8 space-y-4 fixed left-0 top-16 z-40">
+                    <div className="flex flex-col space-y-2 mb-10 pb-6 border-b border-outline-variant/15">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-surface-container-high flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[#81008F] text-3xl">shield</span>
+                            </div>
+                            <div>
+                                <p className="text-[#81008F] font-black tracking-widest font-headline">OPERATIVE_X</p>
+                                <p className="text-[10px] text-on-surface-variant font-headline">CLEARANCE: PHANTOM</p>
+                            </div>
+                        </div>
+                        <p className="text-[9px] tracking-widest text-[#81008F]/60 mt-2">ENCRYPTION ACTIVE</p>
+                    </div>
+                    <nav className="flex flex-col gap-2">
+                        {navItems.map(item => (
+                            <Link 
+                                key={item.path}
+                                to={item.path}
+                                className={`group flex items-center gap-4 p-3 font-headline uppercase font-medium transition-all ${location.pathname === item.path ? 'bg-[#1f1f1f] text-secondary pl-6' : 'text-[#e2e2e2] opacity-70 hover:bg-[#2a2a2a] hover:pl-6'}`}
+                            >
+                                <span className="material-symbols-outlined">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </Link>
+                        ))}
+                    </nav>
+                    <div className="mt-auto bg-secondary-container/10 p-4 border-l-2 border-secondary">
+                        <p className="text-[11px] font-headline text-secondary font-bold mb-1 uppercase">Transmission Warning</p>
+                        <p className="text-[10px] leading-relaxed text-on-surface-variant/80">All data packets are logged. Misreporting is a terminal offense.</p>
+                    </div>
+                </aside>
+            );
+        };
+
+        const BottomNav = () => {
+            const location = useLocation();
+            const navItems = [
+                { path: '/', label: 'INTEL', icon: 'monitoring' },
+                { path: '/surveillance', label: 'TARGETS', icon: 'android_fingerprint' },
+                { path: '/missions', label: 'MISSIONS', icon: 'assignment' },
+                { path: '/loot', label: 'GEAR', icon: 'inventory_2' },
+                { path: '/perks', label: 'PERKS', icon: 'bolt' }
+            ];
+
+            return (
+                <nav className="md:hidden fixed bottom-0 w-full z-[100] bg-[#0e0e0e] border-t border-[#3f4a3c]/15 shadow-[0_-4px_20px_rgba(0,122,27,0.05)] flex justify-around items-center h-20">
+                    {navItems.map(item => (
+                        <Link 
+                            key={item.path}
+                            to={item.path}
+                            className={`flex flex-col items-center justify-center p-2 transition-all active:scale-95 duration-75 ${location.pathname === item.path ? 'bg-[#1f1f1f] text-[#007A1B] border-t-2 border-[#007A1B]' : 'text-[#e2e2e2]/60 hover:bg-[#131313]'}`}
+                        >
+                            <span className="material-symbols-outlined">{item.icon}</span>
+                            <span className="font-headline text-[10px] font-bold tracking-widest uppercase">{item.label}</span>
+                        </Link>
+                    ))}
+                </nav>
+            );
+        };
+
+        // --- Screens ---
+
+        const SubmitEvidence = () => (
+            <div className="flex pt-16 min-h-screen technical-grid">
+                <main className="flex-1 lg:ml-80 pb-24 max-w-5xl mx-auto p-6 md:p-12">
+                    <div className="mb-12 border-l-4 border-primary pl-6">
+                        <h2 className="font-display text-4xl md:text-6xl font-black tracking-tighter uppercase text-on-background mb-2">SUBMIT_KILL_EVIDENCE</h2>
+                        <div className="flex items-center gap-4 text-primary font-label text-xs tracking-[0.3em]">
+                            <span>REF_NO: 992-AX-REPORT</span>
+                            <span className="h-px w-12 bg-primary-container"></span>
+                            <span>STATUS: PENDING_VALIDATION</span>
+                        </div>
+                    </div>
+                    <form className="grid grid-cols-1 md:grid-cols-12 gap-6" onSubmit={(e) => e.preventDefault()}>
+                        <div className="md:col-span-4 space-y-6">
+                            <section className="bg-surface-container-low p-6 space-y-8">
+                                <div>
+                                    <label className="block text-[10px] font-label font-bold text-primary tracking-widest uppercase mb-4">TARGET_IDENTIFIER</label>
+                                    <select className="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3 transition-all appearance-none">
+                                        <option>VAL-772_SYNDICATE_HEAD</option>
+                                        <option>RAZOR_WIND_ENFORCER</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-label font-bold text-primary tracking-widest uppercase mb-4">TIME_OF_INCIDENT</label>
+                                    <input className="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3" type="text" value="2023.10.24 // 03:44:12 UTC" readOnly/>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-label font-bold text-primary tracking-widest uppercase mb-4">LOCATION_COORDINATES</label>
+                                    <div className="flex items-center gap-4 bg-surface-container p-4 border-l-2 border-primary mb-4">
+                                        <span className="material-symbols-outlined text-primary-container">location_on</span>
+                                        <div className="font-label text-sm tracking-tighter"><p>LAT: 35.6895° N</p><p>LON: 139.6917° E</p></div>
+                                    </div>
+                                    <div className="h-48 bg-surface-container relative grayscale contrast-125 opacity-60">
+                                        <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp1C_E9zeU9uFZSKH5U4UULGBf9prrxDhnbnzVbtssHWlFD8P7fnk7XWQJersvCMHutkXDPb5sUZ6S6wg_z70aYdAZoYsbMUgStfZMfAYNC6Zs0leSUzy9wICPmuScAc18QCPHTj8pha3jdj4MCzKg1Ga4mbZ1MdfQZe8c6Z_O9_dFkAozT-bjFrSesojZryRp8sqUSBDK8MIHv2LKE8pBTK62tYFCdX_WUVJU-F3Y8u6WDHHFGNofZtwzfMJIJB7gs7JleNCEXyo" alt="map"/>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                        <div className="md:col-span-8 space-y-6">
+                            <section className="bg-surface-container p-1 relative overflow-hidden group">
+                                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                                    <div className="px-2 py-1 bg-primary text-on-primary text-[9px] font-bold tracking-widest font-label uppercase">LIVE_SCAN</div>
+                                </div>
+                                <div className="relative h-[420px] bg-surface-container-low flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/30 group-hover:border-primary/50 transition-all">
+                                    <img className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-screen group-hover:opacity-60 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmI3zz9NVaChtL5xkXqyf1ZthMpSOaxWrRxG_R0Z-xJoB7yAWIvOyebF3keRanAhJugOLXlUvbXuf9PSEAtH7IsRKBbGAr3Qp9IUtjrOSzuFwpDq9LfHBWNrWHxj98XTY_axyleclG3TfFKBZtNzmYCoLQ0XAM2LWC4jDMSPpdjC0oiRbaqNaAeLsY-wNcaUD4s0PMn-0vOQd7hmR-3Na-6wcbLZJhOcqCo3ZWSfYl2zcYxHOQKpoIjDEmOd8mQ3J_2f9kwyIQybM" alt="forensic evidence"/>
+                                    <div className="relative z-10 flex flex-col items-center text-center p-8">
+                                        <span className="material-symbols-outlined text-6xl text-primary-container mb-4">android_fingerprint</span>
+                                        <h3 className="text-xl font-headline font-bold uppercase tracking-widest text-on-background mb-2">Visual Proof / Biometric Scan</h3>
+                                        <p className="text-sm text-on-surface-variant font-body">Drop encrypted files or retinal link. All metadata will be scrubbed.</p>
+                                    </div>
+                                    <div className="scan-line-anim"></div>
+                                </div>
+                            </section>
+                            <section className="bg-surface-container-low p-8">
+                                <label className="block text-[10px] font-label font-bold text-secondary tracking-[0.3em] uppercase mb-4">MODUS_OPERANDI</label>
+                                <textarea className="w-full bg-surface-container-lowest border-0 border-l-2 border-secondary focus:border-secondary-fixed-dim focus:ring-0 text-on-background font-body text-sm p-4 h-32" placeholder="Document the protocol specifics..."></textarea>
+                                <div className="mt-8 flex items-center justify-between">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" />
+                                        <div className="w-11 h-6 bg-surface-container-high rounded-full peer-checked:bg-secondary-container relative after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                                        <span className="text-[10px] font-label font-bold text-on-surface uppercase tracking-widest">WITNESS_PRESENT</span>
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <div className="w-2 h-2 bg-secondary/30"></div><div className="w-2 h-2 bg-secondary"></div>
+                                    </div>
+                                </div>
+                            </section>
+                            <button className="w-full group relative bg-primary-container text-on-primary-container py-6 px-12 transition-all active:scale-95">
+                                <span className="text-xl font-headline font-black uppercase tracking-[0.5em]">FINALIZE_REPORT</span>
+                            </button>
+                        </div>
+                    </form>
+                </main>
+            </div>
+        );
+
+        const Surveillance = () => {
+            const navigate = useNavigate();
+            return (
+                <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto min-h-screen technical-grid">
+                    <section className="mt-8 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                            <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter text-on-surface uppercase">ACTIVE_SURVEILLANCE</h1>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                                <p className="font-label text-xs tracking-widest text-primary uppercase">Satellite Link Stable // 3 Targets Localized</p>
+                            </div>
+                        </div>
+                        <div className="bg-surface-container-high p-4 border-l-4 border-primary">
+                            <span className="font-label text-[10px] text-outline uppercase tracking-[0.2em]">Coordinate</span>
+                            <span className="font-display font-bold text-lg tracking-widest">34.0522° N, 118.2437° W</span>
+                        </div>
+                    </section>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <div className="lg:col-span-8 space-y-6">
+                            {[
+                                { name: 'PHANTOM_STRIKE', id: 'CAM_01', color: 'primary', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDmThpWSfMtoWM96Q13EIVkgH8GeW1YmobA4_Twl-Azmm8p6DuZ8HNen3BL001b8wlg4C6U5mSBfLVGRatqSu7nUqMSgTLuCeIn9fl04mgst0qJF73EYc_fxuU9qR_ro4lqY7x1zsJMg-Rmc2WpNG7trJp9FF7s8l7Qv7e89g2AS4jv4FFjay3PcD3kjTL8F561dHQw7NQrnP35n8mNWFuWzJe9rDwUUhCeVWe7SY3u1d531ueFRBMDpxDpmonk4njLAaU_A8y0ucQ' },
+                                { name: 'NEON_WIDOW', id: 'CAM_04', color: 'secondary', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCREGMi-Wz9FQ3-DFiXTMYYROvQPcA2l0BfN36j86q9UgNfP0APQ_m3KNVABqVcoICX5-erzW2qXVc8ujHqndPvwAFHNJgniUOmXbkfGOmgZlz5mMURUVD40AJwGDzxhbnlSFvHBjigdTM-sKp868FzHYnXojMJSwWny25nAusp4g1872LzP5oaanRZxFJc5fvOPvrH7hkhQvJn0icmPXOjkoKi2YIm-S7WUvmPESwKVG8ghmOBCog-XATFcPMpIjiwdCvOQBD_YH8' }
+                            ].map(target => (
+                                <div key={target.name} className="bg-surface-container-low group relative overflow-hidden transition-all duration-300">
+                                    <div className="flex flex-col md:flex-row">
+                                        <div className="relative w-full md:w-48 h-48 md:h-auto overflow-hidden grayscale contrast-125 hover:grayscale-0 transition-all">
+                                            <img src={target.img} className="w-full h-full object-cover" alt="target"/>
+                                            <div className="absolute top-2 left-2 bg-black/80 px-2 py-1 text-[10px] font-label text-primary">{target.id}_FEED</div>
+                                        </div>
+                                        <div className="flex-1 p-6 flex flex-col justify-between">
+                                            <div className="flex justify-between items-start">
+                                                <h2 className="font-display text-2xl font-bold tracking-tight text-on-surface">CODENAME: {target.name}</h2>
+                                                <div className={`bg-${target.color}/10 border border-${target.color}/20 px-3 py-1`}>
+                                                    <span className={`text-${target.color} font-label text-xs font-bold tracking-widest uppercase`}>TRACKING</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-8 flex justify-end">
+                                                <button onClick={() => navigate('/missions')} className="bg-primary-container text-on-primary-container font-label text-sm font-bold py-3 px-8 hover:brightness-110 uppercase tracking-widest">OPEN_DOSSIER</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="lg:col-span-4 space-y-6">
+                            <div className="bg-surface-container overflow-hidden relative">
+                                <div className="p-4 border-b border-outline-variant/10 flex justify-between items-center text-primary font-bold uppercase text-xs">Tactical Radar</div>
+                                <div className="aspect-square relative flex items-center justify-center p-8 bg-black/20">
+                                    <div className="absolute w-[90%] h-[90%] border border-primary/10 rounded-full"></div>
+                                    <div className="absolute w-[60%] h-[60%] border border-primary/10 rounded-full"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent rounded-full rotate-45"></div>
+                                    <div className="blip w-3 h-3 bg-primary rounded-full absolute top-1/4 left-1/3 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Missions = () => {
+            const navigate = useNavigate();
+            return (
+                <main className="min-h-screen pt-20 pb-32 px-6 lg:px-12 scanline">
+                    <div className="px-6 py-8 border-l-4 border-primary mb-12">
+                        <p className="font-label text-xs tracking-[0.5em] text-primary/60 mb-2">SYSTEM_LOG // ACCESS_GRANTED</p>
+                        <h2 className="font-display text-4xl md:text-6xl font-black uppercase tracking-tighter text-on-surface">INTEL_GATHERING_<span className="text-primary">TASKS</span></h2>
+                    </div>
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="lg:col-span-3 space-y-6">
+                            <div className="bg-surface-container p-6 space-y-4">
+                                <h3 className="font-label text-sm font-bold text-secondary uppercase tracking-widest">OPERATIVE_STAT</h3>
+                                <div className="space-y-4">
+                                    <div><p className="text-xs opacity-60">MISSIONS_COMPLETED: 142</p><div className="h-1 bg-surface-container-highest mt-1"><div className="h-full bg-primary w-[70%]"></div></div></div>
+                                    <div><p className="text-xs opacity-60">RANK_CREDITS: 42k</p><div className="h-1 bg-surface-container-highest mt-1"><div className="h-full bg-secondary w-[45%]"></div></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="lg:col-span-9 space-y-12">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-surface-container-low border-l-4 border-primary p-6 space-y-4 hover:bg-surface-container-high cursor-pointer transition-all" onClick={() => navigate('/evidence')}>
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-headline text-lg font-bold">Dead Drop in Sector 7</h4>
+                                        <span className="text-[10px] bg-primary-container/20 text-primary px-2 py-1">IN_PROGRESS</span>
+                                    </div>
+                                    <p className="text-sm text-on-surface-variant">Retrieve the encrypted flash drive from the central train hub.</p>
+                                    <div className="flex justify-between items-end pt-4">
+                                        <div><p className="text-[10px] uppercase text-outline">Reward</p><p className="font-headline text-primary font-bold text-lg">200 Gold</p></div>
+                                        <button className="bg-primary text-on-primary text-xs px-4 py-2 font-bold">REPORT</button>
+                                    </div>
+                                </div>
+                                <div className="bg-surface-container-low border-2 border-primary/30 p-6 md:col-span-2 flex flex-col md:flex-row gap-6 justify-between items-center group cursor-pointer" onClick={() => navigate('/loot')}>
+                                    <div className="flex-grow">
+                                        <div className="flex items-center gap-3"><h4 className="font-headline text-xl font-black">SYN_FLOOD_ANALYTICS</h4><span className="text-[10px] bg-secondary-container/40 text-secondary-fixed-dim px-2 py-1 animate-pulse">READY_FOR_UPLOAD</span></div>
+                                        <p className="text-sm text-on-surface-variant max-w-xl">Initial data packet successfully extracted. Secure connection ready.</p>
+                                    </div>
+                                    <button className="bg-secondary-container text-on-secondary-container text-xs font-bold px-8 py-3 hover:brightness-125 transition-all flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-sm">upload</span>UPLOAD_INTEL
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            );
+        };
+
+        const Loot = () => {
+            const navigate = useNavigate();
+            return (
+                <main className="min-h-screen pt-20 pb-24 flex flex-col items-center justify-center relative overflow-hidden technical-grid">
+                    <div className="relative z-10 w-full max-w-5xl px-6 text-center">
+                        <div className="mb-12">
+                            <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter text-on-background mb-2">ENCRYPTED_CACHE_UNLOCKED</h1>
+                            <div className="flex justify-center items-center gap-4 text-primary font-label text-sm tracking-[0.4em] uppercase">
+                                <span>STATUS: DECRYPTED</span>
+                                <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                                <span>PHANTOM_NODE</span>
+                            </div>
+                        </div>
+                        <div className="relative w-80 h-80 md:w-96 md:h-96 mx-auto mb-12">
+                            <div className="w-full h-full bg-surface-container/60 backdrop-blur-xl border border-outline-variant/15 flex items-center justify-center relative overflow-hidden shadow-[0_0_50px_rgba(118,221,113,0.15)]">
+                                <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary"></div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-secondary-container"></div>
+                                <div className="flex flex-col items-center">
+                                    <span className="material-symbols-outlined text-7xl md:text-8xl text-primary animate-pulse" style={{fontVariationSettings: "'FILL' 1"}}>deployed_code</span>
+                                    <div className="mt-4 font-label text-xs tracking-widest text-outline">CORE_ID: X-990</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
+                            <div className="bg-surface-container-low p-6 border-l-4 border-primary text-left">
+                                <div className="text-3xl font-display font-bold">500 GOLD</div>
+                                <div className="text-xs font-label text-primary mt-1">CURRENCY_DEPOSITED</div>
+                            </div>
+                            <div className="bg-surface-container-low p-6 border-l-4 border-secondary text-left">
+                                <div className="text-xl font-display font-bold">PERK: GHOST_SIGNAL</div>
+                                <div className="text-xs font-label text-secondary mt-1">INVISIBILITY +15%</div>
+                            </div>
+                            <div className="bg-surface-container-low p-6 border-l-4 border-outline-variant text-left">
+                                <div className="text-xl font-display font-bold">COSMETIC: NIGHT_VISOR</div>
+                                <div className="text-xs font-label text-outline mt-1">SQUAD_ID: ENABLED</div>
+                            </div>
+                        </div>
+                        <button onClick={() => navigate('/perks')} className="bg-primary-container text-on-primary-container px-16 py-5 font-display font-black text-xl tracking-[0.3em] hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(0,122,27,0.3)] transition-all">
+                            CLAIM_ASSETS
+                        </button>
+                    </div>
+                </main>
+            );
+        };
+
+        const Perks = () => (
+            <main className="max-w-7xl mx-auto px-6 py-24 min-h-screen">
+                <div className="mb-12"><h2 className="font-display text-5xl font-extrabold uppercase tracking-tighter">UPGRADE_CENTER</h2></div>
+                <section className="mb-16">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3"><span className="w-2 h-2 bg-primary animate-pulse"></span><h3 className="font-display text-xl font-bold uppercase tracking-widest">ACTIVE_PERKS</h3></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-surface-container-high p-6 flex items-center justify-between group cursor-pointer border-l-4 border-primary">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-primary-container/20 flex items-center justify-center"><span className="material-symbols-outlined text-primary text-4xl" style={{fontVariationSettings: "'FILL' 1"}}>visibility_off</span></div>
+                                <div><p className="font-display font-bold text-lg text-primary">Ghost Signal</p><p className="font-label text-sm text-primary tracking-widest">02:45:00 REMAINING</p></div>
+                            </div>
+                            <div className="flex gap-1"><div className="w-3 h-3 bg-primary"></div><div className="w-3 h-3 bg-primary"></div><div className="w-3 h-3 bg-primary/20"></div></div>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div className="flex items-center gap-3 mb-8"><h3 className="font-display text-xl font-bold uppercase tracking-widest">AVAILABLE_PERKS</h3></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[
+                            { name: 'Elo Multiplier', cost: '1,200G', color: 'primary', icon: 'psychology' },
+                            { name: 'Identity Mask', cost: '3,500G', color: 'secondary', icon: 'android_fingerprint' },
+                            { name: 'Rapid Breach', cost: '800G', color: 'primary', icon: 'bolt' }
+                        ].map(perk => (
+                            <div key={perk.name} className="bg-surface-container flex flex-col group border border-outline-variant/10">
+                                <div className="aspect-square bg-surface-container-low flex items-center justify-center relative overflow-hidden">
+                                    <span className={`material-symbols-outlined text-5xl text-${perk.color} z-10`}>{perk.icon}</span>
+                                </div>
+                                <div className="p-6">
+                                    <h4 className="font-display font-bold text-lg uppercase mb-2">{perk.name}</h4>
+                                    <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+                                        <div className="flex flex-col"><span className="text-[10px] text-outline uppercase">COST</span><span className={`font-display font-bold text-${perk.color}`}>{perk.cost}</span></div>
+                                        <button className={`bg-${perk.color}-container text-on-${perk.color}-container px-6 py-2 text-xs font-bold uppercase`}>ACTIVATE</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            </main>
+        );
+
+        const Moderation = () => (
+            <div className="flex min-h-screen pt-[68px]">
+                <Sidebar />
+                <main className="flex-1 lg:ml-80 p-8 technical-grid">
+                    <header className="mb-12 border-l-4 border-primary pl-6">
+                        <h2 className="text-4xl font-display font-black tracking-tighter">COMMAND_CENTER // MODERATION</h2>
+                        <p className="text-on-surface-variant font-label text-sm tracking-[0.3em] uppercase">REAL-TIME EXECUTION AUDIT</p>
+                    </header>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        <div className="bg-surface-container p-4 border-l-2 border-primary"><div className="text-xs uppercase">Pending Reports</div><div className="text-3xl font-display font-bold text-primary">42</div></div>
+                        <div className="bg-surface-container p-4 border-l-2 border-secondary"><div className="text-xs uppercase">High Priority</div><div className="text-3xl font-display font-bold text-secondary">08</div></div>
+                    </div>
+                    <section className="bg-surface-container-lowest border border-outline-variant/15 p-6 md:p-8">
+                        <div className="flex justify-between items-start mb-8">
+                            <h3 className="text-2xl font-display font-bold">PENDING_KILL_REPORT: #CK-99021</h3>
+                            <div className="text-right text-[10px] uppercase font-label">2024-05-24 // 22:14:09 UTC</div>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="aspect-[4/5] bg-surface-container-high overflow-hidden grayscale brightness-75">
+                                    <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiYk3LNc7y-nIFdPB-M7GM5S-MRt0M8c4KfYVSw4WMHr39dIzkam2x7jXpXMz5A6JdVXO-tQ1ouNwEgmrSqeSSR9wgUhPay5wEJ2a4O_V2F38GULUgAihVMu0vQguSdiW8qzpBQkceJwulM5b0sPaBRhCusyi-0-tRiFzUQ7GtdFqEaSI8QvPU2k56XxfRDa548s_7n1Dntptd2F33sBXj3CyrbpNpr65In_JI6zI-lY5j7R65aRi43ENwYLVOn5yqIn3HvnJJN-o" alt="evidence"/>
+                                </div>
+                                <div className="aspect-[4/5] bg-surface-container-high overflow-hidden grayscale">
+                                    <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuES9GuAeumiik0NoxgGbF9bxHkFe5QY4Bs7vz6xxWQ5QNSaBqFXZ4ITrPS2GDPihknKRC8SA7-hQa5r_K4okmFw2To0ip9LxBinOdT4fJXwufy5cdVANJA1hwoekTndYr8hw6vfRryKoFAwKGAde0deYTqzSXJ6SNbKHga2iJnIeN9lRJz_DzGPNNaD3fWN5DvhB6ODaA_06IOxuBbAr3uuAWHGYGMC-ePSqf2wvPuwJp_Eh_jQHXZDMvqi46QiKWpbKzbrvulKs" alt="target"/>
+                                </div>
+                            </div>
+                            <div className="lg:col-span-4 space-y-6">
+                                <div className="space-y-4 pt-4">
+                                    <button className="w-full bg-primary-container text-on-primary-container py-4 font-bold uppercase tracking-[0.2em] hover:bg-primary transition-all">APPROVE_KILL</button>
+                                    <button className="w-full border-2 border-error-container text-error py-4 font-bold uppercase tracking-[0.2em]">REJECT_DISPUTE</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        );
+
+        const Events = () => (
+            <div className="flex h-screen overflow-hidden">
+                <Sidebar />
+                <main className="flex-1 lg:ml-80 flex flex-col relative overflow-y-auto">
+                    <div className="p-8 lg:p-12 space-y-12">
+                        <div className="border-l-4 border-primary pl-6">
+                            <h2 className="text-5xl font-headline font-black tracking-tighter uppercase italic">PROTOCOL_OVERRIDE</h2>
+                            <p className="text-on-surface-variant font-label tracking-widest text-xs mt-2">GLOBAL COMMAND AUTHORIZATION REQUIRED</p>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <section className="lg:col-span-8 space-y-8">
+                                <div className="bg-surface-container p-8 relative overflow-hidden group border border-outline-variant/10">
+                                    <h3 className="font-headline font-bold text-lg mb-8 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-primary">public</span>EVENT_CATALYST
+                                    </h3>
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        <div className="bg-surface-container-high p-6 space-y-4 border-l border-error">
+                                            <h4 className="font-bold text-error">CASCADE_FAILURE / TRIGGER_SMITE</h4>
+                                            <p className="text-xs opacity-70">Immediate system-wide disruption. Targets all non-cleared nodes.</p>
+                                            <button className="w-full bg-error-container text-on-error-container py-4 font-bold hover:bg-error transition-all">EXECUTE_SMITE</button>
+                                        </div>
+                                        <div className="bg-surface-container-high p-6 space-y-4 border-l border-primary">
+                                            <h4 className="font-bold text-primary">TERRITORY_EXPANSION</h4>
+                                            <p className="text-xs opacity-70">Expand influence radius. Increases operative visibility.</p>
+                                            <div className="h-1 bg-surface-container-lowest overflow-hidden"><div className="h-full w-2/3 bg-primary"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-surface-container p-8 space-y-6">
+                                    <h3 className="font-headline font-bold">AGENT_DATABASE_QUERY</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left font-label text-xs border-collapse">
+                                            <thead className="bg-surface-container-low uppercase tracking-widest"><tr className="border-b border-outline-variant/10"><th className="py-4 px-4">Identifier</th><th className="py-4 px-4">Status</th><th className="py-4 px-4">Threat</th></tr></thead>
+                                            <tbody>
+                                                <tr className="hover:bg-primary/5 transition-all"><td className="py-4 px-4 font-bold">OPERATIVE_99</td><td className="py-4 px-4 text-primary">ACTIVE</td><td className="py-4 px-4">OMEGA</td></tr>
+                                                <tr className="hover:bg-primary/5 transition-all"><td className="py-4 px-4 redacted">REDACTED_TEXT</td><td className="py-4 px-4 text-error">COMPROMISED</td><td className="py-4 px-4">SIGMA</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                            <aside className="lg:col-span-4 flex flex-col gap-8">
+                                <section className="bg-surface-container h-[600px] flex flex-col border-t-2 border-primary">
+                                    <div className="p-4 bg-surface-container-low flex justify-between items-center"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-primary animate-pulse"></div><span className="font-bold text-xs">SYSTEM_LOGS</span></div></div>
+                                    <div className="flex-1 p-6 font-mono text-[11px] overflow-y-auto space-y-2 text-primary/80">
+                                        <p><span className="opacity-50">[14:02]</span> AUTH_LEVEL: PHANTOM</p>
+                                        <p><span className="opacity-50">[14:03]</span> NODE_77_INFILTRATION: SUCCESS</p>
+                                        <p className="text-error"><span className="opacity-50">[14:04]</span> ALERT: UNAUTHORIZED_QUERY</p>
+                                        <p className="redacted">ENCRYPTED_LOG_STRING_REDACTED</p>
+                                    </div>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+
+        const App = () => {
+            return (
+                <MemoryRouter>
+                    <Header />
+                    <Sidebar />
+                    <Routes>
+                        <Route path="/" element={<Missions />} />
+                        <Route path="/evidence" element={<SubmitEvidence />} />
+                        <Route path="/surveillance" element={<Surveillance />} />
+                        <Route path="/missions" element={<Missions />} />
+                        <Route path="/loot" element={<Loot />} />
+                        <Route path="/perks" element={<Perks />} />
+                        <Route path="/moderation" element={<Moderation />} />
+                        <Route path="/events" element={<Events />} />
+                    </Routes>
+                    <BottomNav />
+                    {/* Visual Overlay Effect */}
+                    <div className="fixed inset-0 pointer-events-none opacity-[0.03] overflow-hidden z-[999]">
+                        <div className="absolute inset-0 bg-repeat bg-[length:100%_4px] bg-[linear-gradient(to_bottom,transparent,transparent_2px,#fff_2px,#fff_4px)]"></div>
+                    </div>
+                </MemoryRouter>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -61,16 +61,16 @@
 </script>
 
 <nav
-	class="fixed inset-x-0 bottom-0 z-50 flex h-16 items-stretch justify-around bg-surface-container-lowest shadow-[0_-4px_20px_rgba(0,122,27,0.1)]"
+	class="fixed inset-x-0 bottom-0 z-50 flex h-20 items-stretch justify-around bg-surface-container-lowest border-t border-outline-variant/15 shadow-[0_-4px_20px_rgba(0,122,27,0.05)]"
 >
 	{#each items as item}
 		<a
 			href={isLocked(item) ? undefined : resolve(item.href)}
 			aria-disabled={isLocked(item)}
-			class={`flex flex-1 flex-col items-center justify-center gap-1 p-2 text-[10px] font-bold tracking-tight transition-colors ${isActive(item) ? 'bg-primary-container text-black' : isLocked(item) ? 'pointer-events-none cursor-not-allowed text-outline/30 saturate-0' : 'text-outline hover:bg-surface-container-low hover:text-primary'}`}
+			class={`flex flex-col items-center justify-center p-2 transition-all active:scale-95 duration-75 {isActive(item) ? 'bg-surface-container text-primary border-t-2 border-primary' : isLocked(item) ? 'pointer-events-none cursor-not-allowed text-outline/30 saturate-0' : 'text-outline hover:bg-surface-container-low'}`}
 		>
-			<Icon name={item.icon} filled={isActive(item) || item.fill} />
-			<span class="font-headline uppercase">{item.label}</span>
+			<Icon name={item.icon} filled={isActive(item) || item.fill} class="text-xl" />
+			<span class="font-headline text-[10px] font-bold tracking-widest uppercase mt-1">{item.label}</span>
 		</a>
 	{/each}
 </nav>
