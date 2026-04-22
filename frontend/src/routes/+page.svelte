@@ -1,20 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	// import { goto } from '$app/navigation';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav, heroServerImage } from '$lib/prototype/data';
+	import type { LayoutData } from './$types';
 
-	let { data } = $props<{
-		data: {
-			verification: Promise<{
-				refId: string;
-				clearance: string;
-				grantedAt: string;
-			}>;
-		};
-	}>();
+	let { data }: LayoutData = $props();
+
+	const flow = $derived(data.sessionFlow ?? null);
+	const isGuest = $derived(!flow || flow.status === 'guest');
 
 	const briefingSteps = [
 		m.home_briefing_step_1(),
@@ -31,14 +28,74 @@
 	let encryptedBuffer = $state(0);
 	let accessGranted = $state(false);
 	let currentLocale = $state(getLocale());
+	let cta = $derived.by(() => {
+		if (isGuest) {
+			return {
+				href: resolve('/agent-id'),
+				label: m.home_start_registration(),
+				copy: accessGranted
+					? m.home_system_breach_logged()
+					: m.home_registration_terminal_locked(),
+				disabled: !accessGranted,
+				badge: null as string | null
+			};
+		}
+
+		if (flow.status === 'no_profile') {
+			return {
+				href: resolve('/agent-id'),
+				label: 'Complete agent registration',
+				copy: 'Identity shell active. Finish profile intake to unlock dossier review.',
+				disabled: false,
+				badge: 'PROFILE REQUIRED'
+			};
+		}
+
+		if (flow.status === 'rejected') {
+			return {
+				href: resolve('/agent-id'),
+				label: 'Revise rejected profile',
+				copy: 'Reviewer flagged dossier mismatch. Reload latest submission and resend corrected intel.',
+				disabled: false,
+				badge: 'REVISION REQUIRED'
+			};
+		}
+
+		if (flow.status === 'pending') {
+			return {
+				href: resolve('/dossier'),
+				label: 'Open dossier review hub',
+				copy: 'Profile request in queue. Monitor review state and operative access from dossier hub.',
+				disabled: false,
+				badge: 'UNDER REVIEW'
+			};
+		}
+
+		return {
+			href: resolve('/dossier'),
+			label: 'Open operative dossier hub',
+			copy: 'Clearance confirmed. Resume dossier command view for mission intel, status feeds, and live access routes.',
+			disabled: false,
+			badge: 'OPERATIVE ACTIVE'
+		};
+	});
 
 	$effect(() => {
 		const verification = data.verification;
+		let cancelled = false;
 
 		verification.then(() => {
+			if (cancelled) {
+				return;
+			}
+
 			accessGranted = true;
 			verificationProgress = 100;
 		});
+
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	onMount(() => {
@@ -212,13 +269,23 @@
 		<div class="md:col-span-5">
 			<div class="flex h-full flex-col justify-between bg-surface-container-high p-6">
 				<div>
+					{#if cta.badge}
+						<div class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-[10px] font-bold tracking-[0.24em] text-on-primary-container uppercase">
+							{cta.badge}
+						</div>
+					{/if}
 					<h3
 						class="mb-6 font-headline text-xs font-bold tracking-[0.4em] text-on-surface-variant uppercase"
 					>
 						{m.home_mission_briefing()}
 					</h3>
+					{#if !isGuest}
+						<p class="mb-6 border-l-4 border-primary/50 bg-surface-container px-4 py-3 text-sm leading-relaxed text-on-surface-variant">
+							{cta.copy}
+						</p>
+					{/if}
 					<ul class="space-y-4">
-						{#each briefingSteps as step, index}
+						{#each briefingSteps as step, index (step)}
 							<li class="flex gap-4">
 								<span class="font-label font-bold text-primary">0{index + 1}</span>
 								<span class="flex-1 border-b border-outline-variant/30 pb-2 text-sm">{step}</span>
@@ -229,15 +296,15 @@
 
 				<div class="mt-8">
 					<a
-						href={resolve('/agent-id')}
-						aria-disabled={!accessGranted}
-						class={`glitch-burst tactical-button flex w-full items-center justify-between px-8 py-5 font-headline font-extrabold tracking-[0.2em] uppercase transition-[filter,transform,brightness,opacity] hover:brightness-110 ${accessGranted ? '' : 'pointer-events-none opacity-50 saturate-0'}`}
+						href={cta.href}
+						aria-disabled={cta.disabled}
+						class={`glitch-burst tactical-button flex w-full items-center justify-between px-8 py-5 font-headline font-extrabold tracking-[0.2em] uppercase transition-[filter,transform,brightness,opacity] hover:brightness-110 ${cta.disabled ? 'pointer-events-none opacity-50 saturate-0' : ''}`}
 					>
-						<span>{m.home_start_registration()}</span>
+						<span>{cta.label}</span>
 						<span class="material-symbols-outlined">chevron_right</span>
 					</a>
 					<p class="mt-4 text-center font-label text-[10px] tracking-[0.3em] text-outline">
-						{accessGranted ? m.home_system_breach_logged() : m.home_registration_terminal_locked()}
+						{cta.copy}
 					</p>
 				</div>
 			</div>
@@ -256,7 +323,7 @@
 					{m.home_encrypted_buffer()}
 				</p>
 				<div class="mt-2 grid grid-cols-4 gap-1">
-					{#each Array.from({ length: bufferSegments }, (_, index) => index) as index}
+					{#each Array.from({ length: bufferSegments }, (_, index) => index) as index (index)}
 						<div class="h-2 overflow-hidden bg-surface-container-highest">
 							<div
 								class={`h-full transition-[width,background-color,box-shadow] duration-300 ease-out ${index < activeSegments(encryptedBuffer, bufferSegments) ? 'bg-secondary shadow-[0_0_14px_rgba(254,169,255,0.28)]' : 'bg-secondary/20'}`}

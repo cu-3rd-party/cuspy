@@ -14,6 +14,7 @@ export type DossierDraft = {
 		physicalContact: boolean;
 		hugsCloseProximity: boolean;
 	};
+	registrationCompleted: boolean;
 	unlockedStep: 1 | 2 | 3;
 };
 
@@ -33,6 +34,7 @@ export const createDefaultDossierDraft = (): DossierDraft => ({
 		physicalContact: true,
 		hugsCloseProximity: false
 	},
+	registrationCompleted: false,
 	unlockedStep: 1
 });
 

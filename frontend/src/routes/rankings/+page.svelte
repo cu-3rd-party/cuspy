@@ -2,6 +2,53 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { agentAvatar, dossierNav, roster } from '$lib/prototype/data';
+	import { sessionUser, type RankingEntry, type SessionUser } from '$lib/stores/session';
+
+	type RankingRow = {
+		rank: string;
+		name: string;
+		syndicate: string;
+		rating: string;
+		discoveries: string;
+		active?: boolean;
+	};
+
+	let { data } = $props<{
+		data: {
+			rankings?: RankingEntry[];
+			sessionUser?: SessionUser | null;
+		};
+	}>();
+
+	const numberFormat = new Intl.NumberFormat('en-US');
+
+	let activeUserId = $derived(data.sessionUser?.user_id ?? $sessionUser?.user_id ?? null);
+	let rows = $derived.by<RankingRow[]>(() => {
+		if (!data.rankings?.length) {
+			return roster;
+		}
+
+		return data.rankings.map((entry, index) => ({
+			rank: String(index + 1).padStart(2, '0'),
+			name: entry.agent_name ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
+			syndicate: entry.user_id === activeUserId ? 'ACTIVE_SESSION' : 'CONFIRMED_OPERATIVE',
+			rating: numberFormat.format(entry.rating),
+			discoveries: numberFormat.format(entry.approved_kills),
+			active: entry.user_id === activeUserId
+		}));
+	});
+	let averageRating = $derived(
+		data.rankings?.length
+			? numberFormat.format(
+					Math.round(data.rankings.reduce((total, entry) => total + entry.rating, 0) / data.rankings.length)
+				)
+			: '1,240'
+	);
+	let totalDiscoveries = $derived(
+		data.rankings?.length
+			? numberFormat.format(data.rankings.reduce((total, entry) => total + entry.approved_kills, 0))
+			: '128,491'
+	);
 </script>
 
 <TerminalShell
@@ -39,7 +86,7 @@
 			</div>
 
 			<div class="divide-y divide-outline-variant/10">
-				{#each roster as row}
+				{#each rows as row (row.rank + row.name)}
 					<div
 						class={`grid grid-cols-12 items-center gap-2 px-6 py-5 transition-colors ${row.active ? 'border-l-2 border-primary bg-primary-container/10' : 'hover:bg-surface-container'}`}
 					>
@@ -99,7 +146,7 @@
 				<span class="font-label text-[10px] tracking-[0.2em] text-outline uppercase"
 					>{m.rankings_global_avg_elo()}</span
 				>
-				<div class="mt-2 font-headline text-3xl font-bold">1,240</div>
+				<div class="mt-2 font-headline text-3xl font-bold">{averageRating}</div>
 				<div class="mt-3 h-1 bg-surface-container-highest">
 					<div class="h-full w-[65%] bg-secondary-container"></div>
 				</div>
@@ -108,7 +155,7 @@
 				<span class="font-label text-[10px] tracking-[0.2em] text-outline uppercase"
 					>{m.rankings_weekly_discoveries()}</span
 				>
-				<div class="mt-2 font-headline text-3xl font-bold text-primary">128,491</div>
+				<div class="mt-2 font-headline text-3xl font-bold text-primary">{totalDiscoveries}</div>
 				<div class="mt-2 text-[10px] font-medium text-primary/60">
 					{m.rankings_from_last_period()}
 				</div>

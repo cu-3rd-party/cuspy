@@ -3,8 +3,14 @@
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
-		// interface PageData {}
+		interface Locals {
+			accessToken: string | null;
+			sessionUser: import('$lib/stores/session').SessionUser | null;
+		}
+		interface PageData {
+			sessionFlow?: import('$lib/stores/session').SessionFlow;
+			sessionUser?: import('$lib/stores/session').SessionUser | null;
+		}
 		// interface PageState {}
 		// interface Platform {}
 	}

@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { writeAccessToken } from '$lib/auth/session';
 	import { m } from '$lib/paraglide/messages.js';
+	import { applyProfileDataToDraft } from '$lib/profile-flow';
 	import {
 		isAgentIdComplete,
 		loadDossierDraft,
@@ -17,6 +18,14 @@
 	import Countdown from '$lib/components/Countdown.svelte';
 	import NodeConnectivity from '$lib/components/NodeConnectivity.svelte';
 	import { sessionUser } from '$lib/stores/session';
+	import type { SessionFlow } from '$lib/stores/session';
+
+	let { data } = $props<{
+		data: {
+			sessionFlow?: SessionFlow;
+			sessionUser?: SessionFlow['user'];
+		};
+	}>();
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let uploadError = $state(false);
@@ -24,6 +33,10 @@
 	let submitError = $state('');
 	let isSubmitting = $state(false);
 	let popupTimeout: number | undefined;
+	let hydratedRejectedRequestId = $state<string | null>(null);
+	let flow = $derived(data.sessionFlow ?? null);
+	let activeSessionUser = $derived(data.sessionUser ?? flow?.user ?? $sessionUser);
+	let rejectedRequest = $derived(flow?.status === 'rejected' ? flow.latestProfileRequest : null);
 
 	const academicLevels = [
 		{ value: 'bachelor', label: m.agent_id_bachelor() },
@@ -56,14 +69,32 @@
 		draft.agentId.academicLevel === 'bachelor' && Number(draft.agentId.courseNumber) >= 2
 	);
 
+	const hydrateRejectedDraft = (baseDraft: DossierDraft) => {
+		if (!rejectedRequest) {
+			return baseDraft;
+		}
+
+		hydratedRejectedRequestId = rejectedRequest.profile_creation_request_id;
+
+		return applyProfileDataToDraft(baseDraft, rejectedRequest.requested_profile_data);
+	};
+
 	onMount(() => {
-		draft = loadDossierDraft();
+		draft = hydrateRejectedDraft(loadDossierDraft());
 
 		return () => {
 			if (popupTimeout) {
 				window.clearTimeout(popupTimeout);
 			}
 		};
+	});
+
+	$effect(() => {
+		if (!rejectedRequest || hydratedRejectedRequestId === rejectedRequest.profile_creation_request_id) {
+			return;
+		}
+
+		draft = hydrateRejectedDraft(loadDossierDraft());
 	});
 
 	$effect(() => {
@@ -141,6 +172,15 @@
 		submitError = '';
 
 		try {
+			if (activeSessionUser) {
+				draft.registrationCompleted = true;
+				draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
+				saveDossierDraft(draft);
+				sessionUser.set(activeSessionUser);
+				await goto(resolve('/operational-boundaries'));
+				return;
+			}
+
 			const response = await fetch('/auth/dev-register', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
@@ -171,7 +211,9 @@
 			writeAccessToken(payload.access_token);
 			sessionUser.set(payload.user);
 
+			draft.registrationCompleted = true;
 			draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
+			saveDossierDraft(draft);
 			await goto(resolve('/operational-boundaries'));
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to register';
@@ -234,7 +276,7 @@
 						>
 					</div>
 					<div class="grid gap-3 sm:grid-cols-3">
-						{#each academicLevels as level}
+						{#each academicLevels as level (level.value)}
 							<label
 								class={[
 									'flex cursor-pointer items-center justify-between border px-4 py-3 transition-colors',
@@ -272,7 +314,7 @@
 							bind:value={draft.agentId.courseNumber}
 						>
 							<option value="">Select course</option>
-							{#each courseOptions as course}
+							{#each courseOptions as course (course)}
 								<option value={course}>{course}</option>
 							{/each}
 						</select>
@@ -290,7 +332,7 @@
 							>
 						</div>
 						<div class="grid gap-3 sm:grid-cols-3">
-							{#each bachelorTracks as track}
+							{#each bachelorTracks as track (track.value)}
 								<label
 									class={[
 										'flex cursor-pointer items-center justify-between border px-4 py-3 transition-colors',

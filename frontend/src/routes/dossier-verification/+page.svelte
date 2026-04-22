@@ -6,13 +6,15 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import {
 		canAccessStep,
-		clearDossierDraft,
 		loadDossierDraft,
+		saveDossierDraft,
 		type DossierDraft
 	} from '$lib/prototype/dossierDraft';
 	import TerminalShell from '$lib/components/TerminalShell.svelte';
 	import { enlistNav, verificationImage } from '$lib/prototype/data';
 	import { sessionUser } from '$lib/stores/session';
+	import type { AgentProfileData } from '$lib/stores/session';
+	import type { SessionUser } from '$lib/stores/session';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let profileImage = $derived(draft.agentId.identificationImage || verificationImage);
@@ -43,6 +45,20 @@
 		}
 	});
 
+	const buildRequestedProfileData = (): AgentProfileData => ({
+		codename: draft.agentId.codename,
+		academicGroup: draft.agentId.academicGroup,
+		academicLevel: draft.agentId.academicLevel,
+		courseNumber: draft.agentId.courseNumber,
+		bachelorTrack: draft.agentId.bachelorTrack,
+		identificationName: draft.agentId.identificationName,
+		identificationImage: draft.agentId.identificationImage,
+		boundaries: {
+			physicalContact: draft.boundaries.physicalContact,
+			hugsCloseProximity: draft.boundaries.hugsCloseProximity
+		}
+	});
+
 	const handleSubmit = async () => {
 		const token = readAccessToken();
 		if (!token) {
@@ -54,6 +70,7 @@
 		submitError = '';
 
 		try {
+			const requestedProfileData = buildRequestedProfileData();
 			const response = await fetch('/profile-creation-requests', {
 				method: 'POST',
 				headers: {
@@ -61,19 +78,7 @@
 					authorization: `Bearer ${token}`
 				},
 				body: JSON.stringify({
-					requested_profile_data: {
-						codename: draft.agentId.codename,
-						academicGroup: draft.agentId.academicGroup,
-						academicLevel: draft.agentId.academicLevel,
-						courseNumber: draft.agentId.courseNumber,
-						bachelorTrack: draft.agentId.bachelorTrack,
-						identificationName: draft.agentId.identificationName,
-						identificationImage: draft.agentId.identificationImage,
-						boundaries: {
-							physicalContact: draft.boundaries.physicalContact,
-							hugsCloseProximity: draft.boundaries.hugsCloseProximity
-						}
-					}
+					requested_profile_data: requestedProfileData
 				})
 			});
 
@@ -82,29 +87,41 @@
 				throw new Error(payload.error ?? 'Request failed');
 			}
 
-			clearDossierDraft();
-			sessionUser.update((current) =>
-				current
-					? {
-						...current,
-						agent_name: draft.agentId.codename,
-						agent_data: {
-							...current.agent_data,
-							codename: draft.agentId.codename,
-							academicGroup: draft.agentId.academicGroup,
-							academicLevel: draft.agentId.academicLevel,
-							courseNumber: draft.agentId.courseNumber,
-							bachelorTrack: draft.agentId.bachelorTrack,
-							boundaries: {
-								physicalContact: draft.boundaries.physicalContact,
-								hugsCloseProximity: draft.boundaries.hugsCloseProximity
+			const payload = (await response.json().catch(() => ({}))) as {
+				user?: SessionUser;
+			};
+
+			draft.registrationCompleted = true;
+			draft.unlockedStep = 3;
+			saveDossierDraft(draft);
+
+			if (payload.user) {
+				sessionUser.set({
+					...payload.user,
+					agent_name: payload.user.agent_name ?? draft.agentId.codename,
+					agent_data: {
+						...requestedProfileData,
+						...payload.user.agent_data,
+						boundaries: requestedProfileData.boundaries
+					}
+				});
+			} else {
+				sessionUser.update((current) =>
+					current
+						? {
+							...current,
+							agent_name: draft.agentId.codename,
+							agent_data: {
+								...current.agent_data,
+								...requestedProfileData,
+								boundaries: requestedProfileData.boundaries
 							}
 						}
-					}
-					: current
-			);
+						: current
+				);
+			}
 
-			await goto(resolve('/dossier'));
+			await goto(resolve('/dossier'), { invalidateAll: true });
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to submit profile';
 		} finally {
@@ -200,7 +217,7 @@
 				{m.dossier_verification_operational_boundaries()}
 			</h3>
 			<div class="grid gap-px bg-outline-variant/20 md:grid-cols-2">
-				{#each boundaries as [label, status, tone]}
+				{#each boundaries as [label, status, tone] (label)}
 					<div class="flex items-center justify-between bg-surface-container p-4">
 						<span class="text-sm">{label}</span>
 						<span

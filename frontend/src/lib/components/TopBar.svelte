@@ -1,19 +1,23 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import { m } from '$lib/paraglide/messages.js';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { TopBarConfig } from '$lib/prototype/data';
+	import type { SessionFlow } from '$lib/stores/session';
 
-	let { config } = $props<{ config: TopBarConfig }>();
-</script>
-
-<script lang="ts">
-	import { resolve } from '$app/paths';
-	import { m } from '$lib/paraglide/messages.js';
-	import Icon from '$lib/components/Icon.svelte';
-	import type { TopBarConfig } from '$lib/prototype/data';
-
-	let { config } = $props<{ config: TopBarConfig }>();
+	let { config, flow = undefined }: { config: TopBarConfig; flow?: SessionFlow } = $props();
+	let codename = $derived(
+		(flow?.user?.agent_data?.codename as string | undefined) ?? flow?.user?.agent_name ?? 'guest'
+	);
+	let status = $derived(
+		flow?.status === 'approved'
+			? 'OPERATIVE ACTIVE'
+			: flow?.status === 'pending'
+				? 'WAITING CLEARANCE'
+				: flow?.status === 'rejected'
+					? 'REVISION REQUIRED'
+					: flow?.status === 'no_profile'
+						? 'PROFILE REQUIRED'
+						: 'GUEST SESSION'
+	);
 </script>
 
 <header
@@ -22,7 +26,7 @@
 	<div class="flex items-center gap-3">
 		{#if config.backHref}
 			<a
-				href={resolve(config.backHref)}
+				href={config.backHref}
 				class="rounded-full p-2 text-outline transition-colors hover:bg-surface-container-low hover:text-primary"
 			>
 				<Icon name="arrow_back" />
@@ -37,10 +41,10 @@
 	</div>
 
 	<div class="flex items-center gap-6">
-		<nav class="hidden md:flex gap-8 text-[12px] font-bold tracking-[0.1em] uppercase">
-			<a href="/admin/moderation" class="text-primary hover:bg-surface-container transition-colors p-1">ENCRYPTED_COMMS</a>
-			<a href="/admin/events" class="text-on-surface hover:bg-surface-container transition-colors p-1">NETWORK_STATUS</a>
-		</nav>
+		<div class="hidden min-w-0 md:block">
+			<div class="font-headline text-[10px] tracking-[0.2em] text-outline uppercase">{status}</div>
+			<div class="truncate font-headline text-sm font-bold uppercase text-on-surface">{codename}</div>
+		</div>
 		<div class="flex items-center gap-2 bg-surface-container px-3 py-1 border border-outline-variant/10">
 			<Icon name="payments" class="text-sm text-primary" />
 			<span class="font-label text-sm font-bold tracking-widest text-primary">45,200G</span>
