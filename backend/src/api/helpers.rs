@@ -308,3 +308,93 @@ pub async fn fetch_current_rating(db: &sqlx::PgPool, user_id: Uuid) -> Result<i6
     .fetch_one(db)
     .await?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use http::HeaderValue;
+    use serde_json::json;
+    use sqlx::postgres::PgPoolOptions;
+
+    fn test_state() -> AppState {
+        AppState {
+            db: PgPoolOptions::new()
+                .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
+                .expect("lazy pool"),
+            admin_secret: "admin-secret".into(),
+            jwt_secret: "jwt-secret".into(),
+            #[cfg(feature = "telegram-auth")]
+            telegram_bot_token: "bot-token".into(),
+            #[cfg(feature = "telegram-auth")]
+            public_webapp_url: "https://example.com".into(),
+        }
+    }
+
+    #[test]
+    fn normalize_profile_data_rejects_non_object() {
+        let error = normalize_profile_data(Some(json!([1, 2, 3]))).expect_err("must fail");
+        assert_eq!(
+            error.to_string(),
+            "bad request: profile data must be a JSON object"
+        );
+    }
+
+    #[test]
+    fn compare_profile_similarity_tracks_matching_keys() {
+        let response = compare_profile_similarity(
+            &json!({ "city": "Kyiv", "course": 3, "track": "backend" }),
+            &json!({ "city": "Kyiv", "course": 4, "squad": "red" }),
+        )
+        .expect("similarity response");
+
+        assert_eq!(response.matching_keys, vec!["city"]);
+        assert_eq!(response.differing_keys, vec!["course"]);
+        assert_eq!(response.left_only_keys, vec!["track"]);
+        assert_eq!(response.right_only_keys, vec!["squad"]);
+        assert!((response.similarity_score - 0.25).abs() < f64::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn bearer_tokens_round_trip_admin_claims() {
+        let state = test_state();
+        let auth_user = AuthUserRecord {
+            auth_user_id: Uuid::now_v7(),
+            user_id: Uuid::now_v7(),
+            login_identifier: {
+                #[cfg(feature = "telegram-auth")]
+                {
+                    "12345".into()
+                }
+                #[cfg(not(feature = "telegram-auth"))]
+                {
+                    "agent@example.com".into()
+                }
+            },
+            password_hash: Some("hash".into()),
+        };
+        let token = create_access_token(&state, &auth_user, true).expect("token");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {token}")).expect("header"),
+        );
+
+        let auth = require_bearer_token(&headers, &state).expect("auth user");
+        assert_eq!(auth.user_id, auth_user.user_id);
+        assert!(auth.is_admin);
+    }
+
+    #[tokio::test]
+    async fn admin_secret_fallback_works_without_bearer_token() {
+        let state = test_state();
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::HeaderName::from_static("x-admin-secret"),
+            HeaderValue::from_static("admin-secret"),
+        );
+
+        let auth = require_admin(&headers, &state).expect("admin auth");
+        assert!(auth.is_admin);
+        assert_eq!(auth.user_id, Uuid::nil());
+    }
+}

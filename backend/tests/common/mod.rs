@@ -365,3 +365,25 @@ pub async fn fetch_user_agent_data(ctx: &TestContext, user_id: &str) -> Value {
         .expect("fetch user agent data")
         .get::<Value, _>(0)
 }
+
+#[cfg(not(feature = "telegram-auth"))]
+pub async fn fetch_latest_audit_actor(ctx: &TestContext, matched_path: &str) -> Option<String> {
+    sqlx::query(
+        r#"
+        select actor_user_id
+        from audit_log
+        where matched_path = $1
+        order by created_at desc, audit_log_id desc
+        limit 1
+        "#,
+    )
+    .bind(matched_path)
+    .fetch_optional(&ctx.db)
+    .await
+    .expect("fetch audit actor")
+    .and_then(|row| {
+        row.try_get::<Option<uuid::Uuid>, _>(0)
+            .expect("audit actor uuid")
+    })
+    .map(|value| value.to_string())
+}

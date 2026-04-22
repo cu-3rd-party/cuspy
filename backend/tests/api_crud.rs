@@ -5,7 +5,9 @@ mod common;
 use axum::http::StatusCode;
 use serde_json::{Value, json};
 
-use common::{TestContext, fetch_user_agent_data, register_user, seed_admin_user};
+use common::{
+    TestContext, fetch_latest_audit_actor, fetch_user_agent_data, register_user, seed_admin_user,
+};
 
 #[tokio::test]
 async fn backend_endpoints_work_end_to_end() {
@@ -40,6 +42,10 @@ async fn backend_endpoints_work_end_to_end() {
         .await;
     assert_eq!(me_status, StatusCode::OK);
     assert_eq!(me_body["user_id"], user["user_id"]);
+    assert_eq!(
+        fetch_latest_audit_actor(&ctx, "/auth/me").await,
+        Some(user_id.clone())
+    );
 
     let (get_user_status, get_user_body) = ctx
         .json(
@@ -359,6 +365,15 @@ async fn backend_endpoints_work_end_to_end() {
         .await;
     assert_eq!(moderate_kill_status, StatusCode::OK);
     assert_eq!(moderate_kill_body["status"], "ADMIN_APPROVED");
+    assert_eq!(
+        fetch_latest_audit_actor(&ctx, "/kills/{kill_id}/moderate").await,
+        Some(
+            moderate_kill_body["moderator_id"]
+                .as_str()
+                .expect("moderator id")
+                .to_string()
+        )
+    );
 
     let (approved_kills_status, approved_kills_body) = ctx
         .json("GET", "/kills", None, Some(&token), None, None)

@@ -46,6 +46,10 @@ async fn audit_request(State(state): State<AppState>, request: Request, next: Ne
     let method = request.method().to_string();
     let uri = request.uri().to_string();
     let headers = request.headers().clone();
+    let actor_user_id = crate::api::helpers::require_bearer_token(&headers, &state)
+        .ok()
+        .map(|auth| auth.user_id)
+        .filter(|user_id| *user_id != Uuid::nil());
     let user_agent = header_to_string(&headers, header::USER_AGENT);
     let forwarded_for =
         header_to_string(&headers, header::HeaderName::from_static("x-forwarded-for"));
@@ -75,6 +79,7 @@ async fn audit_request(State(state): State<AppState>, request: Request, next: Ne
         &state.db,
         AuditLogInsert {
             request_id,
+            actor_user_id,
             method,
             request_uri: uri,
             matched_path,
@@ -100,6 +105,7 @@ fn header_to_string(headers: &HeaderMap, name: header::HeaderName) -> Option<Str
 
 struct AuditLogInsert {
     request_id: Uuid,
+    actor_user_id: Option<Uuid>,
     method: String,
     request_uri: String,
     matched_path: Option<String>,
@@ -114,6 +120,7 @@ async fn persist_audit_log(db: &PgPool, entry: AuditLogInsert) -> Result<(), sql
         insert into audit_log (
             audit_log_id,
             request_id,
+            actor_user_id,
             method,
             request_uri,
             matched_path,
@@ -121,11 +128,12 @@ async fn persist_audit_log(db: &PgPool, entry: AuditLogInsert) -> Result<(), sql
             duration_ms,
             access_context
         )
-        values ($1, $2, $3, $4, $5, $6, $7, $8)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
     )
     .bind(Uuid::now_v7())
     .bind(entry.request_id)
+    .bind(entry.actor_user_id)
     .bind(entry.method)
     .bind(entry.request_uri)
     .bind(entry.matched_path)
