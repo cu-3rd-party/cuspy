@@ -54,10 +54,8 @@ A generalized system for admin-triggered global modifiers:
 ## 3. Authorization
 
 - **JWT-based Authentication**: Use JSON Web Tokens for stateless session management.
-- **Role-Based Access Control (RBAC)**:
-    - `AGENT`: Standard user. Can report kills, confirm their own kills, and view rankings.
-    - `ADMIN`: Full access. Can moderate kill events and manage users.
-- **Middleware**: Implement Axum middleware to verify JWTs and check for required roles on protected endpoints.
+- **Admin Privileges**: Admins possess all `AGENT` capabilities plus full administrative access (moderate kill events, manage users).
+- **Middleware**: Implement Axum middleware to verify JWTs and check for the `is_admin` flag on protected endpoints.
 
 ## 4. CI/CD Configuration (GitHub Actions)
 
@@ -132,4 +130,6 @@ A generalized system for admin-triggered global modifiers:
     - **Target Extension (168h)**: Extend the current target's deadline by one week.
     - **Shadow Strike (24h)**: Ability to kill for 24h if $\le 2$ other people (excluding the agent) are nearby; the victim is notified.
     - **Kill Transfer / Aegis (24h)**: One-time shield for 24h; if killed, the points for the kill are assigned to a random player instead.
+- **Geolocation Sharing**: Ability for agents to voluntarily share their real-time coordinates with all other players.
+- **Location-Based Verification**: Ability for admins to request specific location snapshots from both killer and victim to verify proximity during a reported kill.
 
