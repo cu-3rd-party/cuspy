@@ -1,18 +1,18 @@
-use axum::extract::{Path, State};
-use http::{HeaderMap, StatusCode};
-use uuid::Uuid;
-use axum::Json;
-use serde_json::Value;
+use crate::AppState;
 use crate::api::helpers;
 use crate::api::models::ApiError;
 use crate::api::models::similarity::{SimilarityRequest, SimilarityResponse};
 use crate::api::models::user::{UpdateUserRequest, UserRecord, UserResponse};
-use crate::AppState;
+use axum::Json;
+use axum::extract::{Path, State};
+use http::{HeaderMap, StatusCode};
+use serde_json::Value;
+use uuid::Uuid;
 
 pub async fn fetch_user(state: &AppState, user_id: Uuid) -> Result<UserRecord, ApiError> {
     sqlx::query_as::<_, UserRecord>(
         r#"
-        select user_id, telegram_id, rating, agent_name, agent_data, created_at, updated_at
+        select user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         from "user"
         where user_id = $1
         "#,
@@ -23,12 +23,16 @@ pub async fn fetch_user(state: &AppState, user_id: Uuid) -> Result<UserRecord, A
     .ok_or(ApiError::NotFound)
 }
 
-pub async fn me(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<UserResponse>, ApiError> {
+pub async fn me(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<UserResponse>, ApiError> {
     #[cfg(feature = "telegram-auth")]
     helpers::verify_telegram_init_data(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
     let user = fetch_user(&state, auth.user_id).await?;
-    Ok(Json(helpers::to_user_response(user)))
+    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+    Ok(Json(helpers::to_user_response(user, rating)))
 }
 
 pub async fn get_user(
@@ -41,7 +45,8 @@ pub async fn get_user(
     let auth = helpers::require_bearer_token(&headers, &state)?;
     helpers::ensure_owner(&auth, user_id)?;
     let user = fetch_user(&state, user_id).await?;
-    Ok(Json(helpers::to_user_response(user)))
+    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+    Ok(Json(helpers::to_user_response(user, rating)))
 }
 
 pub async fn update_user(
@@ -65,23 +70,41 @@ pub async fn update_user(
         update "user"
         set
             telegram_id = coalesce($2, telegram_id),
-            rating = coalesce($3, rating),
-            agent_name = coalesce($4, agent_name),
-            agent_data = coalesce($5, agent_data)
+            agent_name = coalesce($3, agent_name),
+            agent_data = coalesce($4, agent_data)
         where user_id = $1
-        returning user_id, telegram_id, rating, agent_name, agent_data, created_at, updated_at
+        returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         "#,
     )
     .bind(user_id)
     .bind(payload.telegram_id)
-    .bind(payload.rating)
     .bind(payload.agent_name)
     .bind(agent_data)
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(helpers::to_user_response(user)))
+    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+    Ok(Json(helpers::to_user_response(user, rating)))
+}
+
+pub async fn update_me(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<UpdateUserRequest>,
+) -> Result<Json<UserResponse>, ApiError> {
+    let auth = helpers::require_bearer_token(&headers, &state)?;
+
+    update_user(
+        State(state),
+        headers,
+        Path(auth.user_id),
+        Json(UpdateUserRequest {
+            is_admin: None,
+            ..payload
+        }),
+    )
+    .await
 }
 
 pub async fn delete_user(
@@ -117,16 +140,18 @@ pub async fn compare_user_profiles(
     helpers::ensure_owner(&auth, left_user_id)?;
     helpers::ensure_owner(&auth, right_user_id)?;
 
-    let left = sqlx::query_scalar::<_, Value>(r#"select agent_data from "user" where user_id = $1"#)
-        .bind(left_user_id)
-        .fetch_optional(&state.db)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    let right = sqlx::query_scalar::<_, Value>(r#"select agent_data from "user" where user_id = $1"#)
-        .bind(right_user_id)
-        .fetch_optional(&state.db)
-        .await?
-        .ok_or(ApiError::NotFound)?;
+    let left =
+        sqlx::query_scalar::<_, Value>(r#"select agent_data from "user" where user_id = $1"#)
+            .bind(left_user_id)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or(ApiError::NotFound)?;
+    let right =
+        sqlx::query_scalar::<_, Value>(r#"select agent_data from "user" where user_id = $1"#)
+            .bind(right_user_id)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or(ApiError::NotFound)?;
 
     Ok(Json(helpers::compare_profile_similarity(&left, &right)?))
 }
@@ -139,5 +164,8 @@ pub async fn compare_profiles(
     #[cfg(feature = "telegram-auth")]
     helpers::verify_telegram_init_data(&headers, &state)?;
     let _auth = helpers::require_bearer_token(&headers, &state)?;
-    Ok(Json(helpers::compare_profile_similarity(&payload.left, &payload.right)?))
+    Ok(Json(helpers::compare_profile_similarity(
+        &payload.left,
+        &payload.right,
+    )?))
 }

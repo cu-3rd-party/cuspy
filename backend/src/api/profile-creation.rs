@@ -1,11 +1,14 @@
-use axum::extract::{Path, State};
-use http::{HeaderMap, StatusCode};
-use axum::Json;
-use uuid::Uuid;
+use crate::AppState;
 use crate::api::helpers;
 use crate::api::models::ApiError;
-use crate::api::models::profile::{CreateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse, UpdateProfileCreationRequest};
-use crate::AppState;
+use crate::api::models::profile::{
+    CreateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse,
+    UpdateProfileCreationRequest,
+};
+use axum::Json;
+use axum::extract::{Path, State};
+use http::{HeaderMap, StatusCode};
+use uuid::Uuid;
 
 pub async fn list_profile_creation_requests(
     State(state): State<AppState>,
@@ -50,7 +53,8 @@ pub async fn create_profile_creation_request(
     #[cfg(feature = "telegram-auth")]
     helpers::verify_telegram_init_data(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let requested_profile_data = helpers::normalize_profile_data(Some(payload.requested_profile_data))?;
+    let requested_profile_data =
+        helpers::normalize_profile_data(Some(payload.requested_profile_data))?;
     let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
         r#"
         insert into profile_creation_request (
@@ -196,10 +200,11 @@ pub async fn delete_profile_creation_request(
     .ok_or(ApiError::NotFound)?;
     helpers::ensure_owner(&auth, owner_user_id)?;
 
-    let result = sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
-        .bind(request_id)
-        .execute(&state.db)
-        .await?;
+    let result =
+        sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
+            .bind(request_id)
+            .execute(&state.db)
+            .await?;
 
     if result.rows_affected() == 0 {
         return Err(ApiError::NotFound);

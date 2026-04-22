@@ -1,12 +1,14 @@
+use crate::AppState;
+use crate::api::models::ApiError;
+use crate::api::models::profile::{
+    AdminUpdateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse,
+};
+use crate::api::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
+use crate::api::{helpers, user};
+use axum::Json;
 use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
-use axum::Json;
-use crate::api::{helpers, user};
-use crate::api::models::ApiError;
-use crate::api::models::profile::{AdminUpdateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse};
-use crate::api::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
-use crate::AppState;
 
 pub async fn admin_list_users(
     State(state): State<AppState>,
@@ -15,14 +17,21 @@ pub async fn admin_list_users(
     helpers::require_admin(&headers, &state)?;
     let users = sqlx::query_as::<_, UserRecord>(
         r#"
-        select user_id, telegram_id, rating, agent_name, agent_data, created_at, updated_at
+        select user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         from "user"
         order by created_at desc
         "#,
     )
     .fetch_all(&state.db)
     .await?;
-    Ok(Json(users.into_iter().map(helpers::to_user_response).collect()))
+
+    let mut responses = Vec::with_capacity(users.len());
+    for user in users {
+        let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+        responses.push(helpers::to_user_response(user, rating));
+    }
+
+    Ok(Json(responses))
 }
 
 pub async fn admin_create_user(
@@ -34,20 +43,24 @@ pub async fn admin_create_user(
     let agent_data = helpers::normalize_profile_data(payload.agent_data)?;
     let user = sqlx::query_as::<_, UserRecord>(
         r#"
-        insert into "user" (user_id, telegram_id, rating, agent_name, agent_data)
+        insert into "user" (user_id, telegram_id, agent_name, agent_data, is_admin)
         values ($1, $2, $3, $4, $5)
-        returning user_id, telegram_id, rating, agent_name, agent_data, created_at, updated_at
+        returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         "#,
     )
     .bind(Uuid::now_v7())
     .bind(payload.telegram_id)
-    .bind(payload.rating)
     .bind(payload.agent_name)
     .bind(agent_data)
+    .bind(payload.is_admin.unwrap_or(false))
     .fetch_one(&state.db)
     .await?;
 
-    Ok((StatusCode::CREATED, Json(helpers::to_user_response(user))))
+    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+    Ok((
+        StatusCode::CREATED,
+        Json(helpers::to_user_response(user, rating)),
+    ))
 }
 
 pub async fn admin_get_user(
@@ -57,7 +70,8 @@ pub async fn admin_get_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     helpers::require_admin(&headers, &state)?;
     let user = user::fetch_user(&state, user_id).await?;
-    Ok(Json(helpers::to_user_response(user)))
+    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+    Ok(Json(helpers::to_user_response(user, rating)))
 }
 
 pub async fn admin_update_user(
@@ -77,23 +91,24 @@ pub async fn admin_update_user(
         update "user"
         set
             telegram_id = coalesce($2, telegram_id),
-            rating = coalesce($3, rating),
-            agent_name = coalesce($4, agent_name),
-            agent_data = coalesce($5, agent_data)
+            agent_name = coalesce($3, agent_name),
+            agent_data = coalesce($4, agent_data),
+            is_admin = coalesce($5, is_admin)
         where user_id = $1
-        returning user_id, telegram_id, rating, agent_name, agent_data, created_at, updated_at
+        returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         "#,
     )
     .bind(user_id)
     .bind(payload.telegram_id)
-    .bind(payload.rating)
     .bind(payload.agent_name)
     .bind(agent_data)
+    .bind(payload.is_admin)
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(helpers::to_user_response(user)))
+    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
+    Ok(Json(helpers::to_user_response(user, rating)))
 }
 
 pub async fn admin_delete_user(
@@ -187,10 +202,10 @@ pub async fn admin_update_profile_creation_request(
         None => None,
     };
 
-    if let Some(status) = payload.status.as_deref() {
-        if !matches!(status, "sent" | "confirmed" | "rejected") {
-            return Err(ApiError::BadRequest("invalid status".into()));
-        }
+    if let Some(status) = payload.status.as_deref()
+        && !matches!(status, "sent" | "confirmed" | "rejected")
+    {
+        return Err(ApiError::BadRequest("invalid status".into()));
     }
 
     let reviewed_at = payload
@@ -254,10 +269,11 @@ pub async fn admin_delete_profile_creation_request(
     Path(request_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     helpers::require_admin(&headers, &state)?;
-    let result = sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
-        .bind(request_id)
-        .execute(&state.db)
-        .await?;
+    let result =
+        sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
+            .bind(request_id)
+            .execute(&state.db)
+            .await?;
 
     if result.rows_affected() == 0 {
         return Err(ApiError::NotFound);

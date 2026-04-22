@@ -7,11 +7,14 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header},
 };
+#[cfg(not(feature = "telegram-auth"))]
+use cukiller_backend::api::helpers;
 use cukiller_backend::{AppState, build_app};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
-use sqlx::postgres::PgPoolOptions;
+#[cfg(not(feature = "telegram-auth"))]
 use sqlx::Row;
+use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 
 pub const ADMIN_SECRET: &str = "test-admin-secret";
@@ -21,7 +24,9 @@ pub const TELEGRAM_BOT_TOKEN: &str = "test-bot-token";
 
 pub struct TestContext {
     pub app: Router,
+    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
     pub db: sqlx::PgPool,
+    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
     pub admin_secret: String,
     db_name: String,
     docker_container_name: Option<String>,
@@ -31,50 +36,59 @@ pub struct TestContext {
 impl TestContext {
     pub async fn new() -> Self {
         let mut docker_container_name = None;
-        let admin_database_url = match std::env::var("TEST_DATABASE_URL").or_else(|_| std::env::var("DATABASE_URL")) {
-            Ok(url) => url,
-            Err(_) => {
-                let suffix = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("system time")
-                    .as_nanos();
-                let container_name = format!("cukiller-backend-test-pg-{suffix}");
-                let output = Command::new("docker")
-                    .args([
-                        "run",
-                        "--rm",
-                        "-d",
-                        "--name",
-                        &container_name,
-                        "-e",
-                        "POSTGRES_DB=postgres",
-                        "-e",
-                        "POSTGRES_USER=postgres",
-                        "-e",
-                        "POSTGRES_PASSWORD=postgres",
-                        "-P",
-                        "postgres:18beta2",
-                    ])
-                    .output()
-                    .expect("start temporary postgres container");
-                assert!(output.status.success(), "docker run failed: {}", String::from_utf8_lossy(&output.stderr));
+        let admin_database_url =
+            match std::env::var("TEST_DATABASE_URL").or_else(|_| std::env::var("DATABASE_URL")) {
+                Ok(url) => url,
+                Err(_) => {
+                    let suffix = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("system time")
+                        .as_nanos();
+                    let container_name = format!("cukiller-backend-test-pg-{suffix}");
+                    let output = Command::new("docker")
+                        .args([
+                            "run",
+                            "--rm",
+                            "-d",
+                            "--name",
+                            &container_name,
+                            "-e",
+                            "POSTGRES_DB=postgres",
+                            "-e",
+                            "POSTGRES_USER=postgres",
+                            "-e",
+                            "POSTGRES_PASSWORD=postgres",
+                            "-P",
+                            "postgres:18beta2",
+                        ])
+                        .output()
+                        .expect("start temporary postgres container");
+                    assert!(
+                        output.status.success(),
+                        "docker run failed: {}",
+                        String::from_utf8_lossy(&output.stderr)
+                    );
 
-                let port_output = Command::new("docker")
-                    .args(["port", &container_name, "5432/tcp"])
-                    .output()
-                    .expect("inspect postgres port");
-                assert!(port_output.status.success(), "docker port failed: {}", String::from_utf8_lossy(&port_output.stderr));
-                let port_mapping = String::from_utf8(port_output.stdout).expect("port utf8");
-                let host_port = port_mapping
-                    .trim()
-                    .rsplit(':')
-                    .next()
-                    .expect("extract host port");
+                    let port_output = Command::new("docker")
+                        .args(["port", &container_name, "5432/tcp"])
+                        .output()
+                        .expect("inspect postgres port");
+                    assert!(
+                        port_output.status.success(),
+                        "docker port failed: {}",
+                        String::from_utf8_lossy(&port_output.stderr)
+                    );
+                    let port_mapping = String::from_utf8(port_output.stdout).expect("port utf8");
+                    let host_port = port_mapping
+                        .trim()
+                        .rsplit(':')
+                        .next()
+                        .expect("extract host port");
 
-                docker_container_name = Some(container_name);
-                format!("postgres://postgres:postgres@127.0.0.1:{host_port}/postgres")
-            }
-        };
+                    docker_container_name = Some(container_name);
+                    format!("postgres://postgres:postgres@127.0.0.1:{host_port}/postgres")
+                }
+            };
 
         let mut admin_pool = None;
         for _ in 0..30 {
@@ -169,7 +183,12 @@ impl TestContext {
             })
             .expect("build request");
 
-        let response = self.app.clone().oneshot(request).await.expect("router response");
+        let response = self
+            .app
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("router response");
         let status = response.status();
         let content_type = response
             .headers()
@@ -184,7 +203,8 @@ impl TestContext {
             .to_bytes();
         let json = if bytes.is_empty() {
             Value::Null
-        } else if matches!(content_type.as_deref(), Some(value) if value.starts_with("application/json")) {
+        } else if matches!(content_type.as_deref(), Some(value) if value.starts_with("application/json"))
+        {
             serde_json::from_slice(&bytes).expect("parse json body")
         } else {
             Value::String(String::from_utf8(bytes.to_vec()).expect("utf8 body"))
@@ -264,6 +284,76 @@ pub async fn register_user(
     assert_eq!(status, StatusCode::CREATED);
     let token = body["access_token"].as_str().expect("token").to_string();
     (token, body["user"].clone())
+}
+
+#[cfg(not(feature = "telegram-auth"))]
+pub async fn seed_admin_user(
+    ctx: &TestContext,
+    email: &str,
+    telegram_id: i64,
+    agent_name: &str,
+) -> String {
+    let user_id = uuid::Uuid::now_v7();
+    sqlx::query(
+        r#"
+        insert into "user" (user_id, telegram_id, agent_name, agent_data, is_admin)
+        values ($1, $2, $3, $4, true)
+        "#,
+    )
+    .bind(user_id)
+    .bind(telegram_id)
+    .bind(agent_name)
+    .bind(json!({"track": "admin"}))
+    .execute(&ctx.db)
+    .await
+    .expect("insert admin user");
+
+    sqlx::query(
+        r#"
+        insert into rating_history (rating_history_id, user_id, rating, change, reason)
+        values ($1, $2, $3, $4, $5)
+        "#,
+    )
+    .bind(uuid::Uuid::now_v7())
+    .bind(user_id)
+    .bind(helpers::DEFAULT_RATING)
+    .bind(helpers::DEFAULT_RATING)
+    .bind("initial_rating")
+    .execute(&ctx.db)
+    .await
+    .expect("insert admin rating history");
+
+    sqlx::query(
+        r#"
+        insert into auth_user (auth_user_id, user_id, login_identifier, password_hash)
+        values ($1, $2, $3, $4)
+        "#,
+    )
+    .bind(uuid::Uuid::now_v7())
+    .bind(user_id)
+    .bind(email)
+    .bind(Some(
+        helpers::hash_password("password123").expect("hash password"),
+    ))
+    .execute(&ctx.db)
+    .await
+    .expect("insert admin auth user");
+
+    let (status, body) = ctx
+        .json(
+            "POST",
+            "/auth/login",
+            Some(json!({ "email": email, "password": "password123" })),
+            None,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    body["access_token"]
+        .as_str()
+        .expect("admin token")
+        .to_string()
 }
 
 #[cfg(not(feature = "telegram-auth"))]

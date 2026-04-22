@@ -1,23 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::AppState;
 use crate::api::r#const::{AUTH_HEADER_PREFIX, USER_TOKEN_TTL};
-use http::{header, HeaderMap};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use uuid::Uuid;
-use serde_json::{json, Value};
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use argon2::password_hash::SaltString;
-use argon2::password_hash::rand_core::OsRng;
-#[cfg(feature = "telegram-auth")]
-use hmac::Hmac;
-#[cfg(feature = "telegram-auth")]
-use hmac::Mac;
-#[cfg(feature = "telegram-auth")]
-use hmac::digest::Digest;
-#[cfg(feature = "telegram-auth")]
-use sha2::Sha256;
-#[cfg(feature = "telegram-auth")]
-use url::form_urlencoded;
 use crate::api::models::ApiError;
 use crate::api::models::auth::{AuthClaims, AuthUserRecord, AuthenticatedUser};
 #[cfg(feature = "telegram-auth")]
@@ -25,19 +9,38 @@ use crate::api::models::auth::{TelegramInitData, TelegramUser};
 use crate::api::models::profile::{ProfileCreationRequestRecord, ProfileCreationRequestResponse};
 use crate::api::models::similarity::SimilarityResponse;
 use crate::api::models::user::{UserRecord, UserResponse};
-use crate::AppState;
+use argon2::password_hash::SaltString;
+use argon2::password_hash::rand_core::OsRng;
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+#[cfg(feature = "telegram-auth")]
+use hmac::Hmac;
+#[cfg(feature = "telegram-auth")]
+use hmac::Mac;
+#[cfg(feature = "telegram-auth")]
+use hmac::digest::Digest;
+use http::{HeaderMap, header};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde_json::{Value, json};
+#[cfg(feature = "telegram-auth")]
+use sha2::Sha256;
+#[cfg(feature = "telegram-auth")]
+use url::form_urlencoded;
+use uuid::Uuid;
+
+pub const DEFAULT_RATING: i64 = 1000;
 
 fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
 }
 
-pub fn to_user_response(record: UserRecord) -> UserResponse {
+pub fn to_user_response(record: UserRecord, rating: i64) -> UserResponse {
     UserResponse {
         user_id: record.user_id,
         telegram_id: record.telegram_id,
-        rating: record.rating,
         agent_name: record.agent_name,
         agent_data: record.agent_data,
+        is_admin: record.is_admin,
+        rating,
         created_at: format_timestamp(record.created_at),
         updated_at: record.updated_at.map(format_timestamp),
     }
@@ -58,24 +61,35 @@ pub fn to_profile_creation_request_response(
     }
 }
 
-pub fn require_admin(headers: &HeaderMap, state: &AppState) -> Result<(), ApiError> {
-    let Some(value) = headers.get(header::HeaderName::from_static("x-admin-secret")) else {
-        return Err(ApiError::Unauthorized);
-    };
+pub fn require_admin(headers: &HeaderMap, state: &AppState) -> Result<AuthenticatedUser, ApiError> {
+    if let Ok(auth) = require_bearer_token(headers, state) {
+        if auth.is_admin {
+            return Ok(auth);
+        }
 
-    let Ok(secret) = value.to_str() else {
-        return Err(ApiError::Unauthorized);
-    };
-
-    if secret != state.admin_secret {
-        return Err(ApiError::Unauthorized);
+        return Err(ApiError::Forbidden);
     }
 
-    Ok(())
+    if let Some(value) = headers.get(header::HeaderName::from_static("x-admin-secret")) {
+        let secret = value.to_str().map_err(|_| ApiError::Unauthorized)?;
+        if secret == state.admin_secret {
+            return Ok(AuthenticatedUser {
+                user_id: Uuid::nil(),
+                is_admin: true,
+                #[cfg(feature = "telegram-auth")]
+                telegram_user_id: 0,
+            });
+        }
+    }
+
+    Err(ApiError::Unauthorized)
 }
 
 #[cfg(feature = "telegram-auth")]
-pub fn verify_telegram_init_data(headers: &HeaderMap, state: &AppState) -> Result<TelegramInitData, ApiError> {
+pub fn verify_telegram_init_data(
+    headers: &HeaderMap,
+    state: &AppState,
+) -> Result<TelegramInitData, ApiError> {
     type HmacSha256 = Hmac<Sha256>;
 
     let Some(value) = headers.get(header::HeaderName::from_static("x-telegram-init-data")) else {
@@ -101,7 +115,8 @@ pub fn verify_telegram_init_data(headers: &HeaderMap, state: &AppState) -> Resul
     data_pairs.sort();
     let data_check_string = data_pairs.join("\n");
     let secret = Sha256::digest(state.telegram_bot_token.as_bytes());
-    let mut mac = HmacSha256::new_from_slice(secret.as_slice()).map_err(|_| ApiError::Unauthorized)?;
+    let mut mac =
+        HmacSha256::new_from_slice(secret.as_slice()).map_err(|_| ApiError::Unauthorized)?;
     mac.update(data_check_string.as_bytes());
     let expected_hash = hex::encode(mac.finalize().into_bytes());
 
@@ -111,8 +126,8 @@ pub fn verify_telegram_init_data(headers: &HeaderMap, state: &AppState) -> Resul
     }
 
     let user_json = user_json.ok_or(ApiError::Unauthorized)?;
-    let telegram_user: TelegramUser = serde_json::from_str(&user_json)
-        .map_err(|_| ApiError::Unauthorized)?;
+    let telegram_user: TelegramUser =
+        serde_json::from_str(&user_json).map_err(|_| ApiError::Unauthorized)?;
 
     Ok(TelegramInitData {
         telegram_user_id: telegram_user.id,
@@ -125,7 +140,10 @@ fn verify_telegram_init_data(_headers: &HeaderMap, _state: &AppState) -> Result<
     Ok(())
 }
 
-pub fn require_bearer_token(headers: &HeaderMap, state: &AppState) -> Result<AuthenticatedUser, ApiError> {
+pub fn require_bearer_token(
+    headers: &HeaderMap,
+    state: &AppState,
+) -> Result<AuthenticatedUser, ApiError> {
     let Some(value) = headers.get(header::AUTHORIZATION) else {
         return Err(ApiError::Unauthorized);
     };
@@ -144,8 +162,13 @@ pub fn require_bearer_token(headers: &HeaderMap, state: &AppState) -> Result<Aut
 
     Ok(AuthenticatedUser {
         user_id: decoded.claims.user_id,
+        is_admin: decoded.claims.is_admin,
         #[cfg(feature = "telegram-auth")]
-        telegram_user_id: decoded.claims.sub.parse().map_err(|_| ApiError::Unauthorized)?,
+        telegram_user_id: decoded
+            .claims
+            .sub
+            .parse()
+            .map_err(|_| ApiError::Unauthorized)?,
     })
 }
 
@@ -161,16 +184,25 @@ pub fn normalize_profile_data(value: Option<Value>) -> Result<Value, ApiError> {
     match value {
         None => Ok(json!({})),
         Some(Value::Object(map)) => Ok(Value::Object(map)),
-        Some(_) => Err(ApiError::BadRequest("profile data must be a JSON object".into())),
+        Some(_) => Err(ApiError::BadRequest(
+            "profile data must be a JSON object".into(),
+        )),
     }
 }
 
-pub fn compare_profile_similarity(left: &Value, right: &Value) -> Result<SimilarityResponse, ApiError> {
+pub fn compare_profile_similarity(
+    left: &Value,
+    right: &Value,
+) -> Result<SimilarityResponse, ApiError> {
     let Value::Object(left_map) = left else {
-        return Err(ApiError::BadRequest("left profile must be a JSON object".into()));
+        return Err(ApiError::BadRequest(
+            "left profile must be a JSON object".into(),
+        ));
     };
     let Value::Object(right_map) = right else {
-        return Err(ApiError::BadRequest("right profile must be a JSON object".into()));
+        return Err(ApiError::BadRequest(
+            "right profile must be a JSON object".into(),
+        ));
     };
 
     let mut matching_keys = Vec::new();
@@ -197,7 +229,8 @@ pub fn compare_profile_similarity(left: &Value, right: &Value) -> Result<Similar
     left_only_keys.sort();
     right_only_keys.sort();
 
-    let union_count = matching_keys.len() + differing_keys.len() + left_only_keys.len() + right_only_keys.len();
+    let union_count =
+        matching_keys.len() + differing_keys.len() + left_only_keys.len() + right_only_keys.len();
     let similarity_score = if union_count == 0 {
         1.0
     } else {
@@ -230,7 +263,11 @@ pub fn verify_password(hash: &str, password: &str) -> Result<(), ApiError> {
         .map_err(|_| ApiError::Unauthorized)
 }
 
-pub fn create_access_token(state: &AppState, auth_user: &AuthUserRecord) -> Result<String, ApiError> {
+pub fn create_access_token(
+    state: &AppState,
+    auth_user: &AuthUserRecord,
+    is_admin: bool,
+) -> Result<String, ApiError> {
     let exp = SystemTime::now()
         .checked_add(USER_TOKEN_TTL)
         .ok_or(ApiError::Token)?
@@ -242,6 +279,7 @@ pub fn create_access_token(state: &AppState, auth_user: &AuthUserRecord) -> Resu
         sub: auth_user.login_identifier.clone(),
         user_id: auth_user.user_id,
         auth_user_id: auth_user.auth_user_id,
+        is_admin,
         exp,
     };
 
@@ -251,4 +289,22 @@ pub fn create_access_token(state: &AppState, auth_user: &AuthUserRecord) -> Resu
         &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
     )
     .map_err(|_| ApiError::Token)
+}
+
+pub async fn fetch_current_rating(db: &sqlx::PgPool, user_id: Uuid) -> Result<i64, ApiError> {
+    Ok(sqlx::query_scalar::<_, i64>(
+        r#"
+        select coalesce((
+            select rating
+            from rating_history
+            where user_id = $1
+            order by created_at desc, rating_history_id desc
+            limit 1
+        ), $2)
+        "#,
+    )
+    .bind(user_id)
+    .bind(DEFAULT_RATING)
+    .fetch_one(db)
+    .await?)
 }

@@ -5,7 +5,7 @@ mod common;
 use axum::http::StatusCode;
 use serde_json::{Value, json};
 
-use common::{TestContext, fetch_user_agent_data, register_user};
+use common::{TestContext, fetch_user_agent_data, register_user, seed_admin_user};
 
 #[tokio::test]
 async fn backend_endpoints_work_end_to_end() {
@@ -35,22 +35,31 @@ async fn backend_endpoints_work_end_to_end() {
     assert_eq!(login_status, StatusCode::OK);
     assert!(login_body["access_token"].as_str().is_some());
 
-    let (me_status, me_body) = ctx.json("GET", "/auth/me", None, Some(&token), None, None).await;
+    let (me_status, me_body) = ctx
+        .json("GET", "/auth/me", None, Some(&token), None, None)
+        .await;
     assert_eq!(me_status, StatusCode::OK);
     assert_eq!(me_body["user_id"], user["user_id"]);
 
     let (get_user_status, get_user_body) = ctx
-        .json("GET", &format!("/users/{user_id}"), None, Some(&token), None, None)
+        .json(
+            "GET",
+            &format!("/users/{user_id}"),
+            None,
+            Some(&token),
+            None,
+            None,
+        )
         .await;
     assert_eq!(get_user_status, StatusCode::OK);
     assert_eq!(get_user_body["agent_name"], "Alpha");
+    assert_eq!(get_user_body["rating"], 1000);
 
     let (update_user_status, update_user_body) = ctx
         .json(
             "PATCH",
             &format!("/users/{user_id}"),
             Some(json!({
-                "rating": 99,
                 "agent_name": "Alpha Prime",
                 "agent_data": { "track": "backend", "city": "Lviv", "course": 3 }
             })),
@@ -60,7 +69,23 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(update_user_status, StatusCode::OK);
-    assert_eq!(update_user_body["rating"], 99);
+    assert_eq!(update_user_body["rating"], 1000);
+
+    let (put_me_status, put_me_body) = ctx
+        .json(
+            "PUT",
+            "/user/me",
+            Some(json!({
+                "agent_name": "Alpha Operative",
+                "agent_data": { "track": "backend", "city": "Lviv", "course": 4 }
+            })),
+            Some(&token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(put_me_status, StatusCode::OK);
+    assert_eq!(put_me_body["agent_name"], "Alpha Operative");
 
     let (compare_status, compare_body) = ctx
         .json(
@@ -110,7 +135,14 @@ async fn backend_endpoints_work_end_to_end() {
         .to_string();
 
     let (list_requests_status, list_requests_body) = ctx
-        .json("GET", "/profile-creation-requests", None, Some(&token), None, None)
+        .json(
+            "GET",
+            "/profile-creation-requests",
+            None,
+            Some(&token),
+            None,
+            None,
+        )
         .await;
     assert_eq!(list_requests_status, StatusCode::OK);
     assert_eq!(list_requests_body.as_array().expect("array").len(), 1);
@@ -141,10 +173,20 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(update_request_status, StatusCode::OK);
-    assert_eq!(update_request_body["requested_profile_data"]["city"], "Kharkiv");
+    assert_eq!(
+        update_request_body["requested_profile_data"]["city"],
+        "Kharkiv"
+    );
 
     let (admin_list_users_status, admin_list_users_body) = ctx
-        .json("GET", "/admin/users", None, None, Some(&ctx.admin_secret), None)
+        .json(
+            "GET",
+            "/admin/users",
+            None,
+            None,
+            Some(&ctx.admin_secret),
+            None,
+        )
         .await;
     assert_eq!(admin_list_users_status, StatusCode::OK);
     assert_eq!(admin_list_users_body.as_array().expect("array").len(), 1);
@@ -155,9 +197,9 @@ async fn backend_endpoints_work_end_to_end() {
             "/admin/users",
             Some(json!({
                 "telegram_id": 2002,
-                "rating": 10,
                 "agent_name": "Bravo",
-                "agent_data": { "track": "frontend" }
+                "agent_data": { "track": "frontend" },
+                "is_admin": true
             })),
             None,
             Some(&ctx.admin_secret),
@@ -165,7 +207,10 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(admin_create_user_status, StatusCode::CREATED);
-    let admin_created_user_id = admin_create_user_body["user_id"].as_str().expect("admin user id").to_string();
+    let admin_created_user_id = admin_create_user_body["user_id"]
+        .as_str()
+        .expect("admin user id")
+        .to_string();
 
     let (admin_get_user_status, _) = ctx
         .json(
@@ -183,14 +228,15 @@ async fn backend_endpoints_work_end_to_end() {
         .json(
             "PATCH",
             &format!("/admin/users/{admin_created_user_id}"),
-            Some(json!({ "rating": 77 })),
+            Some(json!({ "agent_name": "Bravo Lead", "is_admin": false })),
             None,
             Some(&ctx.admin_secret),
             None,
         )
         .await;
     assert_eq!(admin_update_user_status, StatusCode::OK);
-    assert_eq!(admin_update_user_body["rating"], 77);
+    assert_eq!(admin_update_user_body["rating"], 1000);
+    assert_eq!(admin_update_user_body["is_admin"], false);
 
     let (admin_list_requests_status, admin_list_requests_body) = ctx
         .json(
@@ -236,8 +282,111 @@ async fn backend_endpoints_work_end_to_end() {
     let updated_agent_data = fetch_user_agent_data(&ctx, &user_id).await;
     assert_eq!(updated_agent_data["city"], "Kharkiv");
 
-    let (other_token, other_user) = register_user(&ctx, "other@example.com", 3003, "Other", None).await;
+    let (other_token, other_user) =
+        register_user(&ctx, "other@example.com", 3003, "Other", None).await;
     let other_user_id = other_user["user_id"].as_str().expect("other user id");
+    let admin_token = seed_admin_user(&ctx, "admin@example.com", 4004, "Control").await;
+
+    let (pending_kills_status, pending_kills_body) = ctx
+        .json(
+            "GET",
+            "/kills/my-pending",
+            None,
+            Some(&other_token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(pending_kills_status, StatusCode::OK);
+    assert_eq!(pending_kills_body.as_array().expect("array").len(), 0);
+
+    let (report_kill_status, report_kill_body) = ctx
+        .json(
+            "POST",
+            "/kills",
+            Some(json!({
+                "victim_id": other_user_id,
+                "evidence_url": "https://example.com/evidence",
+                "details": { "location": "library", "witnesses": 1 }
+            })),
+            Some(&token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(report_kill_status, StatusCode::CREATED);
+    assert_eq!(report_kill_body["status"], "REPORTED");
+    let kill_id = report_kill_body["kill_event_id"]
+        .as_str()
+        .expect("kill id")
+        .to_string();
+
+    let (victim_pending_status, victim_pending_body) = ctx
+        .json(
+            "GET",
+            "/kills/my-pending",
+            None,
+            Some(&other_token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(victim_pending_status, StatusCode::OK);
+    assert_eq!(victim_pending_body.as_array().expect("array").len(), 1);
+
+    let (confirm_kill_status, confirm_kill_body) = ctx
+        .json(
+            "POST",
+            &format!("/kills/{kill_id}/confirm"),
+            Some(json!({ "confirmed": true })),
+            Some(&other_token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(confirm_kill_status, StatusCode::OK);
+    assert_eq!(confirm_kill_body["status"], "VICTIM_CONFIRMED");
+
+    let (moderate_kill_status, moderate_kill_body) = ctx
+        .json(
+            "POST",
+            &format!("/kills/{kill_id}/moderate"),
+            Some(json!({ "action": "APPROVE", "reason": "verified" })),
+            Some(&admin_token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(moderate_kill_status, StatusCode::OK);
+    assert_eq!(moderate_kill_body["status"], "ADMIN_APPROVED");
+
+    let (approved_kills_status, approved_kills_body) = ctx
+        .json("GET", "/kills", None, Some(&token), None, None)
+        .await;
+    assert_eq!(approved_kills_status, StatusCode::OK);
+    assert_eq!(approved_kills_body.as_array().expect("array").len(), 1);
+
+    let (rankings_status, rankings_body) = ctx
+        .json("GET", "/rankings", None, Some(&token), None, None)
+        .await;
+    assert_eq!(rankings_status, StatusCode::OK);
+    let rankings = rankings_body.as_array().expect("rankings array");
+    assert_eq!(rankings[0]["user_id"], user_id);
+    assert_eq!(rankings[0]["rating"], 1025);
+
+    let (stats_status, stats_body) = ctx
+        .json(
+            "GET",
+            &format!("/stats/user/{user_id}"),
+            None,
+            Some(&token),
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(stats_status, StatusCode::OK);
+    assert_eq!(stats_body["approved_kills"], 1);
+    assert_eq!(stats_body["rating"], 1025);
 
     let (forbidden_user_status, _) = ctx
         .json(
@@ -288,7 +437,14 @@ async fn backend_endpoints_work_end_to_end() {
     assert_eq!(admin_delete_other_status, StatusCode::NO_CONTENT);
 
     let (delete_user_status, _) = ctx
-        .json("DELETE", &format!("/users/{other_user_id}"), None, Some(&other_token), None, None)
+        .json(
+            "DELETE",
+            &format!("/users/{other_user_id}"),
+            None,
+            Some(&other_token),
+            None,
+            None,
+        )
         .await;
     assert_eq!(delete_user_status, StatusCode::NO_CONTENT);
 }

@@ -47,7 +47,8 @@ async fn audit_request(State(state): State<AppState>, request: Request, next: Ne
     let uri = request.uri().to_string();
     let headers = request.headers().clone();
     let user_agent = header_to_string(&headers, header::USER_AGENT);
-    let forwarded_for = header_to_string(&headers, header::HeaderName::from_static("x-forwarded-for"));
+    let forwarded_for =
+        header_to_string(&headers, header::HeaderName::from_static("x-forwarded-for"));
     let real_ip = header_to_string(&headers, header::HeaderName::from_static("x-real-ip"));
     let referer = header_to_string(&headers, header::REFERER);
     let origin = header_to_string(&headers, header::ORIGIN);
@@ -72,13 +73,15 @@ async fn audit_request(State(state): State<AppState>, request: Request, next: Ne
 
     if let Err(error) = persist_audit_log(
         &state.db,
-        request_id,
-        method,
-        uri,
-        matched_path,
-        status,
-        elapsed_ms,
-        access_context,
+        AuditLogInsert {
+            request_id,
+            method,
+            request_uri: uri,
+            matched_path,
+            status,
+            duration_ms: elapsed_ms,
+            access_context,
+        },
     )
     .await
     {
@@ -95,8 +98,7 @@ fn header_to_string(headers: &HeaderMap, name: header::HeaderName) -> Option<Str
         .map(str::to_owned)
 }
 
-async fn persist_audit_log(
-    db: &PgPool,
+struct AuditLogInsert {
     request_id: Uuid,
     method: String,
     request_uri: String,
@@ -104,7 +106,9 @@ async fn persist_audit_log(
     status: StatusCode,
     duration_ms: i64,
     access_context: Value,
-) -> Result<(), sqlx::Error> {
+}
+
+async fn persist_audit_log(db: &PgPool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
     sqlx::query(
         r#"
         insert into audit_log (
@@ -121,13 +125,13 @@ async fn persist_audit_log(
         "#,
     )
     .bind(Uuid::now_v7())
-    .bind(request_id)
-    .bind(method)
-    .bind(request_uri)
-    .bind(matched_path)
-    .bind(i32::from(status.as_u16()))
-    .bind(duration_ms)
-    .bind(access_context)
+    .bind(entry.request_id)
+    .bind(entry.method)
+    .bind(entry.request_uri)
+    .bind(entry.matched_path)
+    .bind(i32::from(entry.status.as_u16()))
+    .bind(entry.duration_ms)
+    .bind(entry.access_context)
     .execute(db)
     .await?;
 

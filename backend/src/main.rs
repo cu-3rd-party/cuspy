@@ -2,7 +2,10 @@ use clap::Parser;
 use cukiller_backend::{AppState, build_app, config};
 use log::info;
 use sqlx::postgres::PgPoolOptions;
-use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo}};
+use teloxide::{
+    prelude::*,
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo},
+};
 use url::Url;
 
 async fn handle_bot_message(bot: Bot, message: Message, webapp_url: String) -> ResponseResult<()> {
@@ -11,12 +14,14 @@ async fn handle_bot_message(bot: Bot, message: Message, webapp_url: String) -> R
     {
         let keyboard = InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::web_app(
             "Open web app",
-            WebAppInfo { url: Url::parse(&webapp_url).expect("valid webapp url") }
+            WebAppInfo {
+                url: Url::parse(&webapp_url).expect("valid webapp url"),
+            },
         )]]);
 
         bot.send_message(
             message.chat.id,
-            "Bot is alive. Use the button below to open the web app inside Telegram."
+            "Bot is alive. Use the button below to open the web app inside Telegram.",
         )
         .reply_markup(keyboard)
         .await?;

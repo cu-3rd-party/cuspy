@@ -1,8 +1,8 @@
-use sqlx::FromRow;
-use uuid::Uuid;
+use crate::api::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::api::models::user::UserResponse;
+use sqlx::FromRow;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
@@ -12,7 +12,6 @@ pub struct RegisterRequest {
     pub password: String,
     #[cfg(not(feature = "telegram-auth"))]
     pub telegram_id: i64,
-    pub rating: Option<i64>,
     pub agent_name: Option<String>,
     pub agent_data: Option<Value>,
 }
@@ -51,12 +50,14 @@ pub struct AuthClaims {
     pub sub: String,
     pub user_id: Uuid,
     pub auth_user_id: Uuid,
+    pub is_admin: bool,
     pub exp: usize,
 }
 
 #[derive(Clone)]
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
+    pub is_admin: bool,
     #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
     #[cfg(feature = "telegram-auth")]
     pub telegram_user_id: i64,

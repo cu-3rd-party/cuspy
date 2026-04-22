@@ -1,13 +1,14 @@
+use axum::Json;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
-use axum::Json;
-use serde_json::json;
 use serde::Serialize;
+use serde_json::json;
 
-pub mod profile;
-pub mod user;
 pub mod auth;
+pub mod kill;
+pub mod profile;
 pub mod similarity;
+pub mod user;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
@@ -35,7 +36,9 @@ impl IntoResponse for ApiError {
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::Forbidden => StatusCode::FORBIDDEN,
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
-            Self::Database(_) | Self::PasswordHash | Self::Token => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Database(_) | Self::PasswordHash | Self::Token => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         };
 
         let body = Json(json!({ "error": self.to_string() }));

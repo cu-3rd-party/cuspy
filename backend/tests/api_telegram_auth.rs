@@ -19,8 +19,8 @@ fn telegram_init_data(user_id: i64) -> String {
     })
     .to_string();
 
-    let mut pairs = vec![
-        format!("auth_date=1700000000"),
+    let mut pairs = [
+        "auth_date=1700000000".to_string(),
         format!("query_id=test-query-{user_id}"),
         format!("user={user}"),
     ];
@@ -62,8 +62,14 @@ async fn telegram_auth_requires_valid_init_data() {
         )
         .await;
     assert_eq!(register_status, StatusCode::CREATED);
-    let token = register_body["access_token"].as_str().expect("token").to_string();
-    let user_id = register_body["user"]["user_id"].as_str().expect("user id").to_string();
+    let token = register_body["access_token"]
+        .as_str()
+        .expect("token")
+        .to_string();
+    let user_id = register_body["user"]["user_id"]
+        .as_str()
+        .expect("user id")
+        .to_string();
 
     let (missing_header_status, _) = ctx
         .json("GET", "/auth/me", None, Some(&token), None, None)
@@ -138,7 +144,9 @@ async fn telegram_auth_requires_valid_init_data() {
         )
         .await;
     assert_eq!(request_status, StatusCode::CREATED);
-    let request_id = request_body["profile_creation_request_id"].as_str().expect("request id");
+    let request_id = request_body["profile_creation_request_id"]
+        .as_str()
+        .expect("request id");
 
     let (forbidden_other_register_token, _) = register_user(
         &ctx,
@@ -172,5 +180,8 @@ async fn telegram_auth_requires_valid_init_data() {
         )
         .await;
     assert_eq!(forbidden_request_status, StatusCode::OK);
-    assert_eq!(forbidden_request_body["profile_creation_request_id"], Value::String(request_id.to_string()));
+    assert_eq!(
+        forbidden_request_body["profile_creation_request_id"],
+        Value::String(request_id.to_string())
+    );
 }
