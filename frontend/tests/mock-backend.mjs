@@ -35,6 +35,16 @@ const users = {
 		is_admin: false,
 		created_at: '1',
 		updated_at: null
+	},
+	admin: {
+		user_id: 'user-admin',
+		telegram_id: 404,
+		rating: 1700,
+		agent_name: 'Admin Agent',
+		agent_data: { codename: 'CONTROL_NODE' },
+		is_admin: true,
+		created_at: '1',
+		updated_at: null
 	}
 };
 
@@ -77,6 +87,38 @@ const profileRequests = {
 	]
 };
 
+let adminRequests = [
+	{
+		profile_creation_request_id: 'queue-1',
+		user_id: 'user-pending',
+		requested_profile_data: {
+			codename: 'PENDING_AGENT',
+			academicGroup: 'B21-DS-01',
+			identificationName: 'pending-id.png',
+			identificationImage: 'data:image/png;base64,AA=='
+		},
+		status: 'sent',
+		reviewer_note: null,
+		reviewed_at: null,
+		created_at: '1710000000',
+		updated_at: '1710000000'
+	},
+	{
+		profile_creation_request_id: 'queue-2',
+		user_id: 'user-rejected',
+		requested_profile_data: {
+			codename: 'REJECTED_AGENT',
+			academicGroup: 'M11-AI-02',
+			identificationName: 'rejected-id.png'
+		},
+		status: 'rejected',
+		reviewer_note: 'Need clearer identification image.',
+		reviewed_at: '1710000200',
+		created_at: '1710000100',
+		updated_at: '1710000200'
+	}
+];
+
 const server = http.createServer((request, response) => {
 	const auth = request.headers.authorization;
 	const token = auth?.replace(/^Bearer\s+/, '') ?? '';
@@ -85,6 +127,7 @@ const server = http.createServer((request, response) => {
 		if (token === 'pending-token') return json(response, 200, users.pending);
 		if (token === 'approved-token') return json(response, 200, users.approved);
 		if (token === 'rejected-token') return json(response, 200, users.rejected);
+		if (token === 'admin-token') return json(response, 200, users.admin);
 		return json(response, 401, { error: 'unauthorized' });
 	}
 
@@ -93,6 +136,39 @@ const server = http.createServer((request, response) => {
 		if (token === 'approved-token') return json(response, 200, profileRequests.approved);
 		if (token === 'rejected-token') return json(response, 200, profileRequests.rejected);
 		return json(response, 200, []);
+	}
+
+	if (request.url === '/admin/profile-creation-requests' && request.method === 'GET') {
+		if (token !== 'admin-token') return json(response, 403, { error: 'forbidden' });
+		return json(response, 200, adminRequests);
+	}
+
+	if (request.url?.startsWith('/admin/profile-creation-requests/') && request.method === 'PATCH') {
+		if (token !== 'admin-token') return json(response, 403, { error: 'forbidden' });
+
+		let body = '';
+		request.on('data', (chunk) => {
+			body += chunk;
+		});
+		request.on('end', () => {
+			const payload = JSON.parse(body || '{}');
+			const requestId = request.url.split('/').pop();
+			adminRequests = adminRequests.map((entry) =>
+				entry.profile_creation_request_id === requestId
+					? {
+						...entry,
+						status: payload.status ?? entry.status,
+						reviewer_note: payload.reviewer_note ?? entry.reviewer_note,
+						reviewed_at: '1710000300',
+						updated_at: '1710000300'
+					}
+					: entry
+			);
+
+			const updated = adminRequests.find((entry) => entry.profile_creation_request_id === requestId);
+			json(response, 200, updated ?? { error: 'not found' });
+		});
+		return;
 	}
 
 	if (request.url === '/rankings') {
