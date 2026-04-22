@@ -1,5 +1,6 @@
 pub mod api;
 pub mod config;
+pub mod notifier;
 
 use std::time::Instant;
 

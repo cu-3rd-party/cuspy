@@ -5,6 +5,7 @@ use crate::api::models::profile::{
 };
 use crate::api::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
 use crate::api::{helpers, user};
+use crate::notifier;
 use axum::Json;
 use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
@@ -260,6 +261,24 @@ pub async fn admin_update_profile_creation_request(
     }
 
     tx.commit().await?;
+
+    if request.status == "confirmed" {
+        notifier::notify_user(
+            &state,
+            request.user_id,
+            "Profile approved. Full operative access live. Open target intel and resume hunt.",
+        )
+        .await;
+    } else if request.status == "rejected" {
+        let note = request.reviewer_note.as_deref().unwrap_or("No reviewer note attached.");
+        notifier::notify_user(
+            &state,
+            request.user_id,
+            format!("Profile rejected. Edit dossier and resend. Reviewer note: {note}"),
+        )
+        .await;
+    }
+
     Ok(Json(helpers::to_profile_creation_request_response(request)))
 }
 

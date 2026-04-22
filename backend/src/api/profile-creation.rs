@@ -5,6 +5,7 @@ use crate::api::models::profile::{
     CreateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse,
     UpdateProfileCreationRequest,
 };
+use crate::notifier;
 use axum::Json;
 use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
@@ -80,6 +81,21 @@ pub async fn create_profile_creation_request(
     .bind(requested_profile_data)
     .fetch_one(&state.db)
     .await?;
+
+    notifier::notify_user(
+        &state,
+        auth.user_id,
+        "Profile request submitted. Review queue active. Gameplay access remains available while moderators verify dossier.",
+    )
+    .await;
+    notifier::notify_admins(
+        &state,
+        format!(
+            "New profile request {} waiting for moderation.",
+            request.profile_creation_request_id
+        ),
+    )
+    .await;
 
     Ok((
         StatusCode::CREATED,

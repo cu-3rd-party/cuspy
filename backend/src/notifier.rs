@@ -1,0 +1,75 @@
+use crate::AppState;
+#[cfg(feature = "telegram-auth")]
+use log::warn;
+#[cfg(feature = "telegram-auth")]
+use teloxide::{prelude::Requester, requests::ResponseResult, types::ChatId, Bot};
+use uuid::Uuid;
+
+#[cfg(feature = "telegram-auth")]
+pub fn notify_telegram(telegram_id: i64, bot_token: String, message: String) {
+    tokio::spawn(async move {
+        if let Err(error) = send_message(telegram_id, &bot_token, message).await {
+            warn!("telegram notification failed: {error}");
+        }
+    });
+}
+
+#[cfg(not(feature = "telegram-auth"))]
+pub fn notify_telegram(_telegram_id: i64, _bot_token: String, _message: String) {}
+
+pub async fn notify_user(state: &AppState, user_id: Uuid, message: impl Into<String>) {
+    let telegram_id = sqlx::query_scalar::<_, i64>(r#"select telegram_id from "user" where user_id = $1"#)
+        .bind(user_id)
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten();
+
+    #[cfg(feature = "telegram-auth")]
+    if let Some(telegram_id) = telegram_id {
+        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.into());
+    }
+
+    #[cfg(not(feature = "telegram-auth"))]
+    {
+        let _ = state;
+        let _ = user_id;
+        let _ = message.into();
+        let _ = telegram_id;
+    }
+}
+
+pub async fn notify_admins(state: &AppState, message: impl Into<String>) {
+    let message = message.into();
+    let recipients = sqlx::query_scalar::<_, i64>(
+        r#"
+        select telegram_id
+        from "user"
+        where is_admin = true
+        "#,
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    #[cfg(feature = "telegram-auth")]
+    for telegram_id in recipients {
+        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.clone());
+    }
+
+    #[cfg(not(feature = "telegram-auth"))]
+    {
+        let _ = state;
+        let _ = message;
+        let _ = recipients;
+    }
+}
+
+#[cfg(feature = "telegram-auth")]
+async fn send_message(telegram_id: i64, bot_token: &str, message: String) -> ResponseResult<()> {
+    Bot::new(bot_token)
+        .send_message(ChatId(telegram_id), message)
+        .await?;
+
+    Ok(())
+}

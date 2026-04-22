@@ -20,6 +20,7 @@ use crate::{
         },
     },
 };
+use crate::notifier;
 
 fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
@@ -150,6 +151,21 @@ pub async fn report_kill(
     .fetch_one(&state.db)
     .await?;
 
+    notifier::notify_user(
+        &state,
+        payload.victim_id,
+        format!(
+            "Kill report filed against you. Open reveal confirmation. Reference: {}",
+            record.kill_event_id
+        ),
+    )
+    .await;
+    notifier::notify_admins(
+        &state,
+        format!("Kill report {} created and awaiting victim response.", record.kill_event_id),
+    )
+    .await;
+
     Ok((http::StatusCode::CREATED, Json(to_kill_response(record))))
 }
 
@@ -270,6 +286,36 @@ pub async fn confirm_kill(
         ))?
     };
 
+    if !payload.confirmed {
+        notifier::notify_user(
+            &state,
+            kill.killer_id,
+            format!(
+                "Kill report {} rejected by counterparty. Review notes in system.",
+                record.kill_event_id
+            ),
+        )
+        .await;
+    } else if auth.user_id == kill.victim_id {
+        notifier::notify_user(
+            &state,
+            kill.killer_id,
+            format!(
+                "Victim confirmed kill report {}. Awaiting admin moderation.",
+                record.kill_event_id
+            ),
+        )
+        .await;
+        notifier::notify_admins(
+            &state,
+            format!(
+                "Kill report {} confirmed by victim and ready for moderation.",
+                record.kill_event_id
+            ),
+        )
+        .await;
+    }
+
     Ok(Json(to_kill_response(record)))
 }
 
@@ -333,6 +379,42 @@ pub async fn moderate_kill(
     .ok_or(ApiError::BadRequest(format!(
         "kill must be in {required_state} before {action}"
     )))?;
+
+    match record.status.as_str() {
+        "ADMIN_APPROVED" => {
+            notifier::notify_user(
+                &state,
+                record.killer_id,
+                format!("Kill report {} approved. Rating changes applied.", record.kill_event_id),
+            )
+            .await;
+            notifier::notify_user(
+                &state,
+                record.victim_id,
+                format!("Kill report {} approved by admin.", record.kill_event_id),
+            )
+            .await;
+        }
+        "REJECTED" => {
+            let reason = record
+                .moderation_reason
+                .clone()
+                .unwrap_or_else(|| "No reason attached.".to_string());
+            notifier::notify_user(
+                &state,
+                record.killer_id,
+                format!("Kill report {} rejected. Reason: {reason}", record.kill_event_id),
+            )
+            .await;
+            notifier::notify_user(
+                &state,
+                record.victim_id,
+                format!("Kill report {} rejected by admin. Reason: {reason}", record.kill_event_id),
+            )
+            .await;
+        }
+        _ => {}
+    }
 
     Ok(Json(to_kill_response(record)))
 }
