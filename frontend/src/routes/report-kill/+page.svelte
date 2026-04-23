@@ -1,6 +1,75 @@
 <script lang="ts">
 	import TopBar from '$lib/components/TopBar.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { readAccessToken } from '$lib/auth/session';
+	import type { KillTarget } from '$lib/stores/session';
+
+	let { data } = $props<{
+		data: {
+			targets: KillTarget[];
+		};
+	}>();
+
+	let targets = $derived(data.targets ?? []);
+	let selectedTargetId = $state('');
+	let modusOperandi = $state('');
+	let witnessPresent = $state(false);
+	let submitError = $state('');
+	let submitMessage = $state('');
+	let isSubmitting = $state(false);
+	let selectedTarget = $derived(
+		targets.find((target: KillTarget) => target.target_id === selectedTargetId) ?? null
+	);
+
+	const handleSubmit = async () => {
+		const token = readAccessToken();
+		if (!token) {
+			submitError = 'Missing session token';
+			return;
+		}
+
+		if (!selectedTargetId) {
+			submitError = 'Select a target first';
+			return;
+		}
+
+		if (!modusOperandi.trim()) {
+			submitError = 'Document the protocol specifics';
+			return;
+		}
+
+		isSubmitting = true;
+		submitError = '';
+		submitMessage = '';
+
+		try {
+			const response = await fetch('/kill-reports', {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json',
+					authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					target_id: selectedTargetId,
+					modus_operandi: modusOperandi.trim(),
+					witness_present: witnessPresent
+				})
+			});
+
+			if (!response.ok) {
+				const payload = await response.json().catch(() => ({ error: 'Request failed' }));
+				throw new Error(payload.error ?? 'Request failed');
+			}
+
+			submitMessage = `Kill report submitted for ${selectedTarget?.identifier ?? 'target'}.`;
+			modusOperandi = '';
+			witnessPresent = false;
+		} catch (error) {
+			submitError = error instanceof Error ? error.message : 'Failed to submit kill report';
+		} finally {
+			isSubmitting = false;
+		}
+	};
 </script>
 
 <TopBar config={{ title: 'REPORT_KILL', icon: 'verified_user' }} />
@@ -21,9 +90,10 @@
 				<section class="bg-surface-container-low p-6 space-y-8">
 					<div>
 						<label for="target-identifier" class="mb-4 block text-[10px] font-label font-bold tracking-widest text-primary uppercase">TARGET_IDENTIFIER</label>
-						<select id="target-identifier" class="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3 transition-all appearance-none">
-							<option>VAL-772_SYNDICATE_HEAD</option>
-							<option>RAZOR_WIND_ENFORCER</option>
+						<select id="target-identifier" bind:value={selectedTargetId} class="w-full bg-surface-container border-0 border-b border-outline-variant focus:border-primary focus:ring-0 text-on-background font-body text-sm py-3 transition-all appearance-none">
+							{#each targets as target (target.target_id)}
+								<option value={target.target_id}>{target.identifier}</option>
+							{/each}
 						</select>
 					</div>
 					<div>
@@ -35,8 +105,8 @@
 						<div class="flex items-center gap-4 bg-surface-container p-4 border-l-2 border-primary mb-4">
 							<Icon name="location_on" class="text-primary-container" />
 							<div class="font-label text-sm tracking-tighter uppercase">
-								<p>LAT: 35.6895° N</p>
-								<p>LON: 139.6917° E</p>
+								<p>TARGET: {selectedTarget?.identifier ?? 'UNASSIGNED'}</p>
+								<p>LAST_SEEN: {selectedTarget?.last_known_location ?? 'UNKNOWN'}</p>
 							</div>
 						</div>
 						<div class="h-48 bg-surface-container relative grayscale contrast-125 opacity-60">
@@ -47,6 +117,14 @@
 			</div>
 
 			<div class="md:col-span-8 space-y-6">
+				{#if submitError}
+					<div class="bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase">{submitError}</div>
+				{/if}
+
+				{#if submitMessage}
+					<div class="bg-primary-container px-4 py-3 font-label text-[11px] tracking-[0.16em] text-on-primary-container uppercase">{submitMessage}</div>
+				{/if}
+
 				<section class="bg-surface-container p-1 relative overflow-hidden group">
 					<div class="absolute top-4 right-4 z-10 flex gap-2">
 						<div class="px-2 py-1 bg-primary text-on-primary text-[9px] font-bold tracking-widest font-label uppercase">LIVE_SCAN</div>
@@ -64,10 +142,10 @@
 
 				<section class="bg-surface-container-low p-8">
 					<label for="modus-operandi" class="mb-4 block text-[10px] font-label font-bold tracking-[0.3em] text-secondary uppercase">MODUS_OPERANDI</label>
-					<textarea id="modus-operandi" class="w-full bg-surface-container-lowest border-0 border-l-2 border-secondary focus:border-secondary-fixed-dim focus:ring-0 text-on-background font-body text-sm p-4 h-32" placeholder="Document the protocol specifics..."></textarea>
+					<textarea id="modus-operandi" bind:value={modusOperandi} class="w-full bg-surface-container-lowest border-0 border-l-2 border-secondary focus:border-secondary-fixed-dim focus:ring-0 text-on-background font-body text-sm p-4 h-32" placeholder="Document the protocol specifics..."></textarea>
 					<div class="mt-8 flex items-center justify-between">
 						<label class="flex items-center gap-3 cursor-pointer">
-							<input type="checkbox" class="sr-only peer" />
+							<input type="checkbox" bind:checked={witnessPresent} class="sr-only peer" />
 							<div class="w-11 h-6 bg-surface-container-high rounded-full peer-checked:bg-secondary-container relative after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
 							<span class="text-[10px] font-label font-bold text-on-surface uppercase tracking-widest">WITNESS_PRESENT</span>
 						</label>
@@ -77,8 +155,8 @@
 						</div>
 					</div>
 				</section>
-				<button class="w-full group relative bg-primary-container text-on-primary-container py-6 px-12 transition-all active:scale-95 uppercase tracking-[0.5em] font-headline font-black text-xl">
-					FINALIZE_REPORT
+				<button type="button" onclick={handleSubmit} disabled={isSubmitting} class="w-full group relative bg-primary-container text-on-primary-container py-6 px-12 transition-all active:scale-95 uppercase tracking-[0.5em] font-headline font-black text-xl disabled:opacity-50">
+					{isSubmitting ? 'SUBMITTING_REPORT' : 'FINALIZE_REPORT'}
 				</button>
 			</div>
 		</form>

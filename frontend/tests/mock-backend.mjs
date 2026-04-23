@@ -107,6 +107,38 @@ const nextUnix = () => String(1710000000 + sequence++);
 
 const nextId = (prefix) => `${prefix}-${sequence++}`;
 
+let targets = [
+	{
+		target_id: 'target-1',
+		identifier: 'VAL-772_SYNDICATE_HEAD',
+		last_known_location: 'CAMPUS_CENTRAL',
+		status: 'active'
+	},
+	{
+		target_id: 'target-2',
+		identifier: 'RAZOR_WIND_ENFORCER',
+		last_known_location: 'SECTOR_7',
+		status: 'active'
+	}
+];
+
+let killReports = [
+	{
+		kill_report_id: 'kill-report-1',
+		reporter_user_id: users.approved.user_id,
+		reporter_codename: users.approved.agent_data.codename,
+		target_id: 'target-1',
+		target_identifier: 'VAL-772_SYNDICATE_HEAD',
+		modus_operandi: 'Confirmed elimination in clean room.',
+		witness_present: false,
+		status: 'confirmed',
+		reviewer_note: 'Evidence chain intact.',
+		created_at: '1710000400',
+		updated_at: '1710000400',
+		reviewed_at: '1710000400'
+	}
+];
+
 let adminRequests = [
 	{
 		profile_creation_request_id: 'queue-1',
@@ -228,6 +260,85 @@ const server = http.createServer((request, response) => {
 		return;
 	}
 
+	if (request.url === '/targets' && request.method === 'GET') {
+		if (!requestForToken(token)) return json(response, 401, { error: 'unauthorized' });
+		return json(response, 200, targets);
+	}
+
+	if (request.url === '/kill-reports' && request.method === 'POST') {
+		const user = requestForToken(token);
+		if (!user) return json(response, 401, { error: 'unauthorized' });
+
+		let body = '';
+		request.on('data', (chunk) => {
+			body += chunk;
+		});
+		request.on('end', () => {
+			const payload = JSON.parse(body || '{}');
+			const target = targets.find((entry) => entry.target_id === payload.target_id);
+			if (!target) return json(response, 400, { error: 'Unknown target' });
+
+			const timestamp = nextUnix();
+			const report = {
+				kill_report_id: nextId('kill-report'),
+				reporter_user_id: user.user_id,
+				reporter_codename: user.agent_data?.codename ?? user.agent_name ?? 'AGENT',
+				target_id: target.target_id,
+				target_identifier: target.identifier,
+				modus_operandi: payload.modus_operandi ?? '',
+				witness_present: Boolean(payload.witness_present),
+				status: 'pending',
+				reviewer_note: null,
+				created_at: timestamp,
+				updated_at: timestamp,
+				reviewed_at: null
+			};
+
+			killReports = [report, ...killReports];
+			json(response, 200, report);
+		});
+		return;
+	}
+
+	if (request.url === '/admin/kill-reports' && request.method === 'GET') {
+		if (token !== 'admin-token') return json(response, 403, { error: 'forbidden' });
+		return json(response, 200, killReports);
+	}
+
+	if (request.url?.startsWith('/admin/kill-reports/') && request.method === 'PATCH') {
+		if (token !== 'admin-token') return json(response, 403, { error: 'forbidden' });
+
+		let body = '';
+		request.on('data', (chunk) => {
+			body += chunk;
+		});
+		request.on('end', () => {
+			const payload = JSON.parse(body || '{}');
+			const reportId = request.url.split('/').pop();
+			killReports = killReports.map((entry) =>
+				entry.kill_report_id === reportId
+					? {
+						...entry,
+						status: payload.status ?? entry.status,
+						reviewer_note: payload.reviewer_note ?? entry.reviewer_note,
+						reviewed_at: '1710000500',
+						updated_at: '1710000500'
+					}
+					: entry
+			);
+
+			const updated = killReports.find((entry) => entry.kill_report_id === reportId);
+			if (updated?.status === 'confirmed') {
+				targets = targets.map((entry) =>
+					entry.target_id === updated.target_id ? { ...entry, status: 'eliminated' } : entry
+				);
+			}
+
+			json(response, 200, updated ?? { error: 'not found' });
+		});
+		return;
+	}
+
 	if (request.url === '/admin/profile-creation-requests' && request.method === 'GET') {
 		if (token !== 'admin-token') return json(response, 403, { error: 'forbidden' });
 		return json(response, 200, adminRequests);
@@ -265,10 +376,20 @@ const server = http.createServer((request, response) => {
 	}
 
 	if (request.url === '/rankings') {
-		return json(response, 200, [
-			{ rank: 1, user_id: 'user-approved', agent_name: 'Approved Agent', rating: 1300, approved_kills: 4, approved_deaths: 1 },
-			{ rank: 2, user_id: 'user-pending', agent_name: 'Pending Agent', rating: 1000, approved_kills: 1, approved_deaths: 0 }
-		]);
+		const rankingUsers = [users.approved, users.pending]
+			.map((user) => ({
+				user_id: user.user_id,
+				agent_name: user.agent_name,
+				rating: user.rating,
+				approved_kills: killReports.filter(
+					(report) => report.reporter_user_id === user.user_id && report.status === 'confirmed'
+				).length,
+				approved_deaths: 0
+			}))
+			.sort((left, right) => right.approved_kills - left.approved_kills || right.rating - left.rating)
+			.map((entry, index) => ({ rank: index + 1, ...entry }));
+
+		return json(response, 200, rankingUsers);
 	}
 
 	json(response, 404, { error: 'not found' });

@@ -59,6 +59,30 @@ export type RankingEntry = {
 	approved_deaths: number;
 };
 
+export type KillTarget = {
+	target_id: string;
+	identifier: string;
+	last_known_location: string;
+	status: 'active' | 'eliminated';
+};
+
+export type KillReportStatus = 'pending' | 'confirmed' | 'rejected';
+
+export type KillReport = {
+	kill_report_id: string;
+	reporter_user_id: string;
+	reporter_codename: string;
+	target_id: string;
+	target_identifier: string;
+	modus_operandi: string;
+	witness_present: boolean;
+	status: KillReportStatus;
+	reviewer_note: string | null;
+	created_at: string;
+	updated_at: string;
+	reviewed_at: string | null;
+};
+
 export type UserStats = {
 	user_id: string;
 	rating: number;
