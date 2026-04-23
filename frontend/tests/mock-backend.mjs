@@ -48,6 +48,13 @@ const users = {
 	}
 };
 
+const tokenUsers = new Map([
+	['pending-token', users.pending],
+	['approved-token', users.approved],
+	['rejected-token', users.rejected],
+	['admin-token', users.admin]
+]);
+
 const profileRequests = {
 	pending: [
 		{
@@ -87,6 +94,19 @@ const profileRequests = {
 	]
 };
 
+const profileRequestsByUserId = new Map([
+	[users.pending.user_id, structuredClone(profileRequests.pending)],
+	[users.approved.user_id, structuredClone(profileRequests.approved)],
+	[users.rejected.user_id, structuredClone(profileRequests.rejected)],
+	[users.admin.user_id, []]
+]);
+
+let sequence = 3;
+
+const nextUnix = () => String(1710000000 + sequence++);
+
+const nextId = (prefix) => `${prefix}-${sequence++}`;
+
 let adminRequests = [
 	{
 		profile_creation_request_id: 'queue-1',
@@ -119,23 +139,93 @@ let adminRequests = [
 	}
 ];
 
+const requestForToken = (token) => tokenUsers.get(token) ?? null;
+
 const server = http.createServer((request, response) => {
 	const auth = request.headers.authorization;
 	const token = auth?.replace(/^Bearer\s+/, '') ?? '';
 
 	if (request.url === '/auth/me') {
-		if (token === 'pending-token') return json(response, 200, users.pending);
-		if (token === 'approved-token') return json(response, 200, users.approved);
-		if (token === 'rejected-token') return json(response, 200, users.rejected);
-		if (token === 'admin-token') return json(response, 200, users.admin);
+		const user = requestForToken(token);
+		if (user) return json(response, 200, user);
 		return json(response, 401, { error: 'unauthorized' });
 	}
 
-	if (request.url === '/profile-creation-requests') {
-		if (token === 'pending-token') return json(response, 200, profileRequests.pending);
-		if (token === 'approved-token') return json(response, 200, profileRequests.approved);
-		if (token === 'rejected-token') return json(response, 200, profileRequests.rejected);
-		return json(response, 200, []);
+	if (request.url === '/auth/register' && request.method === 'POST') {
+		let body = '';
+		request.on('data', (chunk) => {
+			body += chunk;
+		});
+		request.on('end', () => {
+			const payload = JSON.parse(body || '{}');
+			const accessToken = `generated-token-${sequence}`;
+			const userId = nextId('user-generated');
+			const user = {
+				user_id: userId,
+				telegram_id: payload.telegram_id ?? 0,
+				rating: payload.rating ?? 0,
+				agent_name: payload.agent_name ?? 'Generated Agent',
+				agent_data: payload.agent_data ?? {},
+				is_admin: false,
+				created_at: nextUnix(),
+				updated_at: null
+			};
+
+			tokenUsers.set(accessToken, user);
+			profileRequestsByUserId.set(userId, []);
+
+			json(response, 200, { access_token: accessToken, user });
+		});
+		return;
+	}
+
+	if (request.url === '/profile-creation-requests' && request.method === 'GET') {
+		const user = requestForToken(token);
+		if (!user) return json(response, 200, []);
+		return json(response, 200, profileRequestsByUserId.get(user.user_id) ?? []);
+	}
+
+	if (request.url === '/profile-creation-requests' && request.method === 'POST') {
+		const user = requestForToken(token);
+		if (!user) return json(response, 401, { error: 'unauthorized' });
+
+		let body = '';
+		request.on('data', (chunk) => {
+			body += chunk;
+		});
+		request.on('end', () => {
+			const payload = JSON.parse(body || '{}');
+			const timestamp = nextUnix();
+			const requestedProfileData = payload.requested_profile_data ?? {};
+			const profileRequest = {
+				profile_creation_request_id: nextId('request-generated'),
+				user_id: user.user_id,
+				requested_profile_data: requestedProfileData,
+				status: 'sent',
+				reviewer_note: null,
+				reviewed_at: null,
+				created_at: timestamp,
+				updated_at: timestamp
+			};
+
+			profileRequestsByUserId.set(user.user_id, [profileRequest]);
+			user.agent_data = requestedProfileData;
+			user.agent_name = requestedProfileData.codename ?? user.agent_name;
+
+			adminRequests = [
+				{
+					...profileRequest,
+					requested_profile_data: {
+						academicGroup: requestedProfileData.academicGroup ?? 'AUTO-GROUP',
+						...requestedProfileData
+					}
+				},
+				...adminRequests
+			];
+
+			json(response, 200, { ok: true, user });
+		});
+		return;
 	}
 
 	if (request.url === '/admin/profile-creation-requests' && request.method === 'GET') {
@@ -166,6 +256,9 @@ const server = http.createServer((request, response) => {
 			);
 
 			const updated = adminRequests.find((entry) => entry.profile_creation_request_id === requestId);
+			if (updated) {
+				profileRequestsByUserId.set(updated.user_id, [updated]);
+			}
 			json(response, 200, updated ?? { error: 'not found' });
 		});
 		return;
