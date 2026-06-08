@@ -319,7 +319,7 @@ pub async fn fetch_current_rating(db: &sqlx::AnyPool, user_id: Uuid) -> Result<i
         select coalesce((
             select rating
             from rating_history
-            where user_id = $1
+            where cast(user_id as text) = $1
             order by created_at desc, rating_history_id desc
             limit 1
         ), $2)
@@ -343,6 +343,7 @@ mod tests {
             db: AnyPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),
+            is_sqlite: false,
             admin_secret: "admin-secret".into(),
             jwt_secret: "jwt-secret".into(),
             #[cfg(feature = "telegram-auth")]

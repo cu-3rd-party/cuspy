@@ -11,13 +11,32 @@ use serde_json::Value;
 use uuid::Uuid;
 
 pub async fn fetch_user(state: &AppState, user_id: Uuid) -> Result<UserRecord, ApiError> {
-    sqlx::query_as::<_, UserRecord>(
+    sqlx::query_as::<_, UserRecord>(state.db_param(
         r#"
-        select user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
+        select
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from "user"
         where user_id = $1
         "#,
-    )
+        r#"
+        select
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        from "user"
+        where user_id = cast($1 as uuid)
+        "#,
+    ))
     .bind(db_uuid(user_id))
     .fetch_optional(&state.db)
     .await?
@@ -63,7 +82,7 @@ pub async fn update_user(
         None => None,
     };
 
-    let user = sqlx::query_as::<_, UserRecord>(
+    let user = sqlx::query_as::<_, UserRecord>(state.db_param(
         r#"
         update "user"
         set
@@ -71,9 +90,32 @@ pub async fn update_user(
             agent_name = coalesce($3, agent_name),
             agent_data = coalesce($4, agent_data)
         where user_id = $1
-        returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
+        returning
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
-    )
+        r#"
+        update "user"
+        set
+            telegram_id = coalesce($2, telegram_id),
+            agent_name = coalesce($3, agent_name),
+            agent_data = coalesce(cast($4 as jsonb), agent_data)
+        where user_id = cast($1 as uuid)
+        returning
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        "#,
+    ))
     .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
@@ -114,7 +156,10 @@ pub async fn delete_user(
     let auth = helpers::require_bearer_token(&headers, &state)?;
     helpers::ensure_owner(&auth, user_id)?;
 
-    let result = sqlx::query(r#"delete from "user" where user_id = $1"#)
+    let result = sqlx::query(state.db_param(
+        r#"delete from "user" where user_id = $1"#,
+        r#"delete from "user" where user_id = cast($1 as uuid)"#,
+    ))
         .bind(db_uuid(user_id))
         .execute(&state.db)
         .await?;
@@ -137,13 +182,19 @@ pub async fn compare_user_profiles(
     helpers::ensure_owner(&auth, right_user_id)?;
 
     let left =
-        sqlx::query_scalar::<_, String>(r#"select agent_data from "user" where user_id = $1"#)
+        sqlx::query_scalar::<_, String>(state.db_param(
+            r#"select agent_data from "user" where user_id = $1"#,
+            r#"select cast(agent_data as text) from "user" where user_id = cast($1 as uuid)"#,
+        ))
             .bind(db_uuid(left_user_id))
             .fetch_optional(&state.db)
             .await?
             .ok_or(ApiError::NotFound)?;
     let right =
-        sqlx::query_scalar::<_, String>(r#"select agent_data from "user" where user_id = $1"#)
+        sqlx::query_scalar::<_, String>(state.db_param(
+            r#"select agent_data from "user" where user_id = $1"#,
+            r#"select cast(agent_data as text) from "user" where user_id = cast($1 as uuid)"#,
+        ))
             .bind(db_uuid(right_user_id))
             .fetch_optional(&state.db)
             .await?

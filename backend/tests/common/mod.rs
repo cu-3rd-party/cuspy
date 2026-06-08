@@ -14,8 +14,10 @@ use http_body_util::BodyExt;
 use serde_json::{Value, json};
 #[cfg(not(feature = "telegram-auth"))]
 use sqlx::Row;
+use sqlx::any::AnyPoolOptions;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
+use url::Url;
 
 pub const ADMIN_SECRET: &str = "test-admin-secret";
 pub const JWT_SECRET: &str = "test-jwt-secret";
@@ -35,6 +37,8 @@ pub struct TestContext {
 
 impl TestContext {
     pub async fn new() -> Self {
+        sqlx::any::install_default_drivers();
+
         let mut docker_container_name = None;
         let admin_database_url =
             match std::env::var("TEST_DATABASE_URL").or_else(|_| std::env::var("DATABASE_URL")) {
@@ -126,6 +130,13 @@ impl TestContext {
             .connect_with(db_url)
             .await
             .expect("connect test database");
+        let mut any_url = Url::parse(&admin_database_url).expect("parse admin database url");
+        any_url.set_path(&format!("/{db_name}"));
+        let any_test_pool = AnyPoolOptions::new()
+            .max_connections(5)
+            .connect(any_url.as_ref())
+            .await
+            .expect("connect any test database");
 
         sqlx::migrate!("./migrations")
             .run(&test_pool)
@@ -133,13 +144,14 @@ impl TestContext {
             .expect("run migrations");
 
         let state = AppState {
-            db: test_pool.clone(),
+            db: any_test_pool,
+            is_sqlite: false,
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
             #[cfg(feature = "telegram-auth")]
-            telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
+            telegram_bot_token: Some(TELEGRAM_BOT_TOKEN.to_string()),
             #[cfg(feature = "telegram-auth")]
-            public_webapp_url: "https://test.example.com".to_string(),
+            public_webapp_url: Some("https://test.example.com".to_string()),
         };
 
         Self {
@@ -281,7 +293,7 @@ pub async fn register_user(
             telegram_init_data,
         )
         .await;
-    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(status, StatusCode::CREATED, "register_user body: {body}");
     let token = body["access_token"].as_str().expect("token").to_string();
     (token, body["user"].clone())
 }

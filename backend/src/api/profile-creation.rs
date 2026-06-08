@@ -18,22 +18,36 @@ pub async fn list_profile_creation_requests(
 ) -> Result<Json<Vec<ProfileCreationRequestResponse>>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let requests = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let requests = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         select
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_creation_request
         where user_id = $1
         order by created_at desc
         "#,
-    )
+        r#"
+        select
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        from profile_creation_request
+        where cast(user_id as text) = $1
+        order by created_at desc
+        "#,
+    ))
     .bind(db_uuid(auth.user_id))
     .fetch_all(&state.db)
     .await?;
@@ -55,7 +69,7 @@ pub async fn create_profile_creation_request(
     let auth = helpers::require_bearer_token(&headers, &state)?;
     let requested_profile_data =
         helpers::normalize_profile_data(Some(payload.requested_profile_data))?;
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         insert into profile_creation_request (
             profile_creation_request_id,
@@ -65,16 +79,34 @@ pub async fn create_profile_creation_request(
         )
         values ($1, $2, $3, 'sent')
         returning
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        "#,
+        r#"
+        insert into profile_creation_request (
             profile_creation_request_id,
             user_id,
             requested_profile_data,
+            status
+        )
+        values (cast($1 as uuid), cast($2 as uuid), cast($3 as jsonb), 'sent')
+        returning
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
-    )
+    ))
     .bind(db_uuid(Uuid::now_v7()))
     .bind(db_uuid(auth.user_id))
     .bind(db_json(&requested_profile_data))
@@ -109,21 +141,34 @@ pub async fn get_profile_creation_request(
 ) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         select
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_creation_request
         where profile_creation_request_id = $1
         "#,
-    )
+        r#"
+        select
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        from profile_creation_request
+        where profile_creation_request_id = cast($1 as uuid)
+        "#,
+    ))
     .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
@@ -141,21 +186,34 @@ pub async fn update_profile_creation_request(
 ) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let existing = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let existing = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         select
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_creation_request
         where profile_creation_request_id = $1
         "#,
-    )
+        r#"
+        select
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        from profile_creation_request
+        where profile_creation_request_id = cast($1 as uuid)
+        "#,
+    ))
     .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
@@ -171,22 +229,36 @@ pub async fn update_profile_creation_request(
         None => None,
     };
 
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         update profile_creation_request
         set requested_profile_data = coalesce($2, requested_profile_data)
         where profile_creation_request_id = $1
         returning
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
-    )
+        r#"
+        update profile_creation_request
+        set requested_profile_data = coalesce(cast($2 as jsonb), requested_profile_data)
+        where profile_creation_request_id = cast($1 as uuid)
+        returning
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        "#,
+    ))
     .bind(db_uuid(request_id))
     .bind(requested_profile_data.as_ref().map(db_json))
     .fetch_optional(&state.db)
@@ -203,9 +275,10 @@ pub async fn delete_profile_creation_request(
 ) -> Result<StatusCode, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let owner_user_id = sqlx::query_scalar::<_, String>(
+    let owner_user_id = sqlx::query_scalar::<_, String>(state.db_param(
         "select user_id from profile_creation_request where profile_creation_request_id = $1",
-    )
+        "select cast(user_id as text) from profile_creation_request where profile_creation_request_id = cast($1 as uuid)",
+    ))
     .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
@@ -215,7 +288,10 @@ pub async fn delete_profile_creation_request(
     helpers::ensure_owner(&auth, owner_user_id)?;
 
     let result =
-        sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
+        sqlx::query(state.db_param(
+            "delete from profile_creation_request where profile_creation_request_id = $1",
+            "delete from profile_creation_request where profile_creation_request_id = cast($1 as uuid)",
+        ))
             .bind(db_uuid(request_id))
             .execute(&state.db)
             .await?;

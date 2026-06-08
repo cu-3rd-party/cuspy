@@ -3,7 +3,7 @@ create table if not exists "user" (
     telegram_id integer unique not null,
     agent_name text collate nocase,
     agent_data text not null default '{}',
-    is_admin integer not null default 0,
+    is_admin integer null default 0,
     is_sharing_location integer not null default 0,
     current_location text,
     created_at text not null default current_timestamp,

@@ -19,7 +19,14 @@ pub async fn admin_list_users(
     helpers::require_admin(&headers, &state)?;
     let users = sqlx::query_as::<_, UserRecord>(
         r#"
-        select user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
+        select
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from "user"
         order by created_at desc
         "#,
@@ -43,13 +50,32 @@ pub async fn admin_create_user(
 ) -> Result<(StatusCode, Json<UserResponse>), ApiError> {
     helpers::require_admin(&headers, &state)?;
     let agent_data = helpers::normalize_profile_data(payload.agent_data)?;
-    let user = sqlx::query_as::<_, UserRecord>(
+    let user = sqlx::query_as::<_, UserRecord>(state.db_param(
         r#"
         insert into "user" (user_id, telegram_id, agent_name, agent_data, is_admin)
         values ($1, $2, $3, $4, $5)
-        returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
+        returning
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
-    )
+        r#"
+        insert into "user" (user_id, telegram_id, agent_name, agent_data, is_admin)
+        values (cast($1 as uuid), $2, $3, cast($4 as jsonb), $5)
+        returning
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        "#,
+    ))
     .bind(db_uuid(Uuid::now_v7()))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
@@ -88,7 +114,7 @@ pub async fn admin_update_user(
         None => None,
     };
 
-    let user = sqlx::query_as::<_, UserRecord>(
+    let user = sqlx::query_as::<_, UserRecord>(state.db_param(
         r#"
         update "user"
         set
@@ -97,9 +123,33 @@ pub async fn admin_update_user(
             agent_data = coalesce($4, agent_data),
             is_admin = coalesce($5, is_admin)
         where user_id = $1
-        returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
+        returning
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
-    )
+        r#"
+        update "user"
+        set
+            telegram_id = coalesce($2, telegram_id),
+            agent_name = coalesce($3, agent_name),
+            agent_data = coalesce(cast($4 as jsonb), agent_data),
+            is_admin = coalesce($5, is_admin)
+        where user_id = cast($1 as uuid)
+        returning
+            cast(user_id as text) as user_id,
+            telegram_id,
+            agent_name,
+            cast(agent_data as text) as agent_data,
+            is_admin,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        "#,
+    ))
     .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
@@ -119,7 +169,10 @@ pub async fn admin_delete_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     helpers::require_admin(&headers, &state)?;
-    let result = sqlx::query(r#"delete from "user" where user_id = $1"#)
+    let result = sqlx::query(state.db_param(
+        r#"delete from "user" where user_id = $1"#,
+        r#"delete from "user" where user_id = cast($1 as uuid)"#,
+    ))
         .bind(db_uuid(user_id))
         .execute(&state.db)
         .await?;
@@ -139,14 +192,14 @@ pub async fn admin_list_profile_creation_requests(
     let requests = sqlx::query_as::<_, ProfileCreationRequestRecord>(
         r#"
         select
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_creation_request
         order by created_at desc
         "#,
@@ -168,21 +221,34 @@ pub async fn admin_get_profile_creation_request(
     Path(request_id): Path<Uuid>,
 ) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
     helpers::require_admin(&headers, &state)?;
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         select
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_creation_request
         where profile_creation_request_id = $1
         "#,
-    )
+        r#"
+        select
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        from profile_creation_request
+        where profile_creation_request_id = cast($1 as uuid)
+        "#,
+    ))
     .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
@@ -218,7 +284,7 @@ pub async fn admin_update_profile_creation_request(
 
     let mut tx = state.db.begin().await?;
 
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(state.db_param(
         r#"
         update profile_creation_request
         set
@@ -228,16 +294,34 @@ pub async fn admin_update_profile_creation_request(
             reviewed_at = case when $5 is not null then $5 else reviewed_at end
         where profile_creation_request_id = $1
         returning
-            profile_creation_request_id,
-            user_id,
-            requested_profile_data,
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
-    )
+        r#"
+        update profile_creation_request
+        set
+            requested_profile_data = coalesce(cast($2 as jsonb), requested_profile_data),
+            status = coalesce($3, status),
+            reviewer_note = coalesce($4, reviewer_note),
+            reviewed_at = case when $5 is not null then cast($5 as timestamptz) else reviewed_at end
+        where profile_creation_request_id = cast($1 as uuid)
+        returning
+            cast(profile_creation_request_id as text) as profile_creation_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data as text) as requested_profile_data,
+            status,
+            reviewer_note,
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
+        "#,
+    ))
     .bind(db_uuid(request_id))
     .bind(requested_profile_data.as_ref().map(db_json))
     .bind(payload.status.clone())
@@ -248,13 +332,18 @@ pub async fn admin_update_profile_creation_request(
     .ok_or(ApiError::NotFound)?;
 
     if payload.status.as_deref() == Some("confirmed") {
-        sqlx::query(
+        sqlx::query(state.db_param(
             r#"
             update "user"
             set agent_data = $2
             where user_id = $1
             "#,
-        )
+            r#"
+            update "user"
+            set agent_data = cast($2 as jsonb)
+            where user_id = cast($1 as uuid)
+            "#,
+        ))
         .bind(db_uuid(request.user_id))
         .bind(db_json(&request.requested_profile_data))
         .execute(&mut *tx)
@@ -290,7 +379,10 @@ pub async fn admin_delete_profile_creation_request(
 ) -> Result<StatusCode, ApiError> {
     helpers::require_admin(&headers, &state)?;
     let result =
-        sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
+        sqlx::query(state.db_param(
+            "delete from profile_creation_request where profile_creation_request_id = $1",
+            "delete from profile_creation_request where profile_creation_request_id = cast($1 as uuid)",
+        ))
             .bind(db_uuid(request_id))
             .execute(&state.db)
             .await?;

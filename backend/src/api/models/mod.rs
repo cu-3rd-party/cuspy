@@ -7,7 +7,10 @@ use sqlx::{Row, any::AnyRow};
 use uuid::Uuid;
 
 fn decode_timestamp_value(value: &str) -> Result<sqlx::types::time::OffsetDateTime, sqlx::Error> {
-    use time::{PrimitiveDateTime, UtcOffset, format_description::well_known::Rfc3339};
+    use time::{
+        OffsetDateTime, PrimitiveDateTime, UtcOffset,
+        format_description::well_known::Rfc3339,
+    };
 
     if let Ok(unix) = value.parse::<i64>() {
         return sqlx::types::time::OffsetDateTime::from_unix_timestamp(unix)
@@ -18,14 +21,33 @@ fn decode_timestamp_value(value: &str) -> Result<sqlx::types::time::OffsetDateTi
         return Ok(value);
     }
 
-    let format = time::format_description::parse(
-        "[year]-[month]-[day] [hour]:[minute]:[second][optional [.[subsecond]] ]",
-    )
-    .map_err(|error| sqlx::Error::Decode(Box::new(error)))?;
+    for pattern in [
+        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond][offset_hour sign:mandatory]",
+        "[year]-[month]-[day] [hour]:[minute]:[second][offset_hour sign:mandatory]",
+        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond][offset_hour sign:mandatory]:[offset_minute]",
+        "[year]-[month]-[day] [hour]:[minute]:[second][offset_hour sign:mandatory]:[offset_minute]",
+    ] {
+        let format = time::format_description::parse(pattern)
+            .map_err(|error| sqlx::Error::Decode(Box::new(error)))?;
 
-    PrimitiveDateTime::parse(value.trim(), &format)
-        .map(|value| value.assume_offset(UtcOffset::UTC))
-        .map_err(|error| sqlx::Error::Decode(Box::new(error)))
+        if let Ok(value) = OffsetDateTime::parse(value.trim(), &format) {
+            return Ok(value);
+        }
+    }
+
+    for pattern in [
+        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond]",
+        "[year]-[month]-[day] [hour]:[minute]:[second]",
+    ] {
+        let format = time::format_description::parse(pattern)
+            .map_err(|error| sqlx::Error::Decode(Box::new(error)))?;
+
+        if let Ok(value) = PrimitiveDateTime::parse(value.trim(), &format) {
+            return Ok(value.assume_offset(UtcOffset::UTC));
+        }
+    }
+
+    Err(sqlx::Error::Decode("unsupported timestamp format".into()))
 }
 
 pub mod auth;
@@ -46,6 +68,8 @@ pub enum ApiError {
     BadRequest(String),
     #[error("database error")]
     Database(#[from] sqlx::Error),
+    #[error("internal")]
+    Internal(String),
     #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
     #[error("password hash error")]
     PasswordHash,
@@ -55,17 +79,29 @@ pub enum ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        let mut message = self.to_string();
         let status = match self {
             Self::NotFound => StatusCode::NOT_FOUND,
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::Forbidden => StatusCode::FORBIDDEN,
-            Self::BadRequest(_) => StatusCode::BAD_REQUEST,
-            Self::Database(_) | Self::PasswordHash | Self::Token => {
+            Self::BadRequest(msg) => {
+                message = msg;
+                StatusCode::BAD_REQUEST
+            },
+            Self::PasswordHash | Self::Token => {
                 StatusCode::INTERNAL_SERVER_ERROR
-            }
+            },
+            Self::Internal(msg) => {
+                message = msg;
+                StatusCode::INTERNAL_SERVER_ERROR
+            },
+            Self::Database(msg) => {
+                message = msg.to_string();
+                StatusCode::INTERNAL_SERVER_ERROR
+            },
         };
 
-        let body = Json(json!({ "error": self.to_string() }));
+        let body = Json(json!({ "error": message }));
         (status, body).into_response()
     }
 }
@@ -124,5 +160,7 @@ pub fn db_json(value: &serde_json::Value) -> String {
 }
 
 pub fn db_optional_timestamp(value: Option<sqlx::types::time::OffsetDateTime>) -> Option<String> {
-    value.map(|value| value.unix_timestamp().to_string())
+    value.map(|value| value.format(&time::format_description::well_known::Rfc3339))
+        .transpose()
+        .expect("rfc3339 timestamp")
 }

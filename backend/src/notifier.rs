@@ -19,7 +19,10 @@ pub fn notify_telegram(telegram_id: i64, bot_token: String, message: String) {
 pub fn notify_telegram(_telegram_id: i64, _bot_token: String, _message: String) {}
 
 pub async fn notify_user(state: &AppState, user_id: Uuid, message: impl Into<String>) {
-    let telegram_id = sqlx::query_scalar::<_, i64>(r#"select telegram_id from "user" where user_id = $1"#)
+    let telegram_id = sqlx::query_scalar::<_, i64>(state.db_param(
+        r#"select telegram_id from "user" where user_id = $1"#,
+        r#"select telegram_id from "user" where user_id = cast($1 as uuid)"#,
+    ))
         .bind(db_uuid(user_id))
         .fetch_optional(&state.db)
         .await
