@@ -1,4 +1,5 @@
 use crate::AppState;
+use crate::api::models::{db_json, db_optional_timestamp, db_uuid};
 use crate::api::models::ApiError;
 use crate::api::models::profile::{
     AdminUpdateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse,
@@ -49,10 +50,10 @@ pub async fn admin_create_user(
         returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         "#,
     )
-    .bind(Uuid::now_v7())
+    .bind(db_uuid(Uuid::now_v7()))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
-    .bind(agent_data)
+    .bind(db_json(&agent_data))
     .bind(payload.is_admin.unwrap_or(false))
     .fetch_one(&state.db)
     .await?;
@@ -99,10 +100,10 @@ pub async fn admin_update_user(
         returning user_id, telegram_id, agent_name, agent_data, is_admin, created_at, updated_at
         "#,
     )
-    .bind(user_id)
+    .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
-    .bind(agent_data)
+    .bind(agent_data.as_ref().map(db_json))
     .bind(payload.is_admin)
     .fetch_optional(&state.db)
     .await?
@@ -119,7 +120,7 @@ pub async fn admin_delete_user(
 ) -> Result<StatusCode, ApiError> {
     helpers::require_admin(&headers, &state)?;
     let result = sqlx::query(r#"delete from "user" where user_id = $1"#)
-        .bind(user_id)
+        .bind(db_uuid(user_id))
         .execute(&state.db)
         .await?;
 
@@ -182,7 +183,7 @@ pub async fn admin_get_profile_creation_request(
         where profile_creation_request_id = $1
         "#,
     )
-    .bind(request_id)
+    .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
@@ -237,11 +238,11 @@ pub async fn admin_update_profile_creation_request(
             updated_at
         "#,
     )
-    .bind(request_id)
-    .bind(requested_profile_data)
+    .bind(db_uuid(request_id))
+    .bind(requested_profile_data.as_ref().map(db_json))
     .bind(payload.status.clone())
     .bind(payload.reviewer_note)
-    .bind(reviewed_at)
+    .bind(db_optional_timestamp(reviewed_at))
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(ApiError::NotFound)?;
@@ -254,8 +255,8 @@ pub async fn admin_update_profile_creation_request(
             where user_id = $1
             "#,
         )
-        .bind(request.user_id)
-        .bind(request.requested_profile_data.clone())
+        .bind(db_uuid(request.user_id))
+        .bind(db_json(&request.requested_profile_data))
         .execute(&mut *tx)
         .await?;
     }
@@ -290,7 +291,7 @@ pub async fn admin_delete_profile_creation_request(
     helpers::require_admin(&headers, &state)?;
     let result =
         sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
-            .bind(request_id)
+            .bind(db_uuid(request_id))
             .execute(&state.db)
             .await?;
 

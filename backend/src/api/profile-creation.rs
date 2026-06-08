@@ -1,5 +1,6 @@
 use crate::AppState;
 use crate::api::helpers;
+use crate::api::models::{db_json, db_uuid};
 use crate::api::models::ApiError;
 use crate::api::models::profile::{
     CreateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse,
@@ -15,8 +16,7 @@ pub async fn list_profile_creation_requests(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<Vec<ProfileCreationRequestResponse>>, ApiError> {
-    #[cfg(feature = "telegram-auth")]
-    helpers::verify_telegram_init_data(&headers, &state)?;
+    helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
     let requests = sqlx::query_as::<_, ProfileCreationRequestRecord>(
         r#"
@@ -34,7 +34,7 @@ pub async fn list_profile_creation_requests(
         order by created_at desc
         "#,
     )
-    .bind(auth.user_id)
+    .bind(db_uuid(auth.user_id))
     .fetch_all(&state.db)
     .await?;
 
@@ -51,8 +51,7 @@ pub async fn create_profile_creation_request(
     headers: HeaderMap,
     Json(payload): Json<CreateProfileCreationRequest>,
 ) -> Result<(StatusCode, Json<ProfileCreationRequestResponse>), ApiError> {
-    #[cfg(feature = "telegram-auth")]
-    helpers::verify_telegram_init_data(&headers, &state)?;
+    helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
     let requested_profile_data =
         helpers::normalize_profile_data(Some(payload.requested_profile_data))?;
@@ -76,9 +75,9 @@ pub async fn create_profile_creation_request(
             updated_at
         "#,
     )
-    .bind(Uuid::now_v7())
-    .bind(auth.user_id)
-    .bind(requested_profile_data)
+    .bind(db_uuid(Uuid::now_v7()))
+    .bind(db_uuid(auth.user_id))
+    .bind(db_json(&requested_profile_data))
     .fetch_one(&state.db)
     .await?;
 
@@ -108,8 +107,7 @@ pub async fn get_profile_creation_request(
     headers: HeaderMap,
     Path(request_id): Path<Uuid>,
 ) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
-    #[cfg(feature = "telegram-auth")]
-    helpers::verify_telegram_init_data(&headers, &state)?;
+    helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
     let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
         r#"
@@ -126,7 +124,7 @@ pub async fn get_profile_creation_request(
         where profile_creation_request_id = $1
         "#,
     )
-    .bind(request_id)
+    .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
@@ -141,8 +139,7 @@ pub async fn update_profile_creation_request(
     Path(request_id): Path<Uuid>,
     Json(payload): Json<UpdateProfileCreationRequest>,
 ) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
-    #[cfg(feature = "telegram-auth")]
-    helpers::verify_telegram_init_data(&headers, &state)?;
+    helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
     let existing = sqlx::query_as::<_, ProfileCreationRequestRecord>(
         r#"
@@ -159,7 +156,7 @@ pub async fn update_profile_creation_request(
         where profile_creation_request_id = $1
         "#,
     )
-    .bind(request_id)
+    .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
@@ -190,8 +187,8 @@ pub async fn update_profile_creation_request(
             updated_at
         "#,
     )
-    .bind(request_id)
-    .bind(requested_profile_data)
+    .bind(db_uuid(request_id))
+    .bind(requested_profile_data.as_ref().map(db_json))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
@@ -204,21 +201,22 @@ pub async fn delete_profile_creation_request(
     headers: HeaderMap,
     Path(request_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
-    #[cfg(feature = "telegram-auth")]
-    helpers::verify_telegram_init_data(&headers, &state)?;
+    helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let owner_user_id = sqlx::query_scalar::<_, Uuid>(
+    let owner_user_id = sqlx::query_scalar::<_, String>(
         "select user_id from profile_creation_request where profile_creation_request_id = $1",
     )
-    .bind(request_id)
+    .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
+    let owner_user_id = Uuid::parse_str(&owner_user_id)
+        .map_err(|error| ApiError::Database(sqlx::Error::Decode(Box::new(error))))?;
     helpers::ensure_owner(&auth, owner_user_id)?;
 
     let result =
         sqlx::query("delete from profile_creation_request where profile_creation_request_id = $1")
-            .bind(request_id)
+            .bind(db_uuid(request_id))
             .execute(&state.db)
             .await?;
 

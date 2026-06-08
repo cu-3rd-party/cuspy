@@ -1,4 +1,5 @@
 use crate::AppState;
+use crate::api::models::db_uuid;
 #[cfg(feature = "telegram-auth")]
 use log::warn;
 #[cfg(feature = "telegram-auth")]
@@ -19,7 +20,7 @@ pub fn notify_telegram(_telegram_id: i64, _bot_token: String, _message: String) 
 
 pub async fn notify_user(state: &AppState, user_id: Uuid, message: impl Into<String>) {
     let telegram_id = sqlx::query_scalar::<_, i64>(r#"select telegram_id from "user" where user_id = $1"#)
-        .bind(user_id)
+        .bind(db_uuid(user_id))
         .fetch_optional(&state.db)
         .await
         .ok()
@@ -27,7 +28,9 @@ pub async fn notify_user(state: &AppState, user_id: Uuid, message: impl Into<Str
 
     #[cfg(feature = "telegram-auth")]
     if let Some(telegram_id) = telegram_id {
-        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.into());
+        if let Some(bot_token) = state.telegram_bot_token.clone() {
+            notify_telegram(telegram_id, bot_token, message.into());
+        }
     }
 
     #[cfg(not(feature = "telegram-auth"))]
@@ -54,7 +57,9 @@ pub async fn notify_admins(state: &AppState, message: impl Into<String>) {
 
     #[cfg(feature = "telegram-auth")]
     for telegram_id in recipients {
-        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.clone());
+        if let Some(bot_token) = state.telegram_bot_token.clone() {
+            notify_telegram(telegram_id, bot_token, message.clone());
+        }
     }
 
     #[cfg(not(feature = "telegram-auth"))]

@@ -13,8 +13,8 @@ pub struct Config {
     pub jwt_secret: String,
 
     #[clap(long, env)]
-    pub telegram_bot_token: String,
+    pub telegram_bot_token: Option<String>,
 
     #[clap(long, env)]
-    pub public_webapp_url: String,
+    pub public_webapp_url: Option<String>,
 }

@@ -1,9 +1,9 @@
+use crate::api::models::{parse_json, parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::FromRow;
+use sqlx::{FromRow, Row, any::AnyRow};
 use uuid::Uuid;
 
-#[derive(FromRow)]
 pub struct UserRecord {
     pub user_id: Uuid,
     pub telegram_id: i64,
@@ -12,6 +12,20 @@ pub struct UserRecord {
     pub is_admin: bool,
     pub created_at: sqlx::types::time::OffsetDateTime,
     pub updated_at: Option<sqlx::types::time::OffsetDateTime>,
+}
+
+impl<'r> FromRow<'r, AnyRow> for UserRecord {
+    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+        Ok(Self {
+            user_id: parse_uuid(row, "user_id")?,
+            telegram_id: row.try_get("telegram_id")?,
+            agent_name: row.try_get("agent_name")?,
+            agent_data: parse_json(row, "agent_data")?,
+            is_admin: row.try_get("is_admin")?,
+            created_at: parse_timestamp(row, "created_at")?,
+            updated_at: parse_optional_timestamp(row, "updated_at")?,
+        })
+    }
 }
 
 #[derive(Serialize)]

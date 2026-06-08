@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="dev" type="js.build_tools.npm" nameIsGenerated="true">
+  <configuration default="false" name="frontend" type="js.build_tools.npm">
     <package-json value="$PROJECT_DIR$/frontend/package.json" />
     <command value="run" />
     <scripts>
@@ -8,10 +8,8 @@
     <node-interpreter value="project" />
     <package-manager value="$USER_HOME$/.bun/bin/bun" />
     <envs>
-      <env name="HOST" value="0.0.0.0" />
-      <env name="PORT" value="4173" />
       <env name="BACKEND_URL" value="http://127.0.0.1:3000" />
-      <env name="PUBLIC_WEBAPP_URL" value="https://deity-skeptic-mossy.ngrok-free.dev" />
+      <env name="PUBLIC_DEBUG_AUTH" value="true" />
     </envs>
     <EXTENSION ID="com.intellij.javascript.debugger.execution.StartBrowserRunConfigurationExtension">
       <browser with-js-debugger="true" />

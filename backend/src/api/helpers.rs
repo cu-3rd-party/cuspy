@@ -2,6 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::AppState;
 use crate::api::r#const::{AUTH_HEADER_PREFIX, USER_TOKEN_TTL};
+use crate::api::models::db_uuid;
 use crate::api::models::ApiError;
 use crate::api::models::auth::{AuthClaims, AuthUserRecord, AuthenticatedUser};
 #[cfg(feature = "telegram-auth")]
@@ -132,6 +133,27 @@ pub fn verify_telegram_init_data(
     Ok(TelegramInitData {
         telegram_user_id: telegram_user.id,
     })
+}
+
+pub fn optional_telegram_user_id(
+    headers: &HeaderMap,
+    state: &AppState,
+) -> Result<Option<i64>, ApiError> {
+    #[cfg(feature = "telegram-auth")]
+    {
+        if !state.telegram_auth_enabled() {
+            return Ok(None);
+        }
+
+        return Ok(Some(verify_telegram_init_data(headers, state)?.telegram_user_id));
+    }
+
+    #[cfg(not(feature = "telegram-auth"))]
+    {
+        let _ = headers;
+        let _ = state;
+        Ok(None)
+    }
 }
 
 #[cfg(not(feature = "telegram-auth"))]
@@ -291,7 +313,7 @@ pub fn create_access_token(
     .map_err(|_| ApiError::Token)
 }
 
-pub async fn fetch_current_rating(db: &sqlx::PgPool, user_id: Uuid) -> Result<i64, ApiError> {
+pub async fn fetch_current_rating(db: &sqlx::AnyPool, user_id: Uuid) -> Result<i64, ApiError> {
     Ok(sqlx::query_scalar::<_, i64>(
         r#"
         select coalesce((
@@ -303,7 +325,7 @@ pub async fn fetch_current_rating(db: &sqlx::PgPool, user_id: Uuid) -> Result<i6
         ), $2)
         "#,
     )
-    .bind(user_id)
+    .bind(db_uuid(user_id))
     .bind(DEFAULT_RATING)
     .fetch_one(db)
     .await?)
@@ -314,19 +336,19 @@ mod tests {
     use super::*;
     use http::HeaderValue;
     use serde_json::json;
-    use sqlx::postgres::PgPoolOptions;
+    use sqlx::any::AnyPoolOptions;
 
     fn test_state() -> AppState {
         AppState {
-            db: PgPoolOptions::new()
+            db: AnyPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),
             admin_secret: "admin-secret".into(),
             jwt_secret: "jwt-secret".into(),
             #[cfg(feature = "telegram-auth")]
-            telegram_bot_token: "bot-token".into(),
+            telegram_bot_token: Some("bot-token".into()),
             #[cfg(feature = "telegram-auth")]
-            public_webapp_url: "https://example.com".into(),
+            public_webapp_url: Some("https://example.com".into()),
         }
     }
 

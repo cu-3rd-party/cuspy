@@ -13,18 +13,26 @@ use axum::{
 };
 use log::error;
 use serde_json::{Value, json};
-use sqlx::PgPool;
+use sqlx::AnyPool;
 use uuid::Uuid;
+use crate::api::models::{db_json, db_optional_uuid, db_uuid};
 
 #[derive(Clone)]
 pub struct AppState {
-    pub db: PgPool,
+    pub db: AnyPool,
     pub admin_secret: String,
     pub jwt_secret: String,
     #[cfg(feature = "telegram-auth")]
-    pub telegram_bot_token: String,
+    pub telegram_bot_token: Option<String>,
     #[cfg(feature = "telegram-auth")]
-    pub public_webapp_url: String,
+    pub public_webapp_url: Option<String>,
+}
+
+impl AppState {
+    #[cfg(feature = "telegram-auth")]
+    pub fn telegram_auth_enabled(&self) -> bool {
+        self.telegram_bot_token.is_some()
+    }
 }
 
 pub fn build_app(state: AppState) -> Router {
@@ -115,7 +123,7 @@ struct AuditLogInsert {
     access_context: Value,
 }
 
-async fn persist_audit_log(db: &PgPool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
+async fn persist_audit_log(db: &AnyPool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
     sqlx::query(
         r#"
         insert into audit_log (
@@ -132,15 +140,15 @@ async fn persist_audit_log(db: &PgPool, entry: AuditLogInsert) -> Result<(), sql
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
     )
-    .bind(Uuid::now_v7())
-    .bind(entry.request_id)
-    .bind(entry.actor_user_id)
+    .bind(db_uuid(Uuid::now_v7()))
+    .bind(db_uuid(entry.request_id))
+    .bind(db_optional_uuid(entry.actor_user_id))
     .bind(entry.method)
     .bind(entry.request_uri)
     .bind(entry.matched_path)
     .bind(i32::from(entry.status.as_u16()))
     .bind(entry.duration_ms)
-    .bind(entry.access_context)
+    .bind(db_json(&entry.access_context))
     .execute(db)
     .await?;
 

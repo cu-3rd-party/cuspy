@@ -10,7 +10,7 @@ mod r#const;
 mod health;
 pub mod helpers;
 mod kills;
-mod models;
+pub mod models;
 #[path = "profile-creation.rs"]
 mod profile_creation;
 mod user;

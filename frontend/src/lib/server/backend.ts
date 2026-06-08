@@ -1,9 +1,12 @@
-import { env } from '$env/dynamic/private';
+import { env as privateEnv } from '$env/dynamic/private';
+import { env as publicEnv } from '$env/dynamic/public';
 import { error } from '@sveltejs/kit';
 
 const DEFAULT_BACKEND_URL = 'http://127.0.0.1:3000';
 
-export const backendBaseUrl = () => env.BACKEND_URL || DEFAULT_BACKEND_URL;
+export const backendBaseUrl = () => privateEnv.BACKEND_URL || DEFAULT_BACKEND_URL;
+
+export const debugAuthEnabled = () => publicEnv.PUBLIC_DEBUG_AUTH === 'true';
 
 export const telegramInitDataHeader = (request: Request) => {
 	const initData = request.headers.get('x-telegram-init-data');

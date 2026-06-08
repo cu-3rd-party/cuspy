@@ -11,6 +11,7 @@ use crate::{
     AppState,
     api::{
         helpers,
+        models::{db_json, db_uuid, parse_json, parse_optional_timestamp, parse_optional_uuid, parse_timestamp, parse_uuid},
         models::{
             ApiError,
             kill::{
@@ -26,7 +27,6 @@ fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
 }
 
-#[derive(FromRow)]
 struct KillEventRecord {
     kill_event_id: Uuid,
     killer_id: Uuid,
@@ -43,6 +43,30 @@ struct KillEventRecord {
     moderator_id: Option<Uuid>,
     created_at: sqlx::types::time::OffsetDateTime,
     updated_at: Option<sqlx::types::time::OffsetDateTime>,
+}
+
+impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
+    fn from_row(row: &'r sqlx::any::AnyRow) -> Result<Self, sqlx::Error> {
+        use sqlx::Row;
+
+        Ok(Self {
+            kill_event_id: parse_uuid(row, "kill_event_id")?,
+            killer_id: parse_uuid(row, "killer_id")?,
+            victim_id: parse_uuid(row, "victim_id")?,
+            status: row.try_get("status")?,
+            evidence_url: row.try_get("evidence_url")?,
+            details: parse_json(row, "details")?,
+            killer_confirmed_at: parse_optional_timestamp(row, "killer_confirmed_at")?,
+            victim_confirmed_at: parse_optional_timestamp(row, "victim_confirmed_at")?,
+            moderation_reason: row.try_get("moderation_reason")?,
+            reported_at: parse_timestamp(row, "reported_at")?,
+            confirmed_at: parse_optional_timestamp(row, "confirmed_at")?,
+            moderated_at: parse_optional_timestamp(row, "moderated_at")?,
+            moderator_id: parse_optional_uuid(row, "moderator_id")?,
+            created_at: parse_timestamp(row, "created_at")?,
+            updated_at: parse_optional_timestamp(row, "updated_at")?,
+        })
+    }
 }
 
 fn to_kill_response(record: KillEventRecord) -> KillEventResponse {
@@ -88,7 +112,7 @@ async fn fetch_kill(state: &AppState, kill_id: Uuid) -> Result<KillEventRecord, 
         where kill_event_id = $1
         "#,
     )
-    .bind(kill_id)
+    .bind(db_uuid(kill_id))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)
@@ -143,11 +167,11 @@ pub async fn report_kill(
             updated_at
         "#,
     )
-    .bind(Uuid::now_v7())
-    .bind(auth.user_id)
-    .bind(payload.victim_id)
+    .bind(db_uuid(Uuid::now_v7()))
+    .bind(db_uuid(auth.user_id))
+    .bind(db_uuid(payload.victim_id))
     .bind(payload.evidence_url)
-    .bind(details)
+    .bind(db_json(&details))
     .fetch_one(&state.db)
     .await?;
 
@@ -216,7 +240,7 @@ pub async fn confirm_kill(
                 updated_at
             "#,
         )
-        .bind(kill_id)
+        .bind(db_uuid(kill_id))
         .bind(note)
         .fetch_optional(&state.db)
         .await?
@@ -247,7 +271,7 @@ pub async fn confirm_kill(
                 updated_at
             "#,
         )
-        .bind(kill_id)
+        .bind(db_uuid(kill_id))
         .fetch_one(&state.db)
         .await?
     } else {
@@ -278,7 +302,7 @@ pub async fn confirm_kill(
                 updated_at
             "#,
         )
-        .bind(kill_id)
+        .bind(db_uuid(kill_id))
         .fetch_optional(&state.db)
         .await?
         .ok_or(ApiError::BadRequest(
@@ -369,11 +393,11 @@ pub async fn moderate_kill(
             updated_at
         "#,
     )
-    .bind(kill_id)
+    .bind(db_uuid(kill_id))
     .bind(next_status)
     .bind(reason)
-    .bind(admin.user_id)
-    .bind(Uuid::nil())
+    .bind(db_uuid(admin.user_id))
+    .bind(db_uuid(Uuid::nil()))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::BadRequest(format!(
@@ -451,7 +475,7 @@ pub async fn list_my_pending_kills(
         order by reported_at desc, created_at desc
         "#,
     )
-    .bind(auth.user_id)
+    .bind(db_uuid(auth.user_id))
     .fetch_all(&state.db)
     .await?;
 
@@ -582,7 +606,7 @@ pub async fn user_stats(
         where exists (select 1 from "user" where user_id = $1)
         "#,
     )
-    .bind(user_id)
+    .bind(db_uuid(user_id))
     .bind(helpers::DEFAULT_RATING)
     .fetch_optional(&state.db)
     .await?

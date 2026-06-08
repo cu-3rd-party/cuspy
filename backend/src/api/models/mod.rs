@@ -3,6 +3,30 @@ use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use serde::Serialize;
 use serde_json::json;
+use sqlx::{Row, any::AnyRow};
+use uuid::Uuid;
+
+fn decode_timestamp_value(value: &str) -> Result<sqlx::types::time::OffsetDateTime, sqlx::Error> {
+    use time::{PrimitiveDateTime, UtcOffset, format_description::well_known::Rfc3339};
+
+    if let Ok(unix) = value.parse::<i64>() {
+        return sqlx::types::time::OffsetDateTime::from_unix_timestamp(unix)
+            .map_err(|error| sqlx::Error::Decode(Box::new(error)));
+    }
+
+    if let Ok(value) = sqlx::types::time::OffsetDateTime::parse(value, &Rfc3339) {
+        return Ok(value);
+    }
+
+    let format = time::format_description::parse(
+        "[year]-[month]-[day] [hour]:[minute]:[second][optional [.[subsecond]] ]",
+    )
+    .map_err(|error| sqlx::Error::Decode(Box::new(error)))?;
+
+    PrimitiveDateTime::parse(value.trim(), &format)
+        .map(|value| value.assume_offset(UtcOffset::UTC))
+        .map_err(|error| sqlx::Error::Decode(Box::new(error)))
+}
 
 pub mod auth;
 pub mod kill;
@@ -49,4 +73,56 @@ impl IntoResponse for ApiError {
 #[derive(Serialize)]
 pub struct HealthResponse {
     pub status: &'static str,
+}
+
+pub fn parse_uuid(row: &AnyRow, column: &str) -> Result<Uuid, sqlx::Error> {
+    let value: String = row.try_get(column)?;
+    Uuid::parse_str(&value).map_err(|error| sqlx::Error::Decode(Box::new(error)))
+}
+
+pub fn parse_optional_uuid(row: &AnyRow, column: &str) -> Result<Option<Uuid>, sqlx::Error> {
+    let value: Option<String> = row.try_get(column)?;
+    match value {
+        Some(value) => Uuid::parse_str(&value)
+            .map(Some)
+            .map_err(|error| sqlx::Error::Decode(Box::new(error))),
+        None => Ok(None),
+    }
+}
+
+pub fn parse_json(row: &AnyRow, column: &str) -> Result<serde_json::Value, sqlx::Error> {
+    let value: String = row.try_get(column)?;
+    serde_json::from_str(&value).map_err(|error| sqlx::Error::Decode(Box::new(error)))
+}
+
+pub fn parse_optional_timestamp(
+    row: &AnyRow,
+    column: &str,
+) -> Result<Option<sqlx::types::time::OffsetDateTime>, sqlx::Error> {
+    let value: Option<String> = row.try_get(column)?;
+    value.map(|value| decode_timestamp_value(&value)).transpose()
+}
+
+pub fn parse_timestamp(
+    row: &AnyRow,
+    column: &str,
+) -> Result<sqlx::types::time::OffsetDateTime, sqlx::Error> {
+    let value: String = row.try_get(column)?;
+    decode_timestamp_value(&value)
+}
+
+pub fn db_uuid(value: Uuid) -> String {
+    value.to_string()
+}
+
+pub fn db_optional_uuid(value: Option<Uuid>) -> Option<String> {
+    value.map(|value| value.to_string())
+}
+
+pub fn db_json(value: &serde_json::Value) -> String {
+    value.to_string()
+}
+
+pub fn db_optional_timestamp(value: Option<sqlx::types::time::OffsetDateTime>) -> Option<String> {
+    value.map(|value| value.unix_timestamp().to_string())
 }

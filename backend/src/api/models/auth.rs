@@ -1,27 +1,23 @@
+use crate::api::models::parse_uuid;
 use crate::api::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::FromRow;
+use sqlx::{FromRow, any::AnyRow};
 use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
-    #[cfg(not(feature = "telegram-auth"))]
-    pub email: String,
-    #[cfg(not(feature = "telegram-auth"))]
-    pub password: String,
-    #[cfg(not(feature = "telegram-auth"))]
-    pub telegram_id: i64,
+    pub email: Option<String>,
+    pub password: Option<String>,
+    pub telegram_id: Option<i64>,
     pub agent_name: Option<String>,
     pub agent_data: Option<Value>,
 }
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    #[cfg(not(feature = "telegram-auth"))]
-    pub email: String,
-    #[cfg(not(feature = "telegram-auth"))]
-    pub password: String,
+    pub email: Option<String>,
+    pub password: Option<String>,
 }
 
 #[cfg(feature = "telegram-auth")]
@@ -36,13 +32,25 @@ pub struct AuthResponse {
     pub user: UserResponse,
 }
 
-#[derive(FromRow)]
 pub struct AuthUserRecord {
     pub auth_user_id: Uuid,
     pub user_id: Uuid,
     pub login_identifier: String,
     #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
     pub password_hash: Option<String>,
+}
+
+impl<'r> FromRow<'r, AnyRow> for AuthUserRecord {
+    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+        use sqlx::Row;
+
+        Ok(Self {
+            auth_user_id: parse_uuid(row, "auth_user_id")?,
+            user_id: parse_uuid(row, "user_id")?,
+            login_identifier: row.try_get("login_identifier")?,
+            password_hash: row.try_get("password_hash")?,
+        })
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

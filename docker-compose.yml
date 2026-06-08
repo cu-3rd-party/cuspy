@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18beta2
+    image: postgres:16
     environment:
       POSTGRES_DB: cukiller
       POSTGRES_USER: cukiller
