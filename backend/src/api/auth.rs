@@ -79,6 +79,7 @@ pub async fn register(
             telegram_id,
             agent_name,
             cast(agent_data as text) as agent_data,
+            is_admin,
             cast(created_at as text) as created_at,
             cast(updated_at as text) as updated_at
         "#,
@@ -90,6 +91,7 @@ pub async fn register(
             telegram_id,
             agent_name,
             cast(agent_data as text) as agent_data,
+            is_admin,
             cast(created_at as text) as created_at,
             cast(updated_at as text) as updated_at
         "#,
