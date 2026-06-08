@@ -67,7 +67,7 @@
 		<a
 			href={isLocked(item) ? undefined : resolve(item.href)}
 			aria-disabled={isLocked(item)}
-			class={`flex flex-col items-center justify-center p-2 transition-all active:scale-95 duration-75 {isActive(item) ? 'bg-surface-container text-primary border-t-2 border-primary' : isLocked(item) ? 'pointer-events-none cursor-not-allowed text-outline/30 saturate-0' : 'text-outline hover:bg-surface-container-low'}`}
+			class={isActive(item) ? 'text-emerald-400 flex flex-col items-center justify-center p-2 transition-all active:scale-95 duration-75 w-full' : isLocked(item) ? ' w-full flex flex-col items-center justify-center p-2 transition-all text-outline pointer-events-none cursor-not-allowed saturate-0' : ' w-full text-emerald-100 flex flex-col items-center justify-center p-2 transition-all active:scale-95 duration-75'}
 		>
 			<Icon name={item.icon} filled={isActive(item) || item.fill} class="text-xl" />
 			<span class="font-headline text-[10px] font-bold tracking-widest uppercase mt-1">{item.label}</span>
