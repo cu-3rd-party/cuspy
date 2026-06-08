@@ -70,32 +70,18 @@ pub async fn register(
     let mut tx = state.db.begin().await?;
 
     let user_id = Uuid::now_v7();
-    let user = match sqlx::query_as::<_, UserRecord>(state.db_param(
-        r#"
+    let user = match sqlx::query_as::<_, UserRecord>(r#"
         insert into "user" (user_id, telegram_id, agent_name, agent_data)
         values ($1, $2, $3, $4)
         returning
-            cast(user_id as text) as user_id,
+            user_id,
             telegram_id,
             agent_name,
-            cast(agent_data as text) as agent_data,
+            agent_data,
             is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
-        r#"
-        insert into "user" (user_id, telegram_id, agent_name, agent_data)
-        values (cast($1 as uuid), $2, $3, cast($4 as jsonb))
-        returning
-            cast(user_id as text) as user_id,
-            telegram_id,
-            agent_name,
-            cast(agent_data as text) as agent_data,
-            is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
-    ))
+            created_at,
+            updated_at
+        "#)
     .bind(db_uuid(user_id))
     .bind(telegram_id)
     .bind(payload.agent_name)
