@@ -63,8 +63,8 @@
 				title: 'Dossier awaiting clearance',
 				body: 'Profile submission received. Hold position while command validates identity packet and operational boundaries.',
 				icon: 'hourglass_top',
-				href: '/waiting-clearance',
-				ctaLabel: 'Open waiting screen',
+				href: null,
+				ctaLabel: null,
 				tone: 'secondary' as const
 			};
 		}
