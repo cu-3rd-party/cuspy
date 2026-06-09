@@ -40,7 +40,7 @@
 <TopBar config={{ title: 'CUKILLER // PROTOCOL', icon: 'terminal' }} flow={sessionFlow} />
 <Sidebar flow={sessionFlow} homeHref={chromeTarget} />
 
-<main class="min-h-screen pt-16 lg:pl-80">
+<main class="min-h-screen lg:pl-80">
 	{@render children()}
 </main>
 

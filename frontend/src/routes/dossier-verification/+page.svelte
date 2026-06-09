@@ -159,7 +159,7 @@
 			</div>
 		</section>
 
-		<div class="mb-8 grid gap-4 md:grid-cols-3">
+		<div class="mb-4 grid gap-4 md:grid-cols-3">
 			<div class="relative overflow-hidden bg-surface-container md:col-span-1">
 				<img
 					src={profileImage}
@@ -230,7 +230,7 @@
 		</section>
 
 		<footer
-			class="mt-12 mb-24 border border-dashed border-error/30 bg-surface-container-low p-6 text-center"
+			class="mt-4 border border-dashed border-error/30 bg-surface-container-low p-6 text-center"
 		>
 			<p class="mb-2 font-label text-[10px] font-bold tracking-[0.3em] text-error uppercase">
 				{m.dossier_verification_legal_notice()}
@@ -247,9 +247,9 @@
 		{/if}
 
 		<div
-			class="fixed inset-x-0 bottom-15 bg-gradient-to-t from-background via-background to-transparent px-4 pt-12 pb-4"
+			class="inset-x-0 mt-4 bg-linear-to-t from-background via-background to-transparent"
 		>
-			<div class="mx-auto flex max-w-4xl justify-end md:w-2/3 md:pr-0">
+			<div class="mx-auto flex justify-end md:pr-0">
 				<button
 					type="button"
 					onclick={handleSubmit}
