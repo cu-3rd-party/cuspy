@@ -29,6 +29,9 @@ sha2 = { version = "0.10.9", optional = true }
 hex = { version = "0.4.3", optional = true }
 teloxide = { version = "0.17.0", features = ["macros"] }
 url = "2.5.7"
+utoipa = { version = "5.5.0", features = ["uuid", "yaml", "chrono", "config", "preserve_order"] }
+utoipa-axum = "0.2.0"
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 
 [dev-dependencies]
 http-body-util = "0.1.3"

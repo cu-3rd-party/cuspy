@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::ApiContext;
 use crate::api::models::db_uuid;
 #[cfg(feature = "telegram-auth")]
 use log::warn;
@@ -18,7 +18,7 @@ pub fn notify_telegram(telegram_id: i64, bot_token: String, message: String) {
 #[cfg(not(feature = "telegram-auth"))]
 pub fn notify_telegram(_telegram_id: i64, _bot_token: String, _message: String) {}
 
-pub async fn notify_user(state: &AppState, user_id: Uuid, message: impl Into<String>) {
+pub async fn notify_user(state: &ApiContext, user_id: Uuid, message: impl Into<String>) {
     let telegram_id = sqlx::query_scalar::<_, i64>(
         r#"select telegram_id from "user" where user_id = cast($1 as uuid)"#,
     )
@@ -44,7 +44,7 @@ pub async fn notify_user(state: &AppState, user_id: Uuid, message: impl Into<Str
     }
 }
 
-pub async fn notify_admins(state: &AppState, message: impl Into<String>) {
+pub async fn notify_admins(state: &ApiContext, message: impl Into<String>) {
     let message = message.into();
     let recipients = sqlx::query_scalar::<_, i64>(
         r#"

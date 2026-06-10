@@ -144,7 +144,7 @@ async fn telegram_auth_requires_valid_init_data() {
         )
         .await;
     assert_eq!(request_status, StatusCode::CREATED);
-    let request_id = request_body["profile_creation_request_id"]
+    let request_id = request_body["profile_request_id"]
         .as_str()
         .expect("request id");
 
@@ -181,7 +181,7 @@ async fn telegram_auth_requires_valid_init_data() {
         .await;
     assert_eq!(forbidden_request_status, StatusCode::OK);
     assert_eq!(
-        forbidden_request_body["profile_creation_request_id"],
+        forbidden_request_body["profile_request_id"],
         Value::String(request_id.to_string())
     );
 }

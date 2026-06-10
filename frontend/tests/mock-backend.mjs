@@ -58,7 +58,7 @@ const tokenUsers = new Map([
 const profileRequests = {
 	pending: [
 		{
-			profile_creation_request_id: 'request-pending',
+			profile_request_id: 'request-pending',
 			user_id: 'user-pending',
 			requested_profile_data: { codename: 'PENDING_AGENT' },
 			status: 'sent',
@@ -70,7 +70,7 @@ const profileRequests = {
 	],
 	approved: [
 		{
-			profile_creation_request_id: 'request-approved',
+			profile_request_id: 'request-approved',
 			user_id: 'user-approved',
 			requested_profile_data: { codename: 'APPROVED_AGENT' },
 			status: 'confirmed',
@@ -82,7 +82,7 @@ const profileRequests = {
 	],
 	rejected: [
 		{
-			profile_creation_request_id: 'request-rejected',
+			profile_request_id: 'request-rejected',
 			user_id: 'user-rejected',
 			requested_profile_data: { codename: 'REJECTED_AGENT' },
 			status: 'rejected',
@@ -141,7 +141,7 @@ let killReports = [
 
 let adminRequests = [
 	{
-		profile_creation_request_id: 'queue-1',
+		profile_request_id: 'queue-1',
 		user_id: 'user-pending',
 		requested_profile_data: {
 			codename: 'PENDING_AGENT',
@@ -156,7 +156,7 @@ let adminRequests = [
 		updated_at: '1710000000'
 	},
 	{
-		profile_creation_request_id: 'queue-2',
+		profile_request_id: 'queue-2',
 		user_id: 'user-rejected',
 		requested_profile_data: {
 			codename: 'REJECTED_AGENT',
@@ -230,7 +230,7 @@ const server = http.createServer((request, response) => {
 			const timestamp = nextUnix();
 			const requestedProfileData = payload.requested_profile_data ?? {};
 			const profileRequest = {
-				profile_creation_request_id: nextId('request-generated'),
+				profile_request_id: nextId('request-generated'),
 				user_id: user.user_id,
 				requested_profile_data: requestedProfileData,
 				status: 'sent',
@@ -355,7 +355,7 @@ const server = http.createServer((request, response) => {
 			const payload = JSON.parse(body || '{}');
 			const requestId = request.url.split('/').pop();
 			adminRequests = adminRequests.map((entry) =>
-				entry.profile_creation_request_id === requestId
+				entry.profile_request_id === requestId
 					? {
 						...entry,
 						status: payload.status ?? entry.status,
@@ -366,7 +366,7 @@ const server = http.createServer((request, response) => {
 					: entry
 			);
 
-			const updated = adminRequests.find((entry) => entry.profile_creation_request_id === requestId);
+			const updated = adminRequests.find((entry) => entry.profile_request_id === requestId);
 			if (updated) {
 				profileRequestsByUserId.set(updated.user_id, [updated]);
 			}

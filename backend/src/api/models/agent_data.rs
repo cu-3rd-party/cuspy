@@ -1,10 +1,9 @@
-use std::fmt::Display;
 use crate::api::models::parse_uuid;
 use serde::{Deserialize, Serialize};
 use sqlx::any::AnyRow;
 use sqlx::{Error, FromRow, Row};
+use std::fmt::Display;
 use std::str::FromStr;
-use tower_http::follow_redirect::policy::PolicyExt;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize)]
@@ -101,4 +100,16 @@ impl<'r> FromRow<'r, AnyRow> for AgentData {
             hugs_close_proximity_allowed: row.get("hugs_close_proximity_allowed"),
         })
     }
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct AgentDataMetadata {
+    pub codename: Option<String>,
+    pub academic_group: Option<String>,
+    pub academic_level: Option<AcademicLevel>,
+    pub course_number: Option<i64>,
+    pub bachelor_track: Option<BachelorTrack>,
+    pub identification_name: Option<String>,
+    pub physical_contact_allowed: bool,
+    pub hugs_close_proximity_allowed: bool,
 }

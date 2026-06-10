@@ -1,13 +1,13 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::AppState;
+use crate::ApiContext;
 use crate::api::r#const::{AUTH_HEADER_PREFIX, AUTH_TOKEN_TTL, REFRESH_TOKEN_TTL};
 use crate::api::models::ApiError;
 use crate::api::models::auth::{AuthClaims, AuthUserRecord, AuthenticatedUser, RefreshClaims};
 #[cfg(feature = "telegram-auth")]
 use crate::api::models::auth::{TelegramInitData, TelegramUser};
 use crate::api::models::db_uuid;
-use crate::api::models::profile::{ProfileCreationRequestRecord, ProfileCreationRequestResponse};
+use crate::api::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::api::models::similarity::SimilarityResponse;
 use crate::api::models::user::{UserRecord, UserResponse};
 use argon2::password_hash::SaltString;
@@ -31,7 +31,7 @@ use uuid::Uuid;
 
 pub const DEFAULT_RATING: i64 = 1000;
 
-fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
+pub fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
 }
 
@@ -48,11 +48,9 @@ pub fn to_user_response(record: UserRecord) -> UserResponse {
     }
 }
 
-pub fn to_profile_creation_request_response(
-    record: ProfileCreationRequestRecord,
-) -> ProfileCreationRequestResponse {
-    ProfileCreationRequestResponse {
-        profile_creation_request_id: record.profile_creation_request_id,
+pub fn to_profile_request_response(record: ProfileRequestRecord) -> ProfileRequestResponse {
+    ProfileRequestResponse {
+        profile_request_id: record.profile_request_id,
         user_id: record.user_id,
         requested_profile_data_id: record.requested_profile_data_id,
         status: record.status,
@@ -63,7 +61,10 @@ pub fn to_profile_creation_request_response(
     }
 }
 
-pub fn require_admin(headers: &HeaderMap, state: &AppState) -> Result<AuthenticatedUser, ApiError> {
+pub fn require_admin(
+    headers: &HeaderMap,
+    state: &ApiContext,
+) -> Result<AuthenticatedUser, ApiError> {
     if let Ok(auth) = require_bearer_token(headers, state) {
         if auth.is_admin {
             return Ok(auth);
@@ -90,7 +91,7 @@ pub fn require_admin(headers: &HeaderMap, state: &AppState) -> Result<Authentica
 #[cfg(feature = "telegram-auth")]
 pub fn verify_telegram_init_data(
     headers: &HeaderMap,
-    state: &AppState,
+    state: &ApiContext,
 ) -> Result<TelegramInitData, ApiError> {
     type HmacSha256 = Hmac<Sha256>;
 
@@ -138,13 +139,13 @@ pub fn verify_telegram_init_data(
 
 #[cfg(not(feature = "telegram-auth"))]
 #[allow(dead_code)]
-fn verify_telegram_init_data(_headers: &HeaderMap, _state: &AppState) -> Result<(), ApiError> {
+fn verify_telegram_init_data(_headers: &HeaderMap, _state: &ApiContext) -> Result<(), ApiError> {
     Ok(())
 }
 
 pub fn optional_telegram_user_id(
     headers: &HeaderMap,
-    state: &AppState,
+    state: &ApiContext,
 ) -> Result<Option<i64>, ApiError> {
     #[cfg(feature = "telegram-auth")]
     {
@@ -165,9 +166,10 @@ pub fn optional_telegram_user_id(
     }
 }
 
+// TODO: по хорошему вынести в экстрактор
 pub fn require_bearer_token(
     headers: &HeaderMap,
-    state: &AppState,
+    state: &ApiContext,
 ) -> Result<AuthenticatedUser, ApiError> {
     let Some(value) = headers.get(header::AUTHORIZATION) else {
         return Err(ApiError::Unauthorized);
@@ -279,7 +281,7 @@ pub fn verify_password(hash: &str, password: &str) -> Result<(), ApiError> {
 }
 
 pub fn create_access_token(
-    state: &AppState,
+    state: &ApiContext,
     auth_user: &AuthUserRecord,
     is_admin: bool,
 ) -> Result<String, ApiError> {
@@ -307,7 +309,7 @@ pub fn create_access_token(
 }
 
 pub fn create_refresh_token(
-    state: &AppState,
+    state: &ApiContext,
     auth_user: &AuthUserRecord,
 ) -> Result<String, ApiError> {
     let exp = SystemTime::now()
@@ -353,8 +355,8 @@ mod tests {
     use serde_json::json;
     use sqlx::any::AnyPoolOptions;
 
-    fn test_state() -> AppState {
-        AppState {
+    fn test_state() -> ApiContext {
+        ApiContext {
             db: AnyPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),

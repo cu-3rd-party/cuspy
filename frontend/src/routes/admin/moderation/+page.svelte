@@ -18,14 +18,14 @@
 	let activeId = $state('');
 	let reviewerNote = $state('');
 	let activeRequest = $derived(
-		requests.find((request) => request.profile_creation_request_id === activeId) ?? requests[0] ?? null
+		requests.find((request) => request.profile_request_id === activeId) ?? requests[0] ?? null
 	);
 	let pendingCount = $derived(requests.filter((request) => request.status === 'sent').length);
 	let resolvedCount = $derived(requests.filter((request) => request.status !== 'sent').length);
 
 	$effect(() => {
 		if (!activeId && requests[0]) {
-			activeId = requests[0].profile_creation_request_id;
+			activeId = requests[0].profile_request_id;
 			reviewerNote = requests[0].reviewer_note ?? '';
 		}
 	});
@@ -71,11 +71,11 @@
 	{:else}
 		<div class="grid gap-8 lg:grid-cols-12">
 			<section class="space-y-4 lg:col-span-4">
-				{#each requests as request (request.profile_creation_request_id)}
+				{#each requests as request (request.profile_request_id)}
 					<button
 						type="button"
-						onclick={() => selectRequest(request.profile_creation_request_id, request.reviewer_note)}
-						class={`w-full border p-4 text-left transition-colors ${request.profile_creation_request_id === activeId ? 'border-primary bg-surface-container text-on-surface' : 'border-outline-variant/20 bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container-low'}`}
+						onclick={() => selectRequest(request.profile_request_id, request.reviewer_note)}
+						class={`w-full border p-4 text-left transition-colors ${request.profile_request_id === activeId ? 'border-primary bg-surface-container text-on-surface' : 'border-outline-variant/20 bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container-low'}`}
 					>
 						<div class="flex items-start justify-between gap-4">
 							<div>
@@ -102,7 +102,7 @@
 					<div class="mb-8 flex flex-wrap items-start justify-between gap-4">
 						<div>
 							<h3 class="text-2xl font-display font-bold uppercase">{activeRequest.requested_profile_data.codename ?? 'UNNAMED_AGENT'}</h3>
-							<p class="mt-2 text-[10px] font-label tracking-[0.3em] text-on-surface-variant uppercase">REQUEST_ID: {activeRequest.profile_creation_request_id}</p>
+							<p class="mt-2 text-[10px] font-label tracking-[0.3em] text-on-surface-variant uppercase">REQUEST_ID: {activeRequest.profile_request_id}</p>
 						</div>
 						<div class="text-right text-[10px] font-label uppercase text-on-surface-variant">
 							<div>SUBMITTED: {formatDate(activeRequest.created_at)}</div>
@@ -137,7 +137,7 @@
 						</div>
 
 						<form method="POST" action="?/moderate" use:enhance class="space-y-4 bg-surface-container p-4">
-							<input type="hidden" name="requestId" value={activeRequest.profile_creation_request_id} />
+							<input type="hidden" name="requestId" value={activeRequest.profile_request_id} />
 							<div>
 								<label for="reviewer-note" class="mb-3 block text-[10px] font-label tracking-[0.2em] text-on-surface-variant uppercase">Reviewer Note</label>
 								<textarea id="reviewer-note" name="reviewerNote" bind:value={reviewerNote} class="min-h-40 w-full bg-surface-container-lowest p-3 text-sm text-on-surface focus:outline-none" placeholder="Explain approval context or rejection reason."></textarea>

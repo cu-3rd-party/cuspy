@@ -1,79 +1,75 @@
-use crate::AppState;
+use crate::ApiContext;
+use crate::api::routes::stats;
 use axum::{
     Router,
     routing::{get, post},
 };
+use routes::admin::{profile_request_crud, users_crud};
+use routes::auth::{login, register};
+use routes::kill;
 
-mod admin;
-mod auth;
+mod apiuser;
 mod r#const;
+mod db;
 mod health;
 pub mod helpers;
-mod image;
-mod kills;
 pub mod models;
-#[path = "profile-creation.rs"]
+#[path = "apiprofile_creation.rs"]
 mod profile_creation;
-mod user;
-mod db;
-mod agent_data;
+pub mod routes;
 
-pub fn router() -> Router<AppState> {
+pub fn router() -> Router<ApiContext> {
     Router::new()
         .route("/health", get(health::health))
-        .route("/auth/register", post(auth::register))
-        .route("/auth/login", post(auth::login))
-        .route("/auth/me", get(user::me))
-        .route("/user/me", get(user::me).put(user::update_me))
+        .route("/auth/register", post(register::register))
+        .route("/auth/login", post(login::login))
+        .route("/auth/me", get(apiuser::me))
+        .route("/user/me", get(apiuser::me).put(apiuser::update_me))
         .route(
             "/users/{user_id}",
-            get(user::get_user)
-                .patch(user::update_user)
-                .delete(user::delete_user),
+            get(apiuser::get_user)
+                .patch(apiuser::update_user)
+                .delete(apiuser::delete_user),
         )
         .route(
             "/users/{left_user_id}/compare/{right_user_id}",
-            get(user::compare_user_profiles),
+            get(apiuser::compare_user_profiles),
         )
-        .route("/system/profile-similarity", post(user::compare_profiles))
         .route(
-            "/kills",
-            get(kills::list_approved_kills).post(kills::report_kill),
+            "/system/profile-similarity",
+            post(apiuser::compare_profiles),
         )
-        .route("/kills/my-pending", get(kills::list_my_pending_kills))
-        .route("/kills/{kill_id}/confirm", post(kills::confirm_kill))
-        .route("/kills/{kill_id}/moderate", post(kills::moderate_kill))
-        .route("/rankings", get(kills::rankings))
-        .route("/stats/user/{user_id}", get(kills::user_stats))
+        .nest("/kill", stats::router())
+        .nest("/stats", stats::router())
         .route(
             "/profile-creation-requests",
-            get(profile_creation::list_profile_creation_requests)
-                .post(profile_creation::create_profile_creation_request),
+            get(profile_creation::list_profile_requests)
+                .post(profile_creation::create_profile_request),
         )
         .route(
             "/profile-creation-requests/{request_id}",
-            get(profile_creation::get_profile_creation_request)
-                .patch(profile_creation::update_profile_creation_request)
-                .delete(profile_creation::delete_profile_creation_request),
+            get(profile_creation::get_profile_request)
+                .patch(profile_creation::update_profile_request)
+                .delete(profile_creation::delete_profile_request),
         )
         .route(
             "/admin/users",
-            get(admin::admin_list_users).post(admin::admin_create_user),
+            get(users_crud::admin_list_users).post(users_crud::admin_create_user),
         )
         .route(
             "/admin/users/{user_id}",
-            get(admin::admin_get_user)
-                .patch(admin::admin_update_user)
-                .delete(admin::admin_delete_user),
+            get(users_crud::admin_get_user)
+                .patch(users_crud::admin_update_user)
+                .delete(users_crud::admin_delete_user),
         )
         .route(
             "/admin/profile-creation-requests",
-            get(admin::admin_list_profile_creation_requests),
+            get(profile_request_crud::admin_list_profile_requests),
         )
         .route(
             "/admin/profile-creation-requests/{request_id}",
-            get(admin::admin_get_profile_creation_request)
-                .patch(admin::admin_update_profile_creation_request)
-                .delete(admin::admin_delete_profile_creation_request),
+            get(profile_request_crud::admin_get_profile_request)
+                .patch(profile_request_crud::admin_update_profile_request)
+                .delete(profile_request_crud::admin_delete_profile_request),
         )
 }

@@ -14,7 +14,7 @@ const makeUser = (): SessionUser => ({
 });
 
 const makeRequest = (status: ProfileRequest['status']): ProfileRequest => ({
-	profile_creation_request_id: 'request-1',
+	profile_request_id: 'request-1',
 	user_id: 'user-1',
 	requested_profile_data: {},
 	status,

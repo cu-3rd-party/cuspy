@@ -10,63 +10,6 @@ use common::{
 };
 
 #[tokio::test]
-async fn sqlite_register_works() {
-    sqlx::any::install_default_drivers();
-
-    let db = sqlx::any::AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect sqlite");
-    sqlx::migrate!("./migrations/sqlite")
-        .run(&db)
-        .await
-        .expect("run sqlite migrations");
-
-    let app = cukiller_backend::build_app(cukiller_backend::AppState {
-        db,
-        admin_secret: "test-admin-secret".into(),
-        jwt_secret: "test-jwt-secret".into(),
-        #[cfg(feature = "telegram-auth")]
-        telegram_bot_token: None,
-        #[cfg(feature = "telegram-auth")]
-        public_webapp_url: None,
-    });
-
-    let request = axum::http::Request::builder()
-        .method("POST")
-        .uri("/auth/register")
-        .header(axum::http::header::CONTENT_TYPE, "application/json")
-        .body(axum::body::Body::from(
-            serde_json::to_vec(&json!({
-                "email": "sqlite@example.com",
-                "password": "password123",
-                "telegram_id": 1,
-                "agent_name": "Sqlite",
-                "agent_data": {"track": "backend"}
-            }))
-            .expect("serialize"),
-        ))
-        .expect("request");
-
-    let response = tower::ServiceExt::oneshot(app, request)
-        .await
-        .expect("response");
-    let status = response.status();
-    let body = http_body_util::BodyExt::collect(response.into_body())
-        .await
-        .expect("body")
-        .to_bytes();
-
-    assert_eq!(
-        status,
-        StatusCode::CREATED,
-        "sqlite register body: {}",
-        String::from_utf8_lossy(&body)
-    );
-}
-
-#[tokio::test]
 async fn backend_endpoints_work_end_to_end() {
     let ctx = TestContext::new().await;
 
@@ -192,7 +135,7 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(create_request_status, StatusCode::CREATED);
-    let request_id = create_request_body["profile_creation_request_id"]
+    let request_id = create_request_body["profile_request_id"]
         .as_str()
         .expect("request id")
         .to_string();

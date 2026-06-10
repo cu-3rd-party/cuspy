@@ -1,5 +1,5 @@
 use clap::Parser;
-use cukiller_backend::{AppState, build_app, config};
+use cukiller_backend::{ApiContext, build_app, config};
 use log::info;
 use sqlx::{AnyPool, any::AnyPoolOptions, migrate::Migrator};
 use std::path::Path;
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     run_migrations(&db).await?;
 
-    let state = AppState {
+    let state = ApiContext {
         db,
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,

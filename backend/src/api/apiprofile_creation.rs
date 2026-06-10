@@ -1,9 +1,8 @@
-use crate::AppState;
+use crate::ApiContext;
 use crate::api::helpers;
 use crate::api::models::ApiError;
 use crate::api::models::profile::{
-    CreateProfileCreationRequest, ProfileCreationRequestRecord, ProfileCreationRequestResponse,
-    UpdateProfileCreationRequest,
+    CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse, UpdateProfileRequest,
 };
 use crate::api::models::{db_json, db_uuid};
 use crate::notifier;
@@ -12,16 +11,16 @@ use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
 
-pub async fn list_profile_creation_requests(
-    State(state): State<AppState>,
+pub async fn list_profile_requests(
+    State(state): State<ApiContext>,
     headers: HeaderMap,
-) -> Result<Json<Vec<ProfileCreationRequestResponse>>, ApiError> {
+) -> Result<Json<Vec<ProfileRequestResponse>>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let requests = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let requests = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_creation_request_id,
+            profile_request_id,
             user_id,
             requested_profile_data_id,
             status,
@@ -29,7 +28,7 @@ pub async fn list_profile_creation_requests(
             reviewed_at,
             created_at,
             updated_at
-        from profile_creation_request
+        from profile_request
         where cast(user_id as text) = $1
         order by created_at desc
         "#,
@@ -41,29 +40,29 @@ pub async fn list_profile_creation_requests(
     Ok(Json(
         requests
             .into_iter()
-            .map(helpers::to_profile_creation_request_response)
+            .map(helpers::to_profile_request_response)
             .collect(),
     ))
 }
 
-pub async fn create_profile_creation_request(
-    State(state): State<AppState>,
+pub async fn create_profile_request(
+    State(state): State<ApiContext>,
     headers: HeaderMap,
-    Json(payload): Json<CreateProfileCreationRequest>,
-) -> Result<(StatusCode, Json<ProfileCreationRequestResponse>), ApiError> {
+    Json(payload): Json<CreateProfileRequest>,
+) -> Result<(StatusCode, Json<ProfileRequestResponse>), ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
-        insert into profile_creation_request (
-            profile_creation_request_id,
+        insert into profile_request (
+            profile_request_id,
             user_id,
             requested_profile_data_id,
             status
         )
         values ($1, $2, $3, 'sent')
         returning
-            profile_creation_request_id,
+            profile_request_id,
             user_id,
             requested_profile_data_id,
             status,
@@ -75,7 +74,7 @@ pub async fn create_profile_creation_request(
     )
     .bind(db_uuid(Uuid::now_v7()))
     .bind(db_uuid(auth.user_id))
-    .bind(db_json(&requested_profile_data_id)) // TODO:
+    .bind("") // TODO:
     .fetch_one(&state.db)
     .await?;
 
@@ -89,28 +88,28 @@ pub async fn create_profile_creation_request(
         &state,
         format!(
             "New profile request {} waiting for moderation.",
-            request.profile_creation_request_id
+            request.profile_request_id
         ),
     )
     .await;
 
     Ok((
         StatusCode::CREATED,
-        Json(helpers::to_profile_creation_request_response(request)),
+        Json(helpers::to_profile_request_response(request)),
     ))
 }
 
-pub async fn get_profile_creation_request(
-    State(state): State<AppState>,
+pub async fn get_profile_request(
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path(request_id): Path<Uuid>,
-) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
+) -> Result<Json<ProfileRequestResponse>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_creation_request_id,
+            profile_request_id,
             user_id,
             requested_profile_data_id,
             status,
@@ -118,8 +117,8 @@ pub async fn get_profile_creation_request(
             reviewed_at,
             created_at,
             updated_at
-        from profile_creation_request
-        where profile_creation_request_id = cast($1 as uuid)
+        from profile_request
+        where profile_request_id = cast($1 as uuid)
         "#,
     )
     .bind(db_uuid(request_id))
@@ -128,21 +127,21 @@ pub async fn get_profile_creation_request(
     .ok_or(ApiError::NotFound)?;
 
     helpers::ensure_owner(&auth, request.user_id)?;
-    Ok(Json(helpers::to_profile_creation_request_response(request)))
+    Ok(Json(helpers::to_profile_request_response(request)))
 }
 
-pub async fn update_profile_creation_request(
-    State(state): State<AppState>,
+pub async fn update_profile_request(
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path(request_id): Path<Uuid>,
-    Json(payload): Json<UpdateProfileCreationRequest>,
-) -> Result<Json<ProfileCreationRequestResponse>, ApiError> {
+    Json(payload): Json<UpdateProfileRequest>,
+) -> Result<Json<ProfileRequestResponse>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let existing = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let existing = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_creation_request_id,
+            profile_request_id,
             user_id,
             requested_profile_data_id,
             status,
@@ -150,8 +149,8 @@ pub async fn update_profile_creation_request(
             reviewed_at,
             created_at,
             updated_at
-        from profile_creation_request
-        where profile_creation_request_id = cast($1 as uuid)
+        from profile_request
+        where profile_request_id = cast($1 as uuid)
         "#,
     )
     .bind(db_uuid(request_id))
@@ -164,13 +163,13 @@ pub async fn update_profile_creation_request(
         return Err(ApiError::Forbidden);
     }
 
-    let request = sqlx::query_as::<_, ProfileCreationRequestRecord>(
+    let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
-        update profile_creation_request
+        update profile_request
         set requested_profile_data = coalesce(cast($2 as jsonb), requested_profile_data)
-        where profile_creation_request_id = cast($1 as uuid)
+        where profile_request_id = cast($1 as uuid)
         returning
-            profile_creation_request_id,
+            profile_request_id,
             user_id,
             requested_profile_data_id,
             status,
@@ -181,22 +180,22 @@ pub async fn update_profile_creation_request(
         "#,
     )
     .bind(db_uuid(request_id))
-    .bind(requested_profile_data.as_ref().map(db_json))
+    .bind("")
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(helpers::to_profile_creation_request_response(request)))
+    Ok(Json(helpers::to_profile_request_response(request)))
 }
 
-pub async fn delete_profile_creation_request(
-    State(state): State<AppState>,
+pub async fn delete_profile_request(
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path(request_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let owner_user_id = sqlx::query_scalar::<_, String>(r#"select cast(user_id as text) from profile_creation_request where profile_creation_request_id = cast($1 as uuid)"#)
+    let owner_user_id = sqlx::query_scalar::<_, String>(r#"select cast(user_id as text) from profile_request where profile_request_id = cast($1 as uuid)"#)
     .bind(db_uuid(request_id))
     .fetch_optional(&state.db)
     .await?
@@ -206,7 +205,7 @@ pub async fn delete_profile_creation_request(
     helpers::ensure_owner(&auth, owner_user_id)?;
 
     let result =
-        sqlx::query(r#"delete from profile_creation_request where profile_creation_request_id = cast($1 as uuid)"#)
+        sqlx::query(r#"delete from profile_request where profile_request_id = cast($1 as uuid)"#)
             .bind(db_uuid(request_id))
             .execute(&state.db)
             .await?;

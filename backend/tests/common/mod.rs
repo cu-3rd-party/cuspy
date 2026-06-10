@@ -9,7 +9,7 @@ use axum::{
 };
 #[cfg(not(feature = "telegram-auth"))]
 use cukiller_backend::api::helpers;
-use cukiller_backend::{AppState, build_app};
+use cukiller_backend::{ApiContext, build_app};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
 #[cfg(not(feature = "telegram-auth"))]
@@ -143,7 +143,7 @@ impl TestContext {
             .await
             .expect("run migrations");
 
-        let state = AppState {
+        let state = ApiContext {
             db: any_test_pool,
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),

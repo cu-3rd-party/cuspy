@@ -4,8 +4,8 @@ use serde_json::Value;
 use sqlx::{FromRow, Row, any::AnyRow};
 use uuid::Uuid;
 
-pub struct ProfileCreationRequestRecord {
-    pub profile_creation_request_id: Uuid,
+pub struct ProfileRequestRecord {
+    pub profile_request_id: Uuid,
     pub user_id: Uuid,
     pub requested_profile_data_id: Uuid,
     pub status: String,
@@ -15,10 +15,10 @@ pub struct ProfileCreationRequestRecord {
     pub updated_at: sqlx::types::time::OffsetDateTime,
 }
 
-impl<'r> FromRow<'r, AnyRow> for ProfileCreationRequestRecord {
+impl<'r> FromRow<'r, AnyRow> for ProfileRequestRecord {
     fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
         Ok(Self {
-            profile_creation_request_id: parse_uuid(row, "profile_creation_request_id")?,
+            profile_request_id: parse_uuid(row, "profile_request_id")?,
             user_id: parse_uuid(row, "user_id")?,
             requested_profile_data_id: parse_uuid(row, "requested_profile_data_id")?,
             status: row.try_get("status")?,
@@ -31,8 +31,8 @@ impl<'r> FromRow<'r, AnyRow> for ProfileCreationRequestRecord {
 }
 
 #[derive(Serialize)]
-pub struct ProfileCreationRequestResponse {
-    pub profile_creation_request_id: Uuid,
+pub struct ProfileRequestResponse {
+    pub profile_request_id: Uuid,
     pub user_id: Uuid,
     pub requested_profile_data_id: Uuid,
     pub status: String,
@@ -43,17 +43,17 @@ pub struct ProfileCreationRequestResponse {
 }
 
 #[derive(Deserialize)]
-pub struct CreateProfileCreationRequest {
+pub struct CreateProfileRequest {
     pub requested_profile_data: Value,
 }
 
 #[derive(Deserialize)]
-pub struct UpdateProfileCreationRequest {
+pub struct UpdateProfileRequest {
     pub requested_profile_data: Option<Value>,
 }
 
 #[derive(Deserialize)]
-pub struct AdminUpdateProfileCreationRequest {
+pub struct AdminUpdateProfileRequest {
     pub requested_profile_data: Option<Value>,
     pub status: Option<String>,
     pub reviewer_note: Option<String>,

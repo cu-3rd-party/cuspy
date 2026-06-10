@@ -53,8 +53,14 @@ impl From<&UserRecord> for UserResponse {
             agent_data_id: value.agent_data_id,
             is_admin: value.is_admin,
             rating: value.rating,
-            created_at: value.created_at.format(&time::format_description::well_known::Rfc3339).unwrap_or_default(),
-            updated_at: value.updated_at.and_then(|t| t.format(&time::format_description::well_known::Rfc3339).ok()),
+            created_at: value
+                .created_at
+                .format(&time::format_description::well_known::Rfc3339)
+                .unwrap_or_default(),
+            updated_at: value.updated_at.and_then(|t| {
+                t.format(&time::format_description::well_known::Rfc3339)
+                    .ok()
+            }),
         }
     }
 }

@@ -75,7 +75,7 @@
 			return baseDraft;
 		}
 
-		hydratedRejectedRequestId = rejectedRequest.profile_creation_request_id;
+		hydratedRejectedRequestId = rejectedRequest.profile_request_id;
 
 		return applyProfileDataToDraft(baseDraft, rejectedRequest.requested_profile_data);
 	};
@@ -91,7 +91,7 @@
 	});
 
 	$effect(() => {
-		if (!rejectedRequest || hydratedRejectedRequestId === rejectedRequest.profile_creation_request_id) {
+		if (!rejectedRequest || hydratedRejectedRequestId === rejectedRequest.profile_request_id) {
 			return;
 		}
 

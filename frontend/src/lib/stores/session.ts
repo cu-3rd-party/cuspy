@@ -29,7 +29,7 @@ export type SessionUser = {
 export type ProfileRequestStatus = 'sent' | 'confirmed' | 'rejected';
 
 export type ProfileRequest = {
-	profile_creation_request_id: string;
+	profile_request_id: string;
 	user_id: string;
 	requested_profile_data: AgentProfileData;
 	status: ProfileRequestStatus;

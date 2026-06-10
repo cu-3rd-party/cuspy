@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::ApiContext;
 use crate::api::helpers;
 use crate::api::models::ApiError;
 use crate::api::models::similarity::{SimilarityRequest, SimilarityResponse};
@@ -11,7 +11,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 pub async fn me(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
 ) -> Result<Json<UserResponse>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
@@ -21,7 +21,7 @@ pub async fn me(
 }
 
 pub async fn get_user(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<UserResponse>, ApiError> {
@@ -33,7 +33,7 @@ pub async fn get_user(
 }
 
 pub async fn update_user(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<UpdateUserRequest>,
@@ -69,7 +69,7 @@ pub async fn update_user(
 }
 
 pub async fn update_me(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, ApiError> {
@@ -88,7 +88,7 @@ pub async fn update_me(
 }
 
 pub async fn delete_user(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
@@ -109,7 +109,7 @@ pub async fn delete_user(
 }
 
 pub async fn compare_user_profiles(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Path((left_user_id, right_user_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<SimilarityResponse>, ApiError> {
@@ -142,7 +142,7 @@ pub async fn compare_user_profiles(
 }
 
 pub async fn compare_profiles(
-    State(state): State<AppState>,
+    State(state): State<ApiContext>,
     headers: HeaderMap,
     Json(payload): Json<SimilarityRequest>,
 ) -> Result<Json<SimilarityResponse>, ApiError> {

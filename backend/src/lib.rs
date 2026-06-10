@@ -18,7 +18,7 @@ use sqlx::AnyPool;
 use uuid::Uuid;
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct ApiContext {
     pub db: AnyPool,
     pub admin_secret: String,
     pub jwt_secret: String,
@@ -28,14 +28,14 @@ pub struct AppState {
     pub public_webapp_url: Option<String>,
 }
 
-impl AppState {
+impl ApiContext {
     #[cfg(feature = "telegram-auth")]
     pub fn telegram_auth_enabled(&self) -> bool {
         self.telegram_bot_token.is_some()
     }
 }
 
-pub fn build_app(state: AppState) -> Router {
+pub fn build_app(state: ApiContext) -> Router {
     api::router()
         .route("/", axum::routing::get(|| async { "backend up" }))
         .layer(tower_http::trace::TraceLayer::new_for_http())
@@ -43,7 +43,7 @@ pub fn build_app(state: AppState) -> Router {
         .with_state(state)
 }
 
-async fn audit_request(State(state): State<AppState>, request: Request, next: Next) -> Response {
+async fn audit_request(State(state): State<ApiContext>, request: Request, next: Next) -> Response {
     let started_at = Instant::now();
     let request_id = Uuid::now_v7();
 
