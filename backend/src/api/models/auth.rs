@@ -1,7 +1,6 @@
 use crate::api::models::parse_uuid;
 use crate::api::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use sqlx::{FromRow, any::AnyRow};
 use uuid::Uuid;
 
@@ -11,7 +10,6 @@ pub struct RegisterRequest {
     pub password: Option<String>,
     pub telegram_id: Option<i64>,
     pub agent_name: Option<String>,
-    pub agent_data: Option<Value>,
 }
 
 #[derive(Deserialize)]
@@ -53,12 +51,22 @@ impl<'r> FromRow<'r, AnyRow> for AuthUserRecord {
     }
 }
 
+// This is what gets derived from user's auth token
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AuthClaims {
     pub sub: String,
     pub user_id: Uuid,
     pub auth_user_id: Uuid,
     pub is_admin: bool,
+    pub exp: usize,
+}
+
+// This is what gets derived from user's refresh token
+#[derive(Clone, Serialize, Deserialize)]
+pub struct RefreshClaims {
+    pub sub: String,
+    pub user_id: Uuid,
+    pub auth_user_id: Uuid,
     pub exp: usize,
 }
 

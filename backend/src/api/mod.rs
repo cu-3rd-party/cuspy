@@ -9,11 +9,14 @@ mod auth;
 mod r#const;
 mod health;
 pub mod helpers;
+mod image;
 mod kills;
 pub mod models;
 #[path = "profile-creation.rs"]
 mod profile_creation;
 mod user;
+mod db;
+mod agent_data;
 
 pub fn router() -> Router<AppState> {
     Router::new()

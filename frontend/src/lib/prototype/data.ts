@@ -33,7 +33,18 @@ export const enlistNav: BottomNavItem[] = [
 		icon: 'assignment_ind',
 		group: 'enlist'
 	},
-	{ href: '/dossier-verification', label: m.nav_verify(), icon: 'security', group: 'enlist' }
+	{
+		href: '/dossier-verification',
+		label: m.nav_verify(),
+		icon: 'refresh',
+		group: 'enlist',
+	},
+	{
+		href: '/dossier',
+		label: m.nav_waiting(),
+		icon: 'security',
+		group: 'enlist',
+	},
 ];
 
 export const dossierNav: BottomNavItem[] = [

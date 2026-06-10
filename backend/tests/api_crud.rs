@@ -25,7 +25,6 @@ async fn sqlite_register_works() {
 
     let app = cukiller_backend::build_app(cukiller_backend::AppState {
         db,
-        is_sqlite: true,
         admin_secret: "test-admin-secret".into(),
         jwt_secret: "test-jwt-secret".into(),
         #[cfg(feature = "telegram-auth")]

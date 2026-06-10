@@ -145,7 +145,6 @@ impl TestContext {
 
         let state = AppState {
             db: any_test_pool,
-            is_sqlite: false,
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
             #[cfg(feature = "telegram-auth")]
@@ -308,14 +307,13 @@ pub async fn seed_admin_user(
     let user_id = uuid::Uuid::now_v7();
     sqlx::query(
         r#"
-        insert into "user" (user_id, telegram_id, agent_name, agent_data, is_admin)
-        values ($1, $2, $3, $4, true)
+        insert into "user" (user_id, telegram_id, agent_name, is_admin)
+        values ($1, $2, $3, true)
         "#,
     )
     .bind(user_id)
     .bind(telegram_id)
     .bind(agent_name)
-    .bind(json!({"track": "admin"}))
     .execute(&ctx.db)
     .await
     .expect("insert admin user");
@@ -370,7 +368,7 @@ pub async fn seed_admin_user(
 
 #[cfg(not(feature = "telegram-auth"))]
 pub async fn fetch_user_agent_data(ctx: &TestContext, user_id: &str) -> Value {
-    sqlx::query("select agent_data from \"user\" where user_id = $1")
+    sqlx::query(r#"select * from "agent_data" where agent_data_id = (select agent_data_id from "user" where user_id = $1)"#)
         .bind(uuid::Uuid::parse_str(user_id).expect("uuid"))
         .fetch_one(&ctx.db)
         .await

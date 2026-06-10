@@ -1,11 +1,12 @@
+
 create table if not exists "user" (
     user_id uuid primary key default uuid_generate_v1mc(),
-    telegram_id bigint unique not null,
+    telegram_id bigint unique,
     agent_name text collate case_insensitive,
-    agent_data jsonb not null default '{}'::jsonb,
+    agent_data_id uuid,
+    foreign key (agent_data_id) references "agent_data"("agent_data_id"),
+    rating bigint not null default 0,
     is_admin boolean not null default false,
-    is_sharing_location boolean not null default false,
-    current_location jsonb,
     created_at timestamptz not null default now(),
     updated_at timestamptz
 );

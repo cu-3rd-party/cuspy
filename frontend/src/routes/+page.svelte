@@ -311,7 +311,7 @@
 		</div>
 	</section>
 
-	<section class="mt-12">
+	<section class="mt-4 mb-12">
 		<div class="flex items-center gap-4 bg-surface-container p-1">
 			<div class="bg-secondary-container p-3 text-secondary">
 				<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1"

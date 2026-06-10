@@ -4,6 +4,8 @@ create table if not exists global_event (
     event_type text not null check (event_type in ('GLOBAL_TARGET', 'NIGHT_HUNT', 'SMIITE')),
     trigger_id uuid not null references "user" (user_id) on delete set null,
     target_id uuid references "user" (user_id) on delete set null,
+    image_resource_id uuid,
+    foreign key (image_resource_id) references "resource"(resource_id),
     start_time timestamptz not null,
     end_time timestamptz not null,
     payload jsonb not null default '{}'::jsonb,

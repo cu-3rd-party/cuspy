@@ -19,6 +19,7 @@
 	import NodeConnectivity from '$lib/components/NodeConnectivity.svelte';
 	import { sessionUser } from '$lib/stores/session';
 	import type { SessionFlow } from '$lib/stores/session';
+	import Icon from "$lib/components/Icon.svelte";
 
 	let { data } = $props<{
 		data: {
@@ -371,7 +372,7 @@
 				<p
 					class="flex items-start gap-4 font-label text-[9px] leading-relaxed text-outline uppercase"
 				>
-					<span class="signal-dot mt-1 size-2 bg-primary"></span>
+					<Icon name="shield" class="text-xl transition-transform group-hover:scale-110" />
 					<span>{m.agent_id_falsification_notice()}</span>
 				</p>
 			</div>

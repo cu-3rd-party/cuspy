@@ -45,71 +45,19 @@ async fn run_bot(bot_token: String, webapp_url: String) {
         .await;
 }
 
-fn normalize_database_url(database_url: &str) -> (String, bool) {
-    if database_url == ":memory:" {
-        return ("sqlite::memory:".into(), true);
-    }
-
-    if database_url.starts_with("sqlite:") {
-        return (database_url.into(), true);
-    }
-
-    if database_url.starts_with("postgres://") || database_url.starts_with("postgresql://") {
-        return (database_url.into(), false);
-    }
-
-    if database_url.contains("://") {
-        return (database_url.into(), false);
-    }
-
-    (format!("sqlite://{database_url}"), true)
-}
-
-fn ensure_sqlite_path_exists(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let Some(path) = database_url.strip_prefix("sqlite://") else {
-        return Ok(());
-    };
-
-    if path.is_empty() || path == ":memory:" {
-        return Ok(());
-    }
-
-    let path = Path::new(path);
-    if let Some(parent) = path.parent()
-        && !parent.as_os_str().is_empty()
-    {
-        std::fs::create_dir_all(parent)?;
-    }
-
-    if !path.exists() {
-        std::fs::File::create(path)?;
-    }
-
-    Ok(())
-}
-
-async fn connect_database(
-    database_url: &str,
-    is_sqlite: bool,
-) -> Result<AnyPool, Box<dyn std::error::Error>> {
-    if is_sqlite {
-        ensure_sqlite_path_exists(database_url)?;
-    }
-
+async fn connect_database(database_url: &str) -> Result<AnyPool, Box<dyn std::error::Error>> {
     Ok(AnyPoolOptions::new()
         .max_connections(10)
         .connect(database_url)
         .await?)
 }
 
-async fn run_migrations(db: &AnyPool, is_sqlite: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let migration_root = if is_sqlite {
-        "./migrations/sqlite"
-    } else {
-        "./migrations"
-    };
-
-    Migrator::new(Path::new(migration_root)).await?.run(db).await?;
+const MIGRATION_ROOT: &str = "./migrations";
+async fn run_migrations(db: &AnyPool) -> Result<(), Box<dyn std::error::Error>> {
+    Migrator::new(Path::new(MIGRATION_ROOT))
+        .await?
+        .run(db)
+        .await?;
     Ok(())
 }
 
@@ -119,14 +67,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     sqlx::any::install_default_drivers();
 
     let config = config::Config::parse();
-    let (database_url, is_sqlite) = normalize_database_url(&config.database_url);
-    let db = connect_database(&database_url, is_sqlite).await?;
+    let database_url = &config.database_url;
+    let db = connect_database(&database_url).await?;
 
-    run_migrations(&db, is_sqlite).await?;
+    run_migrations(&db).await?;
 
     let state = AppState {
         db,
-        is_sqlite,
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,
         #[cfg(feature = "telegram-auth")]
@@ -143,7 +90,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     );
 
-    if let (Some(bot_token), Some(webapp_url)) = (config.telegram_bot_token, config.public_webapp_url)
+    if let (Some(bot_token), Some(webapp_url)) =
+        (config.telegram_bot_token, config.public_webapp_url)
     {
         tokio::select! {
             result = server => {

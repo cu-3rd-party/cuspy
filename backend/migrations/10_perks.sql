@@ -1,11 +1,12 @@
 -- Perks System: allow adding new perks without schema migrations
 create table if not exists perk_definition (
     perk_id uuid primary key default uuid_generate_v1mc(),
-    slug text unique not null collate case_insensitive,
+    slug citext unique not null,
     display_name text not null,
     description text,
     base_duration interval,
-    config jsonb not null default '{}'::jsonb,
+    image_resource_id uuid,
+    foreign key (image_resource_id) references "resource"(resource_id),
     created_at timestamptz not null default now(),
     updated_at timestamptz
 );
@@ -18,7 +19,6 @@ create table if not exists agent_perk (
     perk_id uuid not null references perk_definition (perk_id) on delete cascade,
     activated_at timestamptz not null default now(),
     expires_at timestamptz,
-    instance_metadata jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now(),
     updated_at timestamptz
 );

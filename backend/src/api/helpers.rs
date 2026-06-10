@@ -1,12 +1,12 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::AppState;
-use crate::api::r#const::{AUTH_HEADER_PREFIX, USER_TOKEN_TTL};
-use crate::api::models::db_uuid;
+use crate::api::r#const::{AUTH_HEADER_PREFIX, AUTH_TOKEN_TTL, REFRESH_TOKEN_TTL};
 use crate::api::models::ApiError;
-use crate::api::models::auth::{AuthClaims, AuthUserRecord, AuthenticatedUser};
+use crate::api::models::auth::{AuthClaims, AuthUserRecord, AuthenticatedUser, RefreshClaims};
 #[cfg(feature = "telegram-auth")]
 use crate::api::models::auth::{TelegramInitData, TelegramUser};
+use crate::api::models::db_uuid;
 use crate::api::models::profile::{ProfileCreationRequestRecord, ProfileCreationRequestResponse};
 use crate::api::models::similarity::SimilarityResponse;
 use crate::api::models::user::{UserRecord, UserResponse};
@@ -24,6 +24,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode}
 use serde_json::{Value, json};
 #[cfg(feature = "telegram-auth")]
 use sha2::Sha256;
+use sqlx::Row;
 #[cfg(feature = "telegram-auth")]
 use url::form_urlencoded;
 use uuid::Uuid;
@@ -34,14 +35,14 @@ fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
 }
 
-pub fn to_user_response(record: UserRecord, rating: i64) -> UserResponse {
+pub fn to_user_response(record: UserRecord) -> UserResponse {
     UserResponse {
         user_id: record.user_id,
         telegram_id: record.telegram_id,
         agent_name: record.agent_name,
-        agent_data: record.agent_data,
+        agent_data_id: record.agent_data_id,
         is_admin: record.is_admin,
-        rating,
+        rating: record.rating,
         created_at: format_timestamp(record.created_at),
         updated_at: record.updated_at.map(format_timestamp),
     }
@@ -53,7 +54,7 @@ pub fn to_profile_creation_request_response(
     ProfileCreationRequestResponse {
         profile_creation_request_id: record.profile_creation_request_id,
         user_id: record.user_id,
-        requested_profile_data: record.requested_profile_data,
+        requested_profile_data_id: record.requested_profile_data_id,
         status: record.status,
         reviewer_note: record.reviewer_note,
         reviewed_at: record.reviewed_at.map(format_timestamp),
@@ -135,6 +136,12 @@ pub fn verify_telegram_init_data(
     })
 }
 
+#[cfg(not(feature = "telegram-auth"))]
+#[allow(dead_code)]
+fn verify_telegram_init_data(_headers: &HeaderMap, _state: &AppState) -> Result<(), ApiError> {
+    Ok(())
+}
+
 pub fn optional_telegram_user_id(
     headers: &HeaderMap,
     state: &AppState,
@@ -145,7 +152,9 @@ pub fn optional_telegram_user_id(
             return Ok(None);
         }
 
-        return Ok(Some(verify_telegram_init_data(headers, state)?.telegram_user_id));
+        return Ok(Some(
+            verify_telegram_init_data(headers, state)?.telegram_user_id,
+        ));
     }
 
     #[cfg(not(feature = "telegram-auth"))]
@@ -154,12 +163,6 @@ pub fn optional_telegram_user_id(
         let _ = state;
         Ok(None)
     }
-}
-
-#[cfg(not(feature = "telegram-auth"))]
-#[allow(dead_code)]
-fn verify_telegram_init_data(_headers: &HeaderMap, _state: &AppState) -> Result<(), ApiError> {
-    Ok(())
 }
 
 pub fn require_bearer_token(
@@ -200,16 +203,6 @@ pub fn ensure_owner(auth: &AuthenticatedUser, owner_user_id: Uuid) -> Result<(),
     }
 
     Ok(())
-}
-
-pub fn normalize_profile_data(value: Option<Value>) -> Result<Value, ApiError> {
-    match value {
-        None => Ok(json!({})),
-        Some(Value::Object(map)) => Ok(Value::Object(map)),
-        Some(_) => Err(ApiError::BadRequest(
-            "profile data must be a JSON object".into(),
-        )),
-    }
 }
 
 pub fn compare_profile_similarity(
@@ -291,7 +284,7 @@ pub fn create_access_token(
     is_admin: bool,
 ) -> Result<String, ApiError> {
     let exp = SystemTime::now()
-        .checked_add(USER_TOKEN_TTL)
+        .checked_add(AUTH_TOKEN_TTL)
         .ok_or(ApiError::Token)?
         .duration_since(UNIX_EPOCH)
         .map_err(|_| ApiError::Token)?
@@ -313,20 +306,42 @@ pub fn create_access_token(
     .map_err(|_| ApiError::Token)
 }
 
-pub async fn fetch_current_rating(db: &sqlx::AnyPool, user_id: Uuid) -> Result<i64, ApiError> {
-    Ok(sqlx::query_scalar::<_, i64>(
+pub fn create_refresh_token(
+    state: &AppState,
+    auth_user: &AuthUserRecord,
+) -> Result<String, ApiError> {
+    let exp = SystemTime::now()
+        .checked_add(REFRESH_TOKEN_TTL)
+        .ok_or(ApiError::Token)?
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| ApiError::Token)?
+        .as_secs() as usize;
+
+    let claims = RefreshClaims {
+        sub: auth_user.login_identifier.clone(),
+        user_id: auth_user.user_id,
+        auth_user_id: auth_user.auth_user_id,
+        exp,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+    )
+    .map_err(|_| ApiError::Token)
+}
+
+pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord, ApiError> {
+    Ok(sqlx::query_as(
         r#"
-        select coalesce((
-            select rating
-            from rating_history
-            where cast(user_id as text) = $1
-            order by created_at desc, rating_history_id desc
+            select *
+            from "user"
+            where user_id = $1
             limit 1
-        ), $2)
-        "#,
+            "#,
     )
     .bind(db_uuid(user_id))
-    .bind(DEFAULT_RATING)
     .fetch_one(db)
     .await?)
 }
@@ -343,7 +358,6 @@ mod tests {
             db: AnyPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),
-            is_sqlite: false,
             admin_secret: "admin-secret".into(),
             jwt_secret: "jwt-secret".into(),
             #[cfg(feature = "telegram-auth")]
@@ -351,15 +365,6 @@ mod tests {
             #[cfg(feature = "telegram-auth")]
             public_webapp_url: Some("https://example.com".into()),
         }
-    }
-
-    #[test]
-    fn normalize_profile_data_rejects_non_object() {
-        let error = normalize_profile_data(Some(json!([1, 2, 3]))).expect_err("must fail");
-        assert_eq!(
-            error.to_string(),
-            "bad request: profile data must be a JSON object"
-        );
     }
 
     #[test]

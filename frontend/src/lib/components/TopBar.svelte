@@ -45,12 +45,12 @@
 			<div class="font-headline text-[10px] tracking-[0.2em] text-outline uppercase">{status}</div>
 			<div class="truncate font-headline text-sm font-bold uppercase text-on-surface">{codename}</div>
 		</div>
-		<div class="flex items-center gap-2 bg-surface-container px-3 py-1 border border-outline-variant/10">
-			<Icon name="payments" class="text-sm text-primary" />
-			<span class="font-label text-sm font-bold tracking-widest text-primary">45,200G</span>
-		</div>
-		<button class="p-1 hover:bg-surface-container rounded transition-colors">
-			<Icon name="settings" class="text-xl" />
-		</button>
+<!--		<div class="flex items-center gap-2 bg-surface-container px-3 py-1 border border-outline-variant/10">-->
+<!--			<Icon name="payments" class="text-sm text-primary" />-->
+<!--			<span class="font-label text-sm font-bold tracking-widest text-primary">45,200G</span>-->
+<!--		</div>-->
+<!--		<button class="p-1 hover:bg-surface-container rounded transition-colors">-->
+<!--			<Icon name="settings" class="text-xl" />-->
+<!--		</button>-->
 	</div>
 </header>

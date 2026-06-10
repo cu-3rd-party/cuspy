@@ -34,8 +34,6 @@
 			draft.boundaries.hugsCloseProximity ? m.common_authorized() : m.common_restricted(),
 			statusTone(draft.boundaries.hugsCloseProximity)
 		],
-		[m.dossier_verification_combat_simulation(), m.common_authorized(), 'primary'],
-		[m.dossier_verification_verbal_interrogation(), m.common_authorized(), 'primary']
 	] as const);
 
 	onMount(() => {

@@ -5,9 +5,9 @@
     <option name="workingDirectory" value="file://$PROJECT_DIR$/backend" />
     <envs>
       <env name="ADMIN_SECRET" value="dev-admin-secret" />
-      <env name="DATABASE_URL" value="./data/cukiller.sqlite" />
+      <env name="DATABASE_URL" value="postgresql://postgres:password@localhost:5432/db" />
       <env name="JWT_SECRET" value="dev-jwt-secret" />
-      <env name="RUST_LOG" value="debug" />
+      <env name="RUST_LOG" value="info" />
     </envs>
     <option name="emulateTerminal" value="true" />
     <option name="channel" value="DEFAULT" />

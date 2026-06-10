@@ -20,7 +20,8 @@
 			code: 'SEC_LEVEL_01',
 			title: m.boundaries_physical_contact_title(),
 			copy: m.boundaries_physical_contact_copy(),
-			status: m.common_authorized(),
+			status_authorized: m.common_authorized(),
+			status_restricted: m.common_restricted(),
 			active: true
 		},
 		{
@@ -28,9 +29,10 @@
 			code: 'SEC_LEVEL_02',
 			title: m.boundaries_hugs_title(),
 			copy: m.boundaries_hugs_copy(),
-			status: m.common_restricted(),
+			status_authorized: m.common_authorized(),
+			status_restricted: m.common_restricted(),
 			active: false
-		}
+		},
 	]);
 
 	let bioStage = $state([0, 1]);
@@ -96,8 +98,8 @@
 					aria-pressed={toggle.active}
 					class="flex flex-col justify-between bg-surface-container p-6 text-left transition-colors hover:bg-surface-container-high"
 				>
-					<div class="mb-8">
-						<div class="mb-4 flex items-start justify-between">
+					<span class="mb-8">
+						<span class="mb-4 flex items-start justify-between">
 							<span
 								class="material-symbols-outlined text-3xl text-secondary"
 								style={toggle.active ? "font-variation-settings:'FILL' 1" : ''}>{toggle.icon}</span
@@ -106,24 +108,24 @@
 								class="bg-surface-container-low px-2 py-1 font-label text-[10px] tracking-[0.2em] text-outline uppercase"
 								>{toggle.code}</span
 							>
-						</div>
-						<h3 class="mb-2 font-headline text-xl font-bold uppercase">{toggle.title}</h3>
-						<p class="text-sm text-on-surface-variant">{toggle.copy}</p>
-					</div>
-					<div class="flex items-center justify-between">
+						</span>
+						<span class="mb-2 font-headline text-xl font-bold uppercase">{toggle.title}</span>
+						<span class="text-sm text-on-surface-variant">{toggle.copy}</span>
+					</span>
+					<span class="flex items-center justify-between">
 						<span class="font-label text-xs tracking-[0.2em] text-outline uppercase"
 							>{m.common_status()}:
-							<span class={toggle.active ? 'text-primary' : 'text-error'}>{toggle.status}</span
+							<span class={toggle.active ? 'text-primary' : 'text-error'}>{toggle.active ? toggle.status_authorized : toggle.status_restricted}</span
 							></span
 						>
-						<div
+						<span
 							class={`relative h-6 w-12 ${toggle.active ? 'bg-primary-container' : 'bg-surface-container-highest'} ring-1 ring-outline-variant`}
 						>
-							<div
+							<span
 								class={`absolute top-0.5 size-5 bg-on-surface transition-all ${toggle.active ? 'left-6.5' : 'left-0.5'}`}
-							></div>
-						</div>
-					</div>
+							></span>
+						</span>
+					</span>
 				</button>
 			{/each}
 

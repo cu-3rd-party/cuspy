@@ -1,9 +1,11 @@
 -- Loot & Chests System
 create table if not exists chest_type (
     chest_type_id uuid primary key default uuid_generate_v1mc(),
-    slug text unique not null collate case_insensitive,
+    slug citext unique not null,
     rarity text not null,
     base_drop_rate float not null check (base_drop_rate >= 0 and base_drop_rate <= 1),
+    image_resource_id uuid,
+    foreign key (image_resource_id) references "resource"(resource_id),
     created_at timestamptz not null default now(),
     updated_at timestamptz
 );
@@ -12,9 +14,11 @@ select trigger_updated_at('chest_type');
 
 create table if not exists item (
     item_id uuid primary key default uuid_generate_v1mc(),
-    slug text unique not null collate case_insensitive,
+    slug citext unique not null,
     item_type text not null check (item_type in ('GOLD', 'PERK', 'COSMETIC')),
     value jsonb not null default '{}'::jsonb,
+    image_resource_id uuid,
+    foreign key (image_resource_id) references "resource"(resource_id),
     created_at timestamptz not null default now(),
     updated_at timestamptz
 );
@@ -32,6 +36,7 @@ create table if not exists agent_inventory (
     inventory_id uuid primary key default uuid_generate_v1mc(),
     agent_id uuid not null references "user" (user_id) on delete cascade,
     item_id uuid not null references item (item_id) on delete cascade,
+    unique (agent_id, item_id),
     quantity bigint not null check (quantity >= 0) default 1,
     acquired_at timestamptz not null default now(),
     updated_at timestamptz

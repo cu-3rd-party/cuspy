@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct ProfileCreationRequestRecord {
     pub profile_creation_request_id: Uuid,
     pub user_id: Uuid,
-    pub requested_profile_data: Value,
+    pub requested_profile_data_id: Uuid,
     pub status: String,
     pub reviewer_note: Option<String>,
     pub reviewed_at: Option<sqlx::types::time::OffsetDateTime>,
@@ -20,7 +20,7 @@ impl<'r> FromRow<'r, AnyRow> for ProfileCreationRequestRecord {
         Ok(Self {
             profile_creation_request_id: parse_uuid(row, "profile_creation_request_id")?,
             user_id: parse_uuid(row, "user_id")?,
-            requested_profile_data: parse_json(row, "requested_profile_data")?,
+            requested_profile_data_id: parse_uuid(row, "requested_profile_data_id")?,
             status: row.try_get("status")?,
             reviewer_note: row.try_get("reviewer_note")?,
             reviewed_at: parse_optional_timestamp(row, "reviewed_at")?,
@@ -34,7 +34,7 @@ impl<'r> FromRow<'r, AnyRow> for ProfileCreationRequestRecord {
 pub struct ProfileCreationRequestResponse {
     pub profile_creation_request_id: Uuid,
     pub user_id: Uuid,
-    pub requested_profile_data: Value,
+    pub requested_profile_data_id: Uuid,
     pub status: String,
     pub reviewer_note: Option<String>,
     pub reviewed_at: Option<String>,

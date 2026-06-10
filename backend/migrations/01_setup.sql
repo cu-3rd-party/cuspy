@@ -13,6 +13,7 @@
 -- Also, while unlikely, `gen_random_uuid()` can in theory produce collisions which can trigger spurious errors on
 -- insertion, whereas it's much less likely with `uuid_generate_v1mc()`.
 create extension if not exists "uuid-ossp";
+create extension if not exists "citext";
 
 -- We try to ensure every table has `created_at` and `updated_at` columns, which can help immensely with debugging
 -- and auditing.

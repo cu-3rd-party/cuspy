@@ -4,6 +4,7 @@ pub mod notifier;
 
 use std::time::Instant;
 
+use crate::api::models::{db_json, db_optional_uuid, db_uuid};
 use axum::{
     Router,
     extract::{MatchedPath, Request, State},
@@ -11,16 +12,14 @@ use axum::{
     middleware::{self, Next},
     response::Response,
 };
-use log::error;
+use log::{error, info};
 use serde_json::{Value, json};
 use sqlx::AnyPool;
 use uuid::Uuid;
-use crate::api::models::{db_json, db_optional_uuid, db_uuid};
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: AnyPool,
-    pub is_sqlite: bool,
     pub admin_secret: String,
     pub jwt_secret: String,
     #[cfg(feature = "telegram-auth")]
@@ -30,14 +29,6 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn db_param<'a>(&self, sqlite_sql: &'a str, postgres_sql: &'a str) -> &'a str {
-        if self.is_sqlite {
-            sqlite_sql
-        } else {
-            postgres_sql
-        }
-    }
-
     #[cfg(feature = "telegram-auth")]
     pub fn telegram_auth_enabled(&self) -> bool {
         self.telegram_bot_token.is_some()
@@ -64,7 +55,7 @@ async fn audit_request(State(state): State<AppState>, request: Request, next: Ne
     let method = request.method().to_string();
     let uri = request.uri().to_string();
     let headers = request.headers().clone();
-    let actor_user_id = crate::api::helpers::require_bearer_token(&headers, &state)
+    let actor_user_id = api::helpers::require_bearer_token(&headers, &state)
         .ok()
         .map(|auth| auth.user_id)
         .filter(|user_id| *user_id != Uuid::nil());
@@ -93,9 +84,13 @@ async fn audit_request(State(state): State<AppState>, request: Request, next: Ne
         "origin": origin
     });
 
+    info!(
+        "{}\t| {}\t| {}\t| {}ms\t",
+        &method, &uri, &status, &elapsed_ms
+    );
+
     if let Err(error) = persist_audit_log(
         &state.db,
-        state.is_sqlite,
         AuditLogInsert {
             request_id,
             actor_user_id,
@@ -133,24 +128,8 @@ struct AuditLogInsert {
     access_context: Value,
 }
 
-async fn persist_audit_log(db: &AnyPool, is_sqlite: bool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
-    sqlx::query(if is_sqlite {
-        r#"
-        insert into audit_log (
-            audit_log_id,
-            request_id,
-            actor_user_id,
-            method,
-            request_uri,
-            matched_path,
-            status_code,
-            duration_ms,
-            access_context
-        )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        "#
-    } else {
-        r#"
+async fn persist_audit_log(db: &AnyPool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
+    sqlx::query(r#"
         insert into audit_log (
             audit_log_id,
             request_id,
@@ -163,8 +142,7 @@ async fn persist_audit_log(db: &AnyPool, is_sqlite: bool, entry: AuditLogInsert)
             access_context
         )
         values (cast($1 as uuid), cast($2 as uuid), cast($3 as uuid), $4, $5, $6, $7, $8, cast($9 as jsonb))
-        "#
-    })
+        "#)
     .bind(db_uuid(Uuid::now_v7()))
     .bind(db_uuid(entry.request_id))
     .bind(db_optional_uuid(entry.actor_user_id))

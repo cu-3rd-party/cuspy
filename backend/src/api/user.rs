@@ -1,47 +1,14 @@
 use crate::AppState;
 use crate::api::helpers;
-use crate::api::models::{db_json, db_uuid};
 use crate::api::models::ApiError;
 use crate::api::models::similarity::{SimilarityRequest, SimilarityResponse};
 use crate::api::models::user::{UpdateUserRequest, UserRecord, UserResponse};
+use crate::api::models::{db_json, db_uuid};
 use axum::Json;
 use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
 use serde_json::Value;
 use uuid::Uuid;
-
-pub async fn fetch_user(state: &AppState, user_id: Uuid) -> Result<UserRecord, ApiError> {
-    sqlx::query_as::<_, UserRecord>(state.db_param(
-        r#"
-        select
-            cast(user_id as text) as user_id,
-            telegram_id,
-            agent_name,
-            cast(agent_data as text) as agent_data,
-            is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        from "user"
-        where user_id = $1
-        "#,
-        r#"
-        select
-            cast(user_id as text) as user_id,
-            telegram_id,
-            agent_name,
-            cast(agent_data as text) as agent_data,
-            is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        from "user"
-        where user_id = cast($1 as uuid)
-        "#,
-    ))
-    .bind(db_uuid(user_id))
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or(ApiError::NotFound)
-}
 
 pub async fn me(
     State(state): State<AppState>,
@@ -49,9 +16,8 @@ pub async fn me(
 ) -> Result<Json<UserResponse>, ApiError> {
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let user = fetch_user(&state, auth.user_id).await?;
-    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
-    Ok(Json(helpers::to_user_response(user, rating)))
+    let user = helpers::fetch_user(&state.db, auth.user_id).await?;
+    Ok(Json(helpers::to_user_response(user)))
 }
 
 pub async fn get_user(
@@ -62,9 +28,8 @@ pub async fn get_user(
     helpers::optional_telegram_user_id(&headers, &state)?;
     let auth = helpers::require_bearer_token(&headers, &state)?;
     helpers::ensure_owner(&auth, user_id)?;
-    let user = fetch_user(&state, user_id).await?;
-    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
-    Ok(Json(helpers::to_user_response(user, rating)))
+    let user = helpers::fetch_user(&state.db, user_id).await?;
+    Ok(Json(helpers::to_user_response(user)))
 }
 
 pub async fn update_user(
@@ -77,55 +42,30 @@ pub async fn update_user(
     let auth = helpers::require_bearer_token(&headers, &state)?;
     helpers::ensure_owner(&auth, user_id)?;
 
-    let agent_data = match payload.agent_data {
-        Some(value) => Some(helpers::normalize_profile_data(Some(value))?),
-        None => None,
-    };
-
-    let user = sqlx::query_as::<_, UserRecord>(state.db_param(
+    let user = sqlx::query_as::<_, UserRecord>(
         r#"
         update "user"
         set
             telegram_id = coalesce($2, telegram_id),
-            agent_name = coalesce($3, agent_name),
-            agent_data = coalesce($4, agent_data)
-        where user_id = $1
-        returning
-            cast(user_id as text) as user_id,
-            telegram_id,
-            agent_name,
-            cast(agent_data as text) as agent_data,
-            is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
-        r#"
-        update "user"
-        set
-            telegram_id = coalesce($2, telegram_id),
-            agent_name = coalesce($3, agent_name),
-            agent_data = coalesce(cast($4 as jsonb), agent_data)
+            agent_name = coalesce($3, agent_name)
         where user_id = cast($1 as uuid)
         returning
-            cast(user_id as text) as user_id,
+            user_id,
             telegram_id,
             agent_name,
-            cast(agent_data as text) as agent_data,
             is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
+            created_at,
+            updated_at
         "#,
-    ))
+    )
     .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
-    .bind(agent_data.as_ref().map(db_json))
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;
 
-    let rating = helpers::fetch_current_rating(&state.db, user.user_id).await?;
-    Ok(Json(helpers::to_user_response(user, rating)))
+    Ok(Json(helpers::to_user_response(user)))
 }
 
 pub async fn update_me(
@@ -156,10 +96,7 @@ pub async fn delete_user(
     let auth = helpers::require_bearer_token(&headers, &state)?;
     helpers::ensure_owner(&auth, user_id)?;
 
-    let result = sqlx::query(state.db_param(
-        r#"delete from "user" where user_id = $1"#,
-        r#"delete from "user" where user_id = cast($1 as uuid)"#,
-    ))
+    let result = sqlx::query(r#"delete from "user" where user_id = cast($1 as uuid)"#)
         .bind(db_uuid(user_id))
         .execute(&state.db)
         .await?;
@@ -181,24 +118,20 @@ pub async fn compare_user_profiles(
     helpers::ensure_owner(&auth, left_user_id)?;
     helpers::ensure_owner(&auth, right_user_id)?;
 
-    let left =
-        sqlx::query_scalar::<_, String>(state.db_param(
-            r#"select agent_data from "user" where user_id = $1"#,
-            r#"select cast(agent_data as text) from "user" where user_id = cast($1 as uuid)"#,
-        ))
-            .bind(db_uuid(left_user_id))
-            .fetch_optional(&state.db)
-            .await?
-            .ok_or(ApiError::NotFound)?;
-    let right =
-        sqlx::query_scalar::<_, String>(state.db_param(
-            r#"select agent_data from "user" where user_id = $1"#,
-            r#"select cast(agent_data as text) from "user" where user_id = cast($1 as uuid)"#,
-        ))
-            .bind(db_uuid(right_user_id))
-            .fetch_optional(&state.db)
-            .await?
-            .ok_or(ApiError::NotFound)?;
+    let left = sqlx::query_scalar::<_, String>(
+        r#"select cast(agent_data as text) from "user" where user_id = cast($1 as uuid)"#,
+    )
+    .bind(db_uuid(left_user_id))
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(ApiError::NotFound)?;
+    let right = sqlx::query_scalar::<_, String>(
+        r#"select cast(agent_data as text) from "user" where user_id = cast($1 as uuid)"#,
+    )
+    .bind(db_uuid(right_user_id))
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(ApiError::NotFound)?;
 
     let left: Value = serde_json::from_str(&left)
         .map_err(|error| ApiError::Database(sqlx::Error::Decode(Box::new(error))))?;

@@ -7,11 +7,11 @@ use serde_json::{Value, json};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use crate::notifier;
 use crate::{
     AppState,
     api::{
         helpers,
-        models::{db_json, db_uuid, parse_json, parse_optional_timestamp, parse_optional_uuid, parse_timestamp, parse_uuid},
         models::{
             ApiError,
             kill::{
@@ -19,9 +19,12 @@ use crate::{
                 ReportKillRequest, UserStatsResponse,
             },
         },
+        models::{
+            db_json, db_uuid, parse_json, parse_optional_timestamp, parse_optional_uuid,
+            parse_timestamp, parse_uuid,
+        },
     },
 };
-use crate::notifier;
 
 fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
@@ -90,27 +93,7 @@ fn to_kill_response(record: KillEventRecord) -> KillEventResponse {
 }
 
 async fn fetch_kill(state: &AppState, kill_id: Uuid) -> Result<KillEventRecord, ApiError> {
-    sqlx::query_as::<_, KillEventRecord>(state.db_param(
-        r#"
-        select
-            cast(kill_event_id as text) as kill_event_id,
-            cast(killer_id as text) as killer_id,
-            cast(victim_id as text) as victim_id,
-            status,
-            evidence_url,
-            cast(details as text) as details,
-            cast(killer_confirmed_at as text) as killer_confirmed_at,
-            cast(victim_confirmed_at as text) as victim_confirmed_at,
-            moderation_reason,
-            cast(reported_at as text) as reported_at,
-            cast(confirmed_at as text) as confirmed_at,
-            cast(moderated_at as text) as moderated_at,
-            cast(moderator_id as text) as moderator_id,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        from kill_event
-        where kill_event_id = $1
-        "#,
+    sqlx::query_as::<_, KillEventRecord>(
         r#"
         select
             cast(kill_event_id as text) as kill_event_id,
@@ -131,7 +114,7 @@ async fn fetch_kill(state: &AppState, kill_id: Uuid) -> Result<KillEventRecord, 
         from kill_event
         where cast(kill_event_id as text) = $1
         "#,
-    ))
+    )
     .bind(db_uuid(kill_id))
     .fetch_optional(&state.db)
     .await?
@@ -158,34 +141,7 @@ pub async fn report_kill(
         None => json!({}),
     };
 
-    let record = sqlx::query_as::<_, KillEventRecord>(state.db_param(
-        r#"
-        insert into kill_event (
-            kill_event_id,
-            killer_id,
-            victim_id,
-            evidence_url,
-            details,
-            killer_confirmed_at
-        )
-        values ($1, $2, $3, $4, $5, now())
-        returning
-            cast(kill_event_id as text) as kill_event_id,
-            cast(killer_id as text) as killer_id,
-            cast(victim_id as text) as victim_id,
-            status,
-            evidence_url,
-            cast(details as text) as details,
-            cast(killer_confirmed_at as text) as killer_confirmed_at,
-            cast(victim_confirmed_at as text) as victim_confirmed_at,
-            moderation_reason,
-            cast(reported_at as text) as reported_at,
-            cast(confirmed_at as text) as confirmed_at,
-            cast(moderated_at as text) as moderated_at,
-            cast(moderator_id as text) as moderator_id,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
+    let record = sqlx::query_as::<_, KillEventRecord>(
         r#"
         insert into kill_event (
             kill_event_id,
@@ -213,7 +169,7 @@ pub async fn report_kill(
             cast(created_at as text) as created_at,
             cast(updated_at as text) as updated_at
         "#,
-    ))
+    )
     .bind(db_uuid(Uuid::now_v7()))
     .bind(db_uuid(auth.user_id))
     .bind(db_uuid(payload.victim_id))
@@ -233,7 +189,10 @@ pub async fn report_kill(
     .await;
     notifier::notify_admins(
         &state,
-        format!("Kill report {} created and awaiting victim response.", record.kill_event_id),
+        format!(
+            "Kill report {} created and awaiting victim response.",
+            record.kill_event_id
+        ),
     )
     .await;
 
@@ -259,33 +218,7 @@ pub async fn confirm_kill(
         .filter(|value| !value.is_empty());
 
     let record = if !payload.confirmed {
-        sqlx::query_as::<_, KillEventRecord>(state.db_param(
-            r#"
-            update kill_event
-            set
-                status = 'REJECTED',
-                moderation_reason = coalesce($2, moderation_reason),
-                moderated_at = now(),
-                moderator_id = null
-            where kill_event_id = $1
-              and status in ('REPORTED', 'VICTIM_CONFIRMED')
-            returning
-                cast(kill_event_id as text) as kill_event_id,
-                cast(killer_id as text) as killer_id,
-                cast(victim_id as text) as victim_id,
-                status,
-                evidence_url,
-                cast(details as text) as details,
-                cast(killer_confirmed_at as text) as killer_confirmed_at,
-                cast(victim_confirmed_at as text) as victim_confirmed_at,
-                moderation_reason,
-                cast(reported_at as text) as reported_at,
-                cast(confirmed_at as text) as confirmed_at,
-                cast(moderated_at as text) as moderated_at,
-                cast(moderator_id as text) as moderator_id,
-                cast(created_at as text) as created_at,
-                cast(updated_at as text) as updated_at
-            "#,
+        sqlx::query_as::<_, KillEventRecord>(
             r#"
             update kill_event
             set
@@ -312,7 +245,7 @@ pub async fn confirm_kill(
                 cast(created_at as text) as created_at,
                 cast(updated_at as text) as updated_at
             "#,
-        ))
+        )
         .bind(db_uuid(kill_id))
         .bind(note)
         .fetch_optional(&state.db)
@@ -321,28 +254,7 @@ pub async fn confirm_kill(
             "kill can no longer be rejected".into(),
         ))?
     } else if auth.user_id == kill.killer_id {
-        sqlx::query_as::<_, KillEventRecord>(state.db_param(
-            r#"
-            update kill_event
-            set killer_confirmed_at = coalesce(killer_confirmed_at, now())
-            where kill_event_id = $1
-            returning
-                cast(kill_event_id as text) as kill_event_id,
-                cast(killer_id as text) as killer_id,
-                cast(victim_id as text) as victim_id,
-                status,
-                evidence_url,
-                cast(details as text) as details,
-                cast(killer_confirmed_at as text) as killer_confirmed_at,
-                cast(victim_confirmed_at as text) as victim_confirmed_at,
-                moderation_reason,
-                cast(reported_at as text) as reported_at,
-                cast(confirmed_at as text) as confirmed_at,
-                cast(moderated_at as text) as moderated_at,
-                cast(moderator_id as text) as moderator_id,
-                cast(created_at as text) as created_at,
-                cast(updated_at as text) as updated_at
-            "#,
+        sqlx::query_as::<_, KillEventRecord>(
             r#"
             update kill_event
             set killer_confirmed_at = coalesce(killer_confirmed_at, now())
@@ -364,37 +276,12 @@ pub async fn confirm_kill(
                 cast(created_at as text) as created_at,
                 cast(updated_at as text) as updated_at
             "#,
-        ))
+        )
         .bind(db_uuid(kill_id))
         .fetch_one(&state.db)
         .await?
     } else {
-        sqlx::query_as::<_, KillEventRecord>(state.db_param(
-            r#"
-            update kill_event
-            set
-                victim_confirmed_at = coalesce(victim_confirmed_at, now()),
-                confirmed_at = coalesce(confirmed_at, now()),
-                status = case when status = 'REPORTED' then 'VICTIM_CONFIRMED' else status end
-            where kill_event_id = $1
-              and status in ('REPORTED', 'VICTIM_CONFIRMED')
-            returning
-                cast(kill_event_id as text) as kill_event_id,
-                cast(killer_id as text) as killer_id,
-                cast(victim_id as text) as victim_id,
-                status,
-                evidence_url,
-                cast(details as text) as details,
-                cast(killer_confirmed_at as text) as killer_confirmed_at,
-                cast(victim_confirmed_at as text) as victim_confirmed_at,
-                moderation_reason,
-                cast(reported_at as text) as reported_at,
-                cast(confirmed_at as text) as confirmed_at,
-                cast(moderated_at as text) as moderated_at,
-                cast(moderator_id as text) as moderator_id,
-                cast(created_at as text) as created_at,
-                cast(updated_at as text) as updated_at
-            "#,
+        sqlx::query_as::<_, KillEventRecord>(
             r#"
             update kill_event
             set
@@ -420,7 +307,7 @@ pub async fn confirm_kill(
                 cast(created_at as text) as created_at,
                 cast(updated_at as text) as updated_at
             "#,
-        ))
+        )
         .bind(db_uuid(kill_id))
         .fetch_optional(&state.db)
         .await?
@@ -481,36 +368,7 @@ pub async fn moderate_kill(
         _ => return Err(ApiError::BadRequest("invalid moderation action".into())),
     };
 
-    let record = sqlx::query_as::<_, KillEventRecord>(state.db_param(
-        r#"
-        update kill_event
-        set
-            status = $2,
-            moderation_reason = $3,
-            moderated_at = now(),
-            moderator_id = nullif($4, $5)
-        where kill_event_id = $1
-          and (
-              ($2 = 'ADMIN_APPROVED' and status = 'VICTIM_CONFIRMED')
-              or ($2 = 'REJECTED' and status in ('REPORTED', 'VICTIM_CONFIRMED'))
-          )
-        returning
-            cast(kill_event_id as text) as kill_event_id,
-            cast(killer_id as text) as killer_id,
-            cast(victim_id as text) as victim_id,
-            status,
-            evidence_url,
-            cast(details as text) as details,
-            cast(killer_confirmed_at as text) as killer_confirmed_at,
-            cast(victim_confirmed_at as text) as victim_confirmed_at,
-            moderation_reason,
-            cast(reported_at as text) as reported_at,
-            cast(confirmed_at as text) as confirmed_at,
-            cast(moderated_at as text) as moderated_at,
-            cast(moderator_id as text) as moderator_id,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
+    let record = sqlx::query_as::<_, KillEventRecord>(
         r#"
         update kill_event
         set
@@ -540,7 +398,7 @@ pub async fn moderate_kill(
             cast(created_at as text) as created_at,
             cast(updated_at as text) as updated_at
         "#,
-    ))
+    )
     .bind(db_uuid(kill_id))
     .bind(next_status)
     .bind(reason)
@@ -557,7 +415,10 @@ pub async fn moderate_kill(
             notifier::notify_user(
                 &state,
                 record.killer_id,
-                format!("Kill report {} approved. Rating changes applied.", record.kill_event_id),
+                format!(
+                    "Kill report {} approved. Rating changes applied.",
+                    record.kill_event_id
+                ),
             )
             .await;
             notifier::notify_user(
@@ -575,13 +436,19 @@ pub async fn moderate_kill(
             notifier::notify_user(
                 &state,
                 record.killer_id,
-                format!("Kill report {} rejected. Reason: {reason}", record.kill_event_id),
+                format!(
+                    "Kill report {} rejected. Reason: {reason}",
+                    record.kill_event_id
+                ),
             )
             .await;
             notifier::notify_user(
                 &state,
                 record.victim_id,
-                format!("Kill report {} rejected by admin. Reason: {reason}", record.kill_event_id),
+                format!(
+                    "Kill report {} rejected by admin. Reason: {reason}",
+                    record.kill_event_id
+                ),
             )
             .await;
         }
@@ -596,7 +463,7 @@ pub async fn list_my_pending_kills(
     headers: HeaderMap,
 ) -> Result<Json<Vec<KillEventResponse>>, ApiError> {
     let auth = helpers::require_bearer_token(&headers, &state)?;
-    let records = sqlx::query_as::<_, KillEventRecord>(state.db_param(
+    let records = sqlx::query_as::<_, KillEventRecord>(
         r#"
         select
             cast(kill_event_id as text) as kill_event_id,
@@ -622,32 +489,7 @@ pub async fn list_my_pending_kills(
           )
         order by reported_at desc, created_at desc
         "#,
-        r#"
-        select
-            cast(kill_event_id as text) as kill_event_id,
-            cast(killer_id as text) as killer_id,
-            cast(victim_id as text) as victim_id,
-            status,
-            evidence_url,
-            cast(details as text) as details,
-            cast(killer_confirmed_at as text) as killer_confirmed_at,
-            cast(victim_confirmed_at as text) as victim_confirmed_at,
-            moderation_reason,
-            cast(reported_at as text) as reported_at,
-            cast(confirmed_at as text) as confirmed_at,
-            cast(moderated_at as text) as moderated_at,
-            cast(moderator_id as text) as moderator_id,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        from kill_event
-        where status in ('REPORTED', 'VICTIM_CONFIRMED')
-          and (
-              (cast(killer_id as text) = $1 and killer_confirmed_at is null)
-              or (cast(victim_id as text) = $1 and victim_confirmed_at is null)
-          )
-        order by reported_at desc, created_at desc
-        "#,
-    ))
+    )
     .bind(db_uuid(auth.user_id))
     .fetch_all(&state.db)
     .await?;

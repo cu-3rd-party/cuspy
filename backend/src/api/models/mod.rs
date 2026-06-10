@@ -8,8 +8,7 @@ use uuid::Uuid;
 
 fn decode_timestamp_value(value: &str) -> Result<sqlx::types::time::OffsetDateTime, sqlx::Error> {
     use time::{
-        OffsetDateTime, PrimitiveDateTime, UtcOffset,
-        format_description::well_known::Rfc3339,
+        OffsetDateTime, PrimitiveDateTime, UtcOffset, format_description::well_known::Rfc3339,
     };
 
     if let Ok(unix) = value.parse::<i64>() {
@@ -50,6 +49,7 @@ fn decode_timestamp_value(value: &str) -> Result<sqlx::types::time::OffsetDateTi
     Err(sqlx::Error::Decode("unsupported timestamp format".into()))
 }
 
+pub mod agent_data;
 pub mod auth;
 pub mod kill;
 pub mod profile;
@@ -87,18 +87,16 @@ impl IntoResponse for ApiError {
             Self::BadRequest(msg) => {
                 message = msg;
                 StatusCode::BAD_REQUEST
-            },
-            Self::PasswordHash | Self::Token => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            },
+            }
+            Self::PasswordHash | Self::Token => StatusCode::INTERNAL_SERVER_ERROR,
             Self::Internal(msg) => {
                 message = msg;
                 StatusCode::INTERNAL_SERVER_ERROR
-            },
+            }
             Self::Database(msg) => {
                 message = msg.to_string();
                 StatusCode::INTERNAL_SERVER_ERROR
-            },
+            }
         };
 
         let body = Json(json!({ "error": message }));
@@ -136,7 +134,9 @@ pub fn parse_optional_timestamp(
     column: &str,
 ) -> Result<Option<sqlx::types::time::OffsetDateTime>, sqlx::Error> {
     let value: Option<String> = row.try_get(column)?;
-    value.map(|value| decode_timestamp_value(&value)).transpose()
+    value
+        .map(|value| decode_timestamp_value(&value))
+        .transpose()
 }
 
 pub fn parse_timestamp(
@@ -160,7 +160,8 @@ pub fn db_json(value: &serde_json::Value) -> String {
 }
 
 pub fn db_optional_timestamp(value: Option<sqlx::types::time::OffsetDateTime>) -> Option<String> {
-    value.map(|value| value.format(&time::format_description::well_known::Rfc3339))
+    value
+        .map(|value| value.format(&time::format_description::well_known::Rfc3339))
         .transpose()
         .expect("rfc3339 timestamp")
 }

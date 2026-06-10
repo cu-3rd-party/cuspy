@@ -12,7 +12,7 @@
 
 <div class="min-h-screen bg-background text-on-surface">
 	<TopBar config={topBar} />
-	<main class={`mx-auto w-full max-w-6xl px-4 pt-24 ${nav ? 'pb-24' : 'pb-10'} sm:px-6`}>
+	<main class={`mx-auto w-full max-w-6xl px-4 pt-16 ${nav ? 'pb-24' : 'pb-10'} sm:px-6`}>
 		{@render children()}
 	</main>
 	{#if nav}
