@@ -61,6 +61,7 @@ pub fn to_profile_request_response(record: ProfileRequestRecord) -> ProfileReque
     }
 }
 
+// TODO: вынести в экстрактор
 pub fn require_admin(
     headers: &HeaderMap,
     state: &ApiContext,

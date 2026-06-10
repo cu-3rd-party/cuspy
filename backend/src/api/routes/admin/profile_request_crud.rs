@@ -4,10 +4,20 @@ use crate::api::models::profile::{
 };
 use crate::api::models::{ApiError, db_optional_timestamp, db_uuid};
 use crate::{ApiContext, notifier};
-use axum::Json;
+use axum::{Json, Router};
 use axum::extract::{Path, State};
+use axum::routing::get;
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
+
+pub fn profile_request_router() -> Router<ApiContext> {
+    Router::new()
+        .route("", get(admin_list_profile_requests))
+        .route("{request_id}", 
+               get(admin_get_profile_request)
+                   .patch(admin_update_profile_request)
+                   .delete(admin_delete_profile_request))
+}
 
 pub async fn admin_list_profile_requests(
     State(state): State<ApiContext>,

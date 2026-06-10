@@ -2,10 +2,22 @@ use crate::ApiContext;
 use crate::api::helpers;
 use crate::api::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
 use crate::api::models::{ApiError, db_uuid};
-use axum::Json;
+use axum::{Json, Router};
 use axum::extract::{Path, State};
+use axum::routing::get;
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
+
+pub fn users_router() -> Router<ApiContext> {
+    Router::new()
+        .route("", 
+               get(admin_list_users)
+                   .post(admin_create_user))
+        .route("{user_id}", 
+               get(admin_get_user)
+                   .patch(admin_update_user)
+                   .delete(admin_delete_user))
+}
 
 pub async fn admin_list_users(
     State(state): State<ApiContext>,

@@ -1,0 +1,66 @@
+use axum::extract::{Path, State};
+use http::HeaderMap;
+use uuid::Uuid;
+use axum::Json;
+use crate::api::helpers;
+use crate::api::models::{db_uuid, ApiError};
+use crate::api::models::profile::{ProfileRequestRecord, ProfileRequestResponse, UpdateProfileRequest};
+use crate::ApiContext;
+
+pub async fn update_profile_request(
+    State(state): State<ApiContext>,
+    headers: HeaderMap,
+    Path(request_id): Path<Uuid>,
+    Json(payload): Json<UpdateProfileRequest>,
+) -> Result<Json<ProfileRequestResponse>, ApiError> {
+    helpers::optional_telegram_user_id(&headers, &state)?;
+    let auth = helpers::require_bearer_token(&headers, &state)?;
+    let existing = sqlx::query_as::<_, ProfileRequestRecord>(
+        r#"
+        select
+            profile_request_id,
+            user_id,
+            requested_profile_data_id,
+            status,
+            reviewer_note,
+            reviewed_at,
+            created_at,
+            updated_at
+        from profile_request
+        where profile_request_id = cast($1 as uuid)
+        "#,
+    )
+    .bind(db_uuid(request_id))
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(ApiError::NotFound)?;
+
+    helpers::ensure_owner(&auth, existing.user_id)?;
+    if existing.status != "sent" {
+        return Err(ApiError::Forbidden);
+    }
+
+    let request = sqlx::query_as::<_, ProfileRequestRecord>(
+        r#"
+        update profile_request
+        set requested_profile_data = coalesce(cast($2 as jsonb), requested_profile_data)
+        where profile_request_id = cast($1 as uuid)
+        returning
+            profile_request_id,
+            user_id,
+            requested_profile_data_id,
+            status,
+            reviewer_note,
+            reviewed_at,
+            created_at,
+            updated_at
+        "#,
+    )
+    .bind(db_uuid(request_id))
+    .bind("")
+    .fetch_optional(&state.db)
+    .await?
+    .ok_or(ApiError::NotFound)?;
+
+    Ok(Json(helpers::to_profile_request_response(request)))
+}

@@ -41,7 +41,7 @@ pub async fn confirm_kill(
                 cast(killer_id as text) as killer_id,
                 cast(victim_id as text) as victim_id,
                 status,
-                evidence_url,
+                evidence_url, // TODO: refactor into the new resource location logic
                 cast(details as text) as details,
                 cast(killer_confirmed_at as text) as killer_confirmed_at,
                 cast(victim_confirmed_at as text) as victim_confirmed_at,

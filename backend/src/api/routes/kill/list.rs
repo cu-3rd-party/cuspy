@@ -111,4 +111,6 @@ mod tests {
 
         assert!(!params.build_query().contains("where"));
     }
+
+    // TODO: закончить покрытие тестами
 }

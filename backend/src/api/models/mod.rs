@@ -159,6 +159,10 @@ pub fn db_json(value: &serde_json::Value) -> String {
     value.to_string()
 }
 
+pub fn db_optional_json(value: Option<&serde_json::Value>) -> Option<String> {
+    value.map(|value| value.to_string())
+}
+
 pub fn db_optional_timestamp(value: Option<sqlx::types::time::OffsetDateTime>) -> Option<String> {
     value
         .map(|value| value.format(&time::format_description::well_known::Rfc3339))

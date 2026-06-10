@@ -17,12 +17,6 @@ pub struct ConfirmKillRequest {
     pub note: Option<String>,
 }
 
-#[derive(Deserialize)]
-pub struct ModerateKillRequest {
-    pub action: String,
-    pub reason: Option<String>,
-}
-
 #[derive(Serialize)]
 pub struct KillEventResponse {
     pub kill_event_id: Uuid,
@@ -97,15 +91,16 @@ pub struct KillEventRecord {
     pub killer_id: Uuid,
     pub victim_id: Uuid,
     pub status: String,
-    pub evidence_url: Option<String>,
+    pub evidence_resource_id: Option<Uuid>,
     pub details: Value,
     pub killer_confirmed_at: Option<time::OffsetDateTime>,
     pub victim_confirmed_at: Option<time::OffsetDateTime>,
-    pub moderation_reason: Option<String>,
     pub reported_at: time::OffsetDateTime,
     pub confirmed_at: Option<time::OffsetDateTime>,
     pub moderated_at: Option<time::OffsetDateTime>,
     pub moderator_id: Option<Uuid>,
+    pub moderation_reason: Option<String>,
+    pub rating_applied_at: Option<time::OffsetDateTime>,
     pub created_at: time::OffsetDateTime,
     pub updated_at: Option<time::OffsetDateTime>,
 }
@@ -122,15 +117,16 @@ impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
             killer_id: parse_uuid(row, "killer_id")?,
             victim_id: parse_uuid(row, "victim_id")?,
             status: row.try_get("status")?,
-            evidence_url: row.try_get("evidence_url")?,
+            evidence_resource_id: parse_optional_uuid(row, "evidence_resource_id")?,
             details: parse_json(row, "details")?,
             killer_confirmed_at: parse_optional_timestamp(row, "killer_confirmed_at")?,
             victim_confirmed_at: parse_optional_timestamp(row, "victim_confirmed_at")?,
-            moderation_reason: row.try_get("moderation_reason")?,
             reported_at: parse_timestamp(row, "reported_at")?,
             confirmed_at: parse_optional_timestamp(row, "confirmed_at")?,
             moderated_at: parse_optional_timestamp(row, "moderated_at")?,
             moderator_id: parse_optional_uuid(row, "moderator_id")?,
+            moderation_reason: row.try_get("moderation_reason")?,
+            rating_applied_at: parse_optional_timestamp(row, "rating_applied_at")?,
             created_at: parse_timestamp(row, "created_at")?,
             updated_at: parse_optional_timestamp(row, "updated_at")?,
         })
@@ -143,7 +139,7 @@ pub fn to_kill_response(record: KillEventRecord) -> KillEventResponse {
         killer_id: record.killer_id,
         victim_id: record.victim_id,
         status: record.status,
-        evidence_url: record.evidence_url,
+        evidence_url: record.evidence_url, // TODO: after images module written, fetch relevant resource and return a link
         details: record.details,
         killer_confirmed_at: record.killer_confirmed_at.map(helpers::format_timestamp),
         victim_confirmed_at: record.victim_confirmed_at.map(helpers::format_timestamp),

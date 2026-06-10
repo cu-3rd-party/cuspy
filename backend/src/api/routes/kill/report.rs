@@ -8,7 +8,8 @@ use http::HeaderMap;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
-// TODO: я правильно понимаю, что эта штука работает только для убийцы?
+// TODO: я правильно понимаю, что эта штука работает только для убийцы? надо исправить, сообщить об убийстве может как жертва, так и убийца
+//       да и схеме бд не соответствует
 pub async fn report_kill(
     State(state): State<ApiContext>,
     headers: HeaderMap,
