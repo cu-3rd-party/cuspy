@@ -1,13 +1,14 @@
 use crate::ApiContext;
-use crate::api::helpers;
+use crate::api::{extractor, helpers};
 use crate::api::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
 use crate::api::models::user::UserRecord;
-use crate::api::models::{ApiError, db_uuid};
+use crate::api::models::{db_uuid, ApiError};
 use axum::Json;
 use axum::extract::State;
 use http::{HeaderMap, StatusCode};
 use log::error;
 use uuid::Uuid;
+use crate::api::extractor::{AuthUser, User};
 
 fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> ApiError {
     match error {
@@ -37,39 +38,35 @@ fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> Ap
 
 pub async fn register(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), ApiError> {
-    let telegram_user_id = helpers::optional_telegram_user_id(&headers, &state)?;
+    #[cfg(feature = "telegram-auth")]
+    let (login_identifier, password_hash, telegram_id) = {
+        let telegram_user_id = user.tg.user.id;
+        (telegram_user_id.to_string(), None::<String>, telegram_user_id)
+    };
 
-    let (login_identifier, password_hash, telegram_id) =
-        if let Some(telegram_user_id) = telegram_user_id {
-            (telegram_user_id.to_string(), None, telegram_user_id)
-        } else {
-            let email = payload
-                .email
-                .as_deref()
-                .unwrap_or_default()
-                .trim()
-                .to_lowercase();
-            let password = payload.password.as_deref().unwrap_or_default();
-            if email.is_empty() || password.len() < 8 {
-                return Err(ApiError::BadRequest(
-                    "email must be present and password must be at least 8 characters".into(),
-                ));
-            }
+    #[cfg(not(feature = "telegram-auth"))]
+    let (login_identifier, password_hash, telegram_id) = {
+        let email = payload
+            .email
+            .as_deref()
+            .unwrap_or_default()
+            .trim()
+            .to_lowercase();
+        let password = payload.password.as_deref().unwrap_or_default();
+        if email.is_empty() || password.len() < 8 {
+            return Err(ApiError::BadRequest(
+                "email must be present and password must be at least 8 characters".into(),
+            ));
+        }
 
-            let telegram_id = payload.telegram_id.ok_or(ApiError::BadRequest(
-                "telegram_id is required when Telegram auth is disabled".into(),
-            ))?;
-            (email, Some(helpers::hash_password(password)?), telegram_id)
-        };
-
-    let is_admin = headers
-        .get("Admin")
-        .and_then(|s| s.to_str().ok())
-        .and_then(|header| Some(header == state.admin_secret))
-        .unwrap_or(false);
+        let telegram_id = payload.telegram_id.ok_or(ApiError::BadRequest(
+            "telegram_id is required when Telegram auth is disabled".into(),
+        ))?;
+        (email, Some(helpers::hash_password(password)?), telegram_id)
+    };
 
     let mut tx = state.db.begin().await?;
 
@@ -90,7 +87,7 @@ pub async fn register(
     .bind(db_uuid(user_id))
     .bind(telegram_id)
     .bind(payload.agent_name)
-    .bind(is_admin)
+    .bind(user.is_admin)
     .fetch_one(&mut *tx)
     .await
     {

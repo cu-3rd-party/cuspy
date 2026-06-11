@@ -1,4 +1,4 @@
-use crate::api::helpers;
+use crate::api::extractor;
 use crate::api::models::kill::{KillEventRecord, KillEventResponse, ReportKillRequest};
 use crate::api::models::{ApiError, db_json, db_uuid, kill};
 use crate::{ApiContext, notifier};
@@ -7,16 +7,16 @@ use axum::extract::State;
 use http::HeaderMap;
 use serde_json::{Value, json};
 use uuid::Uuid;
+use crate::api::extractor::AuthUser;
 
 // TODO: я правильно понимаю, что эта штука работает только для убийцы? надо исправить, сообщить об убийстве может как жертва, так и убийца
 //       да и схеме бд не соответствует
 pub async fn report_kill(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Json(payload): Json<ReportKillRequest>,
 ) -> Result<(http::StatusCode, Json<KillEventResponse>), ApiError> {
-    let auth = helpers::require_bearer_token(&headers, &state)?;
-    if auth.user_id == payload.victim_id {
+    if user.user_id == payload.victim_id {
         return Err(ApiError::BadRequest("killer and victim must differ".into()));
     }
 
@@ -59,7 +59,7 @@ pub async fn report_kill(
         "#,
     )
     .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(auth.user_id))
+    .bind(db_uuid(user.user_id))
     .bind(db_uuid(payload.victim_id))
     .bind(db_json(&details))
     .fetch_one(&state.db)

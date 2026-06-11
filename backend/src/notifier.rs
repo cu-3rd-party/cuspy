@@ -1,7 +1,7 @@
-use clap::builder::TypedValueParser;
-use log::info;
 use crate::ApiContext;
 use crate::api::models::db_uuid;
+use clap::builder::TypedValueParser;
+use log::info;
 #[cfg(feature = "telegram-auth")]
 use log::warn;
 #[cfg(feature = "telegram-auth")]
@@ -40,7 +40,11 @@ pub async fn notify_user(state: &ApiContext, user_id: Uuid, message: impl Into<S
 
     #[cfg(not(feature = "telegram-auth"))]
     {
-        info!("notification to user_id={}: {}", user_id.to_string(), message.into());
+        info!(
+            "notification to user_id={}: {}",
+            user_id.to_string(),
+            message.into()
+        );
     }
 }
 

@@ -2,8 +2,12 @@ pub mod api;
 pub mod config;
 pub mod notifier;
 
+#[cfg(feature = "telegram-auth")]
+pub mod telegram;
+
 use std::time::Instant;
 
+use crate::api::extractor::MaybeAuthUser;
 use crate::api::models::{db_json, db_optional_uuid, db_uuid};
 use axum::{
     Router,
@@ -23,16 +27,9 @@ pub struct ApiContext {
     pub admin_secret: String,
     pub jwt_secret: String,
     #[cfg(feature = "telegram-auth")]
-    pub telegram_bot_token: Option<String>,
+    pub telegram_bot_token: String,
     #[cfg(feature = "telegram-auth")]
     pub public_webapp_url: Option<String>,
-}
-
-impl ApiContext {
-    #[cfg(feature = "telegram-auth")]
-    pub fn telegram_auth_enabled(&self) -> bool {
-        self.telegram_bot_token.is_some()
-    }
 }
 
 pub fn build_app(state: ApiContext) -> Router {
@@ -43,7 +40,12 @@ pub fn build_app(state: ApiContext) -> Router {
         .with_state(state)
 }
 
-async fn audit_request(State(state): State<ApiContext>, request: Request, next: Next) -> Response {
+async fn audit_request(
+    State(state): State<ApiContext>,
+    MaybeAuthUser(user): MaybeAuthUser,
+    request: Request,
+    next: Next,
+) -> Response {
     let started_at = Instant::now();
     let request_id = Uuid::now_v7();
 
@@ -55,8 +57,7 @@ async fn audit_request(State(state): State<ApiContext>, request: Request, next: 
     let method = request.method().to_string();
     let uri = request.uri().to_string();
     let headers = request.headers().clone();
-    let actor_user_id = api::helpers::require_bearer_token(&headers, &state)
-        .ok()
+    let actor_user_id = user
         .map(|auth| auth.user_id)
         .filter(|user_id| *user_id != Uuid::nil());
     let user_agent = header_to_string(&headers, header::USER_AGENT);

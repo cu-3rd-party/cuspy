@@ -1,22 +1,21 @@
 use crate::api::models::kill::{ConfirmKillRequest, KillEventRecord, KillEventResponse};
 use crate::api::models::{ApiError, db_uuid, kill};
-use crate::api::{helpers, routes};
+use crate::api::{routes};
 use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::{Path, State};
-use http::HeaderMap;
 use uuid::Uuid;
+use crate::api::extractor::AuthUser;
 
 pub async fn confirm_kill(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Path(kill_id): Path<Uuid>,
     Json(payload): Json<ConfirmKillRequest>,
 ) -> Result<Json<KillEventResponse>, ApiError> {
-    let auth = helpers::require_bearer_token(&headers, &state)?;
     let kill = routes::kill::helpers::fetch_kill(&state, kill_id).await?;
 
-    if auth.user_id != kill.killer_id && auth.user_id != kill.victim_id {
+    if user.user_id != kill.killer_id && user.user_id != kill.victim_id {
         return Err(ApiError::Forbidden);
     }
 
@@ -61,7 +60,7 @@ pub async fn confirm_kill(
         .ok_or(ApiError::BadRequest(
             "kill can no longer be rejected".into(),
         ))?
-    } else if auth.user_id == kill.killer_id {
+    } else if user.user_id == kill.killer_id {
         sqlx::query_as::<_, KillEventRecord>(
             r#"
             update kill_event
@@ -134,7 +133,7 @@ pub async fn confirm_kill(
             ),
         )
         .await;
-    } else if auth.user_id == kill.victim_id {
+    } else if user.user_id == kill.victim_id {
         notifier::notify_user(
             &state,
             kill.killer_id,

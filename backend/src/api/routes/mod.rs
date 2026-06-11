@@ -1,14 +1,14 @@
-use axum::Router;
-use axum::routing::{get};
-use crate::api::{health};
 use crate::ApiContext;
+use crate::api::health;
+use axum::Router;
+use axum::routing::get;
 
-pub mod profile_request;
 pub mod admin;
 pub mod agent_data;
 pub mod auth;
 pub mod image;
 pub mod kill;
+pub mod profile_request;
 pub mod stats;
 pub mod user;
 

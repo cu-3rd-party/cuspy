@@ -1,17 +1,17 @@
 use crate::ApiContext;
-use crate::api::helpers;
 use crate::api::models::kill::{RankingEntry, UserStatsResponse};
 use crate::api::models::{ApiError, db_uuid};
+use crate::api::{extractor, helpers};
 use axum::Json;
 use axum::extract::{Path, State};
 use http::HeaderMap;
 use uuid::Uuid;
+use crate::api::extractor::AuthUser;
 
 pub async fn rankings(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(_user): AuthUser,
 ) -> Result<Json<Vec<RankingEntry>>, ApiError> {
-    let _auth = helpers::require_bearer_token(&headers, &state)?;
     let entries = sqlx::query_as::<_, RankingEntry>(
         r#"
         with latest_ratings as (
@@ -63,10 +63,9 @@ pub async fn rankings(
 
 pub async fn user_stats(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<UserStatsResponse>, ApiError> {
-    let _auth = helpers::require_bearer_token(&headers, &state)?;
     let stats = sqlx::query_as::<_, UserStatsResponse>(
         r#"
         with latest_rating as (

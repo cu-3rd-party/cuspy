@@ -1,18 +1,17 @@
+use crate::ApiContext;
+use crate::api::models::{db_uuid, ApiError};
+use crate::api::{extractor, helpers};
 use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
-use crate::api::helpers;
-use crate::api::models::{db_uuid, ApiError};
-use crate::ApiContext;
+use crate::api::extractor::AuthUser;
 
 pub async fn delete_user(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
-    helpers::optional_telegram_user_id(&headers, &state)?;
-    let auth = helpers::require_bearer_token(&headers, &state)?;
-    helpers::ensure_owner(&auth, user_id)?;
+    helpers::ensure_owner(&user, user_id)?;
 
     let result = sqlx::query(r#"delete from "user" where user_id = cast($1 as uuid)"#)
         .bind(db_uuid(user_id))

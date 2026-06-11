@@ -1,29 +1,31 @@
-use crate::api::helpers;
+use crate::api::extractor::AdminUser;
 use crate::api::models::profile::{
     AdminUpdateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
 use crate::api::models::{ApiError, db_optional_timestamp, db_uuid};
+use crate::api::{extractor, helpers};
 use crate::{ApiContext, notifier};
-use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::routing::get;
+use axum::{Json, Router};
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
 
 pub fn profile_request_router() -> Router<ApiContext> {
     Router::new()
         .route("", get(admin_list_profile_requests))
-        .route("{request_id}", 
-               get(admin_get_profile_request)
-                   .patch(admin_update_profile_request)
-                   .delete(admin_delete_profile_request))
+        .route(
+            "{request_id}",
+            get(admin_get_profile_request)
+                .patch(admin_update_profile_request)
+                .delete(admin_delete_profile_request),
+        )
 }
 
 pub async fn admin_list_profile_requests(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AdminUser(_user): AdminUser,
 ) -> Result<Json<Vec<ProfileRequestResponse>>, ApiError> {
-    helpers::require_admin(&headers, &state)?;
     let requests = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
@@ -52,10 +54,9 @@ pub async fn admin_list_profile_requests(
 
 pub async fn admin_get_profile_request(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AdminUser(_user): AdminUser,
     Path(request_id): Path<Uuid>,
 ) -> Result<Json<ProfileRequestResponse>, ApiError> {
-    helpers::require_admin(&headers, &state)?;
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
@@ -81,12 +82,10 @@ pub async fn admin_get_profile_request(
 
 pub async fn admin_update_profile_request(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AdminUser(_user): AdminUser,
     Path(request_id): Path<Uuid>,
     Json(payload): Json<AdminUpdateProfileRequest>,
 ) -> Result<Json<ProfileRequestResponse>, ApiError> {
-    helpers::require_admin(&headers, &state)?;
-
     if let Some(status) = payload.status.as_deref()
         && !matches!(status, "sent" | "confirmed" | "rejected")
     {
@@ -170,10 +169,9 @@ pub async fn admin_update_profile_request(
 
 pub async fn admin_delete_profile_request(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AdminUser(_user): AdminUser,
     Path(request_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
-    helpers::require_admin(&headers, &state)?;
     let result = sqlx::query(
         r#"
             delete from

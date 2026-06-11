@@ -1,7 +1,7 @@
 use crate::ApiContext;
-use crate::api::helpers;
 use crate::api::models::kill::{KillEventRecord, KillEventResponse};
 use crate::api::models::{ApiError, db_uuid, kill};
+use crate::api::{extractor, helpers};
 use axum::Json;
 use axum::extract::{Query, State};
 use http::HeaderMap;
@@ -10,6 +10,7 @@ use sqlx::any::AnyArguments;
 use sqlx::query::QueryAs;
 use sqlx::{Any, QueryBuilder};
 use uuid::Uuid;
+use crate::api::extractor::AuthUser;
 
 #[derive(Deserialize)]
 pub struct ListParams {
@@ -83,10 +84,9 @@ impl ListParams {
 )]
 pub async fn list_kills(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(_user): AuthUser,
     Query(query): Query<ListParams>,
 ) -> Result<Json<Vec<KillEventResponse>>, ApiError> {
-    let _auth = helpers::require_bearer_token(&headers, &state)?;
     let records = sqlx::query_as(&query.build_query())
         .fetch_all(&state.db)
         .await?;
@@ -99,8 +99,6 @@ pub async fn list_kills(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::Execute;
-
     #[test]
     pub fn test_build_query_no_params() {
         let params = ListParams {

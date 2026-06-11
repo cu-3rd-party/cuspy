@@ -1,13 +1,14 @@
-use crate::api::helpers;
-use crate::api::models::kill::{KillEventRecord, KillEventResponse};
-use crate::api::models::{ApiError, db_uuid, kill};
+use crate::api::extractor;
+use crate::api::models::kill::KillEventResponse;
+use crate::api::models::{ApiError, kill};
+use crate::api::routes::kill::helpers::fetch_kill;
 use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::{Path, State};
 use http::HeaderMap;
 use serde::Deserialize;
 use uuid::Uuid;
-use crate::api::routes::kill::helpers::fetch_kill;
+use crate::api::extractor::AdminUser;
 
 #[derive(Deserialize)]
 pub enum ModerationActions {
@@ -25,11 +26,10 @@ pub struct ModerateKillRequest {
 // Эндпоинт использует админ.
 pub async fn moderate_kill(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AdminUser(_user): AdminUser,
     Path(kill_id): Path<Uuid>,
     Json(request): Json<ModerateKillRequest>,
 ) -> Result<Json<KillEventResponse>, ApiError> {
-    let admin = helpers::require_admin(&headers, &state)?;
     let reason = request
         .reason
         .map(|value| value.trim().to_owned())
@@ -37,14 +37,10 @@ pub async fn moderate_kill(
 
     // TODO: оно должно внутри одной транзакции читать состояние и обновлять его в соответствии с действием админа
     let record = fetch_kill(&state, kill_id).await?;
-    
+
     match request.action {
-        ModerationActions::Approve => {
-            
-        }
-        ModerationActions::Reject => {
-            
-        }
+        ModerationActions::Approve => {}
+        ModerationActions::Reject => {}
     }
 
     // legacy code part for reference

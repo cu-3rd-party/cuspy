@@ -1,7 +1,7 @@
 use crate::api::models::parse_uuid;
 use crate::api::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, any::AnyRow};
+use sqlx::{any::AnyRow, FromRow};
 use uuid::Uuid;
 
 #[derive(Deserialize)]
@@ -16,12 +16,6 @@ pub struct RegisterRequest {
 pub struct LoginRequest {
     pub email: Option<String>,
     pub password: Option<String>,
-}
-
-#[cfg(feature = "telegram-auth")]
-#[derive(Deserialize)]
-pub struct TelegramUser {
-    pub id: i64,
 }
 
 #[derive(Serialize)]
@@ -68,18 +62,4 @@ pub struct RefreshClaims {
     pub user_id: Uuid,
     pub auth_user_id: Uuid,
     pub exp: usize,
-}
-
-#[derive(Clone)]
-pub struct AuthenticatedUser {
-    pub user_id: Uuid,
-    pub is_admin: bool,
-    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
-    #[cfg(feature = "telegram-auth")]
-    pub telegram_user_id: i64,
-}
-
-#[cfg(feature = "telegram-auth")]
-pub struct TelegramInitData {
-    pub telegram_user_id: i64,
 }

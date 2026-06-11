@@ -1,19 +1,18 @@
+use crate::ApiContext;
+use crate::api::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
+use crate::api::models::{db_uuid, ApiError};
+use crate::api::{extractor, helpers};
+use axum::Json;
 use axum::extract::{Path, State};
 use http::HeaderMap;
 use uuid::Uuid;
-use axum::Json;
-use crate::api::helpers;
-use crate::api::models::{db_uuid, ApiError};
-use crate::api::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::ApiContext;
+use crate::api::extractor::AuthUser;
 
 pub async fn get_profile_request(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Path(request_id): Path<Uuid>,
 ) -> Result<Json<ProfileRequestResponse>, ApiError> {
-    helpers::optional_telegram_user_id(&headers, &state)?;
-    let auth = helpers::require_bearer_token(&headers, &state)?;
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
@@ -34,6 +33,6 @@ pub async fn get_profile_request(
     .await?
     .ok_or(ApiError::NotFound)?;
 
-    helpers::ensure_owner(&auth, request.user_id)?;
+    helpers::ensure_owner(&user, request.user_id)?;
     Ok(Json(helpers::to_profile_request_response(request)))
 }

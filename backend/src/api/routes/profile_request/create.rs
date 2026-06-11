@@ -1,19 +1,20 @@
+use crate::api::models::profile::{
+    CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
+};
+use crate::api::models::{db_uuid, ApiError};
+use crate::api::{extractor, helpers};
+use crate::{notifier, ApiContext};
+use axum::Json;
 use axum::extract::State;
 use http::{HeaderMap, StatusCode};
-use axum::Json;
 use uuid::Uuid;
-use crate::api::helpers;
-use crate::api::models::{db_uuid, ApiError};
-use crate::api::models::profile::{CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse};
-use crate::{notifier, ApiContext};
+use crate::api::extractor::AuthUser;
 
 pub async fn create_profile_request(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    AuthUser(user): AuthUser,
     Json(payload): Json<CreateProfileRequest>,
 ) -> Result<(StatusCode, Json<ProfileRequestResponse>), ApiError> {
-    helpers::optional_telegram_user_id(&headers, &state)?;
-    let auth = helpers::require_bearer_token(&headers, &state)?;
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         insert into profile_request (
@@ -35,14 +36,14 @@ pub async fn create_profile_request(
         "#,
     )
     .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(auth.user_id))
+    .bind(db_uuid(user.user_id))
     .bind("") // TODO:
     .fetch_one(&state.db)
     .await?;
 
     notifier::notify_user(
         &state,
-        auth.user_id,
+        user.user_id,
         "Profile request submitted. Review queue active. Gameplay access remains available while moderators verify dossier.",
     )
     .await;
