@@ -89,7 +89,7 @@ impl<'r> FromRow<'r, AnyRow> for AgentData {
                 .try_get("academic_level")
                 .ok()
                 .and_then(|r| AcademicLevel::from_str(r).ok()),
-            course_number: None,
+            course_number: row.try_get("course_number").ok(),
             bachelor_track: row
                 .try_get("bachelor_track")
                 .ok()

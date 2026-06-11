@@ -1,20 +1,23 @@
+use crate::api::extractor::AuthUser;
 use crate::api::models::profile::{
     CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
-use crate::api::models::{db_uuid, ApiError};
-use crate::api::{extractor, helpers};
-use crate::{notifier, ApiContext};
+use crate::api::models::{ApiError, db_uuid};
+use crate::api::{db, helpers};
+use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::State;
-use http::{HeaderMap, StatusCode};
+use http::StatusCode;
 use uuid::Uuid;
-use crate::api::extractor::AuthUser;
 
 pub async fn create_profile_request(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,
     Json(payload): Json<CreateProfileRequest>,
 ) -> Result<(StatusCode, Json<ProfileRequestResponse>), ApiError> {
+    let requested_profile_data_id =
+        db::insert_agent_data_from_profile(&state.db, &payload.requested_profile_data).await?;
+
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         insert into profile_request (
@@ -37,7 +40,7 @@ pub async fn create_profile_request(
     )
     .bind(db_uuid(Uuid::now_v7()))
     .bind(db_uuid(user.user_id))
-    .bind("") // TODO:
+    .bind(db_uuid(requested_profile_data_id))
     .fetch_one(&state.db)
     .await?;
 

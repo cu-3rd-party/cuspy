@@ -1,14 +1,14 @@
 use crate::ApiContext;
-use crate::api::{extractor, helpers};
+use crate::api::extractor::{AuthUser, User};
 use crate::api::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
 use crate::api::models::user::UserRecord;
-use crate::api::models::{db_uuid, ApiError};
+use crate::api::models::{ApiError, db_uuid};
+use crate::api::{extractor, helpers};
 use axum::Json;
 use axum::extract::State;
 use http::{HeaderMap, StatusCode};
 use log::error;
 use uuid::Uuid;
-use crate::api::extractor::{AuthUser, User};
 
 fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> ApiError {
     match error {
@@ -44,7 +44,11 @@ pub async fn register(
     #[cfg(feature = "telegram-auth")]
     let (login_identifier, password_hash, telegram_id) = {
         let telegram_user_id = user.tg.user.id;
-        (telegram_user_id.to_string(), None::<String>, telegram_user_id)
+        (
+            telegram_user_id.to_string(),
+            None::<String>,
+            telegram_user_id,
+        )
     };
 
     #[cfg(not(feature = "telegram-auth"))]

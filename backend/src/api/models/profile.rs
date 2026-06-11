@@ -1,7 +1,7 @@
-use crate::api::models::{parse_json, parse_optional_timestamp, parse_timestamp, parse_uuid};
+use crate::api::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{FromRow, Row, any::AnyRow};
+use sqlx::{any::AnyRow, FromRow, Row};
 use uuid::Uuid;
 
 pub struct ProfileRequestRecord {
@@ -10,9 +10,9 @@ pub struct ProfileRequestRecord {
     pub requested_profile_data_id: Uuid,
     pub status: String,
     pub reviewer_note: Option<String>,
-    pub reviewed_at: Option<sqlx::types::time::OffsetDateTime>,
-    pub created_at: sqlx::types::time::OffsetDateTime,
-    pub updated_at: sqlx::types::time::OffsetDateTime,
+    pub reviewed_at: Option<time::OffsetDateTime>,
+    pub created_at: time::OffsetDateTime,
+    pub updated_at: time::OffsetDateTime,
 }
 
 impl<'r> FromRow<'r, AnyRow> for ProfileRequestRecord {

@@ -16,7 +16,7 @@ mod update;
 pub fn router() -> Router<ApiContext> {
     Router::new()
         .route(
-            "",
+            "/",
             get(list_profile_requests)
                 .post(create_profile_request)
                 .put(update_profile_request)

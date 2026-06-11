@@ -29,7 +29,7 @@ pub struct ApiContext {
     #[cfg(feature = "telegram-auth")]
     pub telegram_bot_token: String,
     #[cfg(feature = "telegram-auth")]
-    pub public_webapp_url: Option<String>,
+    pub public_webapp_url: String,
 }
 
 pub fn build_app(state: ApiContext) -> Router {

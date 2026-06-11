@@ -1,8 +1,7 @@
-use crate::ApiContext;
 use crate::api::routes::admin::profile_request_crud::profile_request_router;
 use crate::api::routes::admin::users_crud::users_router;
+use crate::ApiContext;
 use axum::Router;
-use axum::routing::get;
 
 pub mod profile_request_crud;
 pub mod users_crud;

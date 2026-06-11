@@ -1,7 +1,7 @@
 use crate::api::models::parse_uuid;
 use crate::api::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
-use sqlx::{any::AnyRow, FromRow};
+use sqlx::{FromRow, any::AnyRow};
 use uuid::Uuid;
 
 #[derive(Deserialize)]

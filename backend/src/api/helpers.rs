@@ -12,19 +12,13 @@ use crate::api::models::user::{UserRecord, UserResponse};
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-#[cfg(feature = "telegram-auth")]
-use hmac::Mac;
-#[cfg(feature = "telegram-auth")]
-use hmac::digest::Digest;
-use http::{header, HeaderMap};
-use jsonwebtoken::{encode, EncodingKey, Header};
-use serde_json::{json, Value};
-use sqlx::Row;
+use jsonwebtoken::{EncodingKey, Header, encode};
+use serde_json::{Value};
 use uuid::Uuid;
 
 pub const DEFAULT_RATING: i64 = 1000;
 
-pub fn format_timestamp(value: sqlx::types::time::OffsetDateTime) -> String {
+pub fn format_timestamp(value: time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
 }
 
@@ -206,7 +200,7 @@ pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use http::HeaderValue;
+    use http::{header, HeaderMap, HeaderValue};
     use serde_json::json;
     use sqlx::any::AnyPoolOptions;
 
@@ -220,7 +214,7 @@ mod tests {
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: "bot-token".into(),
             #[cfg(feature = "telegram-auth")]
-            public_webapp_url: Some("https://example.com".into()),
+            public_webapp_url: "https://example.com".into(),
         }
     }
 
@@ -264,11 +258,7 @@ mod tests {
             HeaderValue::from_str(&format!("Bearer {token}")).expect("header"),
         );
 
-        // we're in tests so we can unwrap without hesitation?
-        let auth = User::from_headers(
-            &state,
-            &headers,
-        );
+        let auth = User::from_headers(&state, &headers);
         assert!(auth.is_ok());
         let auth = auth.expect("authenticated user");
         assert_eq!(auth.user_id, auth_user.user_id);
@@ -284,10 +274,7 @@ mod tests {
             HeaderValue::from_static("admin-secret"),
         );
 
-        let auth = User::from_headers(
-            &state,
-            &headers,
-        );
+        let auth = User::from_headers(&state, &headers);
         assert!(auth.is_ok());
         let auth = auth.expect("authenticated user");
         assert!(auth.is_admin);

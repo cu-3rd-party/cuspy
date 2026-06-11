@@ -1,4 +1,5 @@
 use crate::ApiContext;
+use crate::api::extractor::AuthUser;
 use crate::api::models::ApiError;
 use crate::api::models::user::UserResponse;
 use crate::api::{extractor, helpers};
@@ -6,7 +7,6 @@ use axum::Json;
 use axum::extract::{Path, State};
 use http::HeaderMap;
 use uuid::Uuid;
-use crate::api::extractor::AuthUser;
 
 pub async fn get_user(
     State(state): State<ApiContext>,

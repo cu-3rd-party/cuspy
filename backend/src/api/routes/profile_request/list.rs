@@ -1,11 +1,11 @@
 use crate::ApiContext;
+use crate::api::extractor::AuthUser;
 use crate::api::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::api::models::{db_uuid, ApiError};
+use crate::api::models::{ApiError, db_uuid};
 use crate::api::{extractor, helpers};
 use axum::Json;
 use axum::extract::State;
 use http::HeaderMap;
-use crate::api::extractor::AuthUser;
 
 pub async fn list_profile_requests(
     State(state): State<ApiContext>,

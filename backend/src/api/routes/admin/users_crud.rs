@@ -11,9 +11,9 @@ use uuid::Uuid;
 
 pub fn users_router() -> Router<ApiContext> {
     Router::new()
-        .route("", get(admin_list_users).post(admin_create_user))
+        .route("/", get(admin_list_users).post(admin_create_user))
         .route(
-            "{user_id}",
+            "/{user_id}",
             get(admin_get_user)
                 .patch(admin_update_user)
                 .delete(admin_delete_user),

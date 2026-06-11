@@ -1,10 +1,10 @@
 use crate::ApiContext;
-use crate::api::models::{db_uuid, ApiError};
+use crate::api::extractor::AuthUser;
+use crate::api::models::{ApiError, db_uuid};
 use crate::api::{extractor, helpers};
 use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
-use crate::api::extractor::AuthUser;
 
 pub async fn delete_user(
     State(state): State<ApiContext>,

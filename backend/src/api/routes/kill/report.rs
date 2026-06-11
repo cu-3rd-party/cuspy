@@ -1,26 +1,38 @@
-use crate::api::extractor;
+use crate::api::extractor::AuthUser;
 use crate::api::models::kill::{KillEventRecord, KillEventResponse, ReportKillRequest};
 use crate::api::models::{ApiError, db_json, db_uuid, kill};
+use crate::api::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::State;
-use http::HeaderMap;
 use serde_json::{Value, json};
 use uuid::Uuid;
-use crate::api::extractor::AuthUser;
 
-// TODO: я правильно понимаю, что эта штука работает только для убийцы? надо исправить, сообщить об убийстве может как жертва, так и убийца
-//       да и схеме бд не соответствует
 pub async fn report_kill(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,
     Json(payload): Json<ReportKillRequest>,
 ) -> Result<(http::StatusCode, Json<KillEventResponse>), ApiError> {
-    if user.user_id == payload.victim_id {
+    let (killer_id, victim_id) = match (payload.killer_id, payload.victim_id) {
+        (Some(killer_id), Some(victim_id)) => (killer_id, victim_id),
+        (None, Some(victim_id)) => (user.user_id, victim_id),
+        (Some(killer_id), None) => (killer_id, user.user_id),
+        (None, None) => {
+            return Err(ApiError::BadRequest(
+                "either victim_id or killer_id must be provided".into(),
+            ));
+        }
+    };
+
+    if killer_id == victim_id {
         return Err(ApiError::BadRequest("killer and victim must differ".into()));
     }
 
-    let details = match payload.details {
+    if user.user_id != killer_id && user.user_id != victim_id {
+        return Err(ApiError::Forbidden);
+    }
+
+    let mut details = match payload.details {
         Some(Value::Object(map)) => Value::Object(map),
         Some(_) => {
             return Err(ApiError::BadRequest(
@@ -30,17 +42,16 @@ pub async fn report_kill(
         None => json!({}),
     };
 
-    let record = sqlx::query_as::<_, KillEventRecord>(
+    if let Some(evidence_url) = payload.evidence_url
+        && let Some(details_map) = details.as_object_mut()
+    {
+        details_map.insert("evidence_url".into(), Value::String(evidence_url));
+    }
+
+    let reporter_is_killer = user.user_id == killer_id;
+    let query = format!(
         r#"
         insert into kill_event (
-            kill_event_id,
-            killer_id,
-            victim_id,
-            details,
-            killer_confirmed_at
-        )
-        values ($1, $2, $3, now())
-        returning
             kill_event_id,
             killer_id,
             victim_id,
@@ -48,28 +59,43 @@ pub async fn report_kill(
             evidence_resource_id,
             details,
             killer_confirmed_at,
-            victim_confirmed_at,
-            confirmed_at,
-            moderated_at,
-            moderator_id,
-            moderation_reason,
-            rating_applied_at,
-            created_at,
-            updated_at
-        "#,
-    )
-    .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(user.user_id))
-    .bind(db_uuid(payload.victim_id))
-    .bind(db_json(&details))
-    .fetch_one(&state.db)
-    .await?;
+            victim_confirmed_at
+        )
+        values (
+            $1,
+            $2,
+            $3,
+            'REPORTED',
+            null,
+            cast($4 as jsonb),
+            case when $5 then now() else null end,
+            case when $5 then null else now() end
+        )
+        returning
+            {KILL_EVENT_COLUMNS}
+        "#
+    );
+
+    let record = sqlx::query_as::<_, KillEventRecord>(&query)
+        .bind(db_uuid(Uuid::now_v7()))
+        .bind(db_uuid(killer_id))
+        .bind(db_uuid(victim_id))
+        .bind(db_json(&details))
+        .bind(reporter_is_killer)
+        .fetch_one(&state.db)
+        .await?;
+
+    let counterparty_id = if reporter_is_killer {
+        victim_id
+    } else {
+        killer_id
+    };
 
     notifier::notify_user(
         &state,
-        payload.victim_id,
+        counterparty_id,
         format!(
-            "Kill report filed against you. Open reveal confirmation. Reference: {}",
+            "Kill report {} filed. Open the confirmation flow to verify the event.",
             record.kill_event_id
         ),
     )
@@ -77,7 +103,7 @@ pub async fn report_kill(
     notifier::notify_admins(
         &state,
         format!(
-            "Kill report {} created and awaiting victim response.",
+            "Kill report {} created and awaiting counterparty confirmation.",
             record.kill_event_id
         ),
     )

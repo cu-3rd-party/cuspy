@@ -1,9 +1,9 @@
-use http::HeaderValue;
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
 use hmac::digest::Digest;
-use url::form_urlencoded;
+use hmac::{Hmac, Mac};
+use http::HeaderValue;
 use serde::Deserialize;
+use sha2::Sha256;
+use url::form_urlencoded;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -51,15 +51,14 @@ impl TelegramInitData {
         data_pairs.sort();
         let data_check_string = data_pairs.join("\n");
         let secret = Sha256::digest(token);
-        let mut mac =
-            HmacSha256::new_from_slice(secret.as_slice()).ok()?;
+        let mut mac = HmacSha256::new_from_slice(secret.as_slice()).ok()?;
         mac.update(data_check_string.as_bytes());
         let expected_hash = hex::encode(mac.finalize().into_bytes());
 
         let provided_hash = hash?;
 
         if expected_hash != provided_hash {
-            return None
+            return None;
         }
         Some(user_json?)
     }
@@ -68,13 +67,53 @@ impl TelegramInitData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use url::form_urlencoded::byte_serialize;
 
     impl TelegramInitData {
-        fn to_init_data(self) -> String {
-            todo!()
+        fn to_init_data(&self, token: &str) -> String {
+            let user = serde_json::to_string(&self.user).expect("serialize telegram user");
+            let user_encoded = byte_serialize(user.as_bytes()).collect::<String>();
+
+            let mut data_pairs = vec![
+                "auth_date=1700000000".to_string(),
+                "query_id=test-query".to_string(),
+                format!("user={user}"),
+            ];
+            data_pairs.sort();
+
+            let data_check_string = data_pairs.join("\n");
+            let secret = Sha256::digest(token.as_bytes());
+            let mut mac = HmacSha256::new_from_slice(secret.as_slice()).expect("hmac key");
+            mac.update(data_check_string.as_bytes());
+            let hash = hex::encode(mac.finalize().into_bytes());
+
+            format!("query_id=test-query&user={user_encoded}&auth_date=1700000000&hash={hash}")
         }
     }
 
-    // TODO: add test that creates a telegram init data with a valid hash and checks
-    // TODO: add test that creates a telegram init data with an invalid hash and checks
+    #[test]
+    fn parses_init_data_with_valid_hash() {
+        let token = "test-bot-token";
+        let init_data = TelegramInitData {
+            user: TelegramUser { id: 42 },
+        };
+
+        let header = init_data.to_init_data(token);
+        let parsed = TelegramInitData::from_header(token, &header).expect("valid init data");
+
+        assert_eq!(parsed.user.id, 42);
+    }
+
+    #[test]
+    fn rejects_init_data_with_invalid_hash() {
+        let token = "test-bot-token";
+        let init_data = TelegramInitData {
+            user: TelegramUser { id: 42 },
+        };
+
+        let mut header = init_data.to_init_data(token);
+        header.push('0');
+
+        assert!(TelegramInitData::from_header(token, &header).is_none());
+    }
 }

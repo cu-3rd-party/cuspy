@@ -33,9 +33,7 @@ pub async fn notify_user(state: &ApiContext, user_id: Uuid, message: impl Into<S
 
     #[cfg(feature = "telegram-auth")]
     if let Some(telegram_id) = telegram_id {
-        if let Some(bot_token) = state.telegram_bot_token.clone() {
-            notify_telegram(telegram_id, bot_token, message.into());
-        }
+        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.into());
     }
 
     #[cfg(not(feature = "telegram-auth"))]
@@ -63,9 +61,7 @@ pub async fn notify_admins(state: &ApiContext, message: impl Into<String>) {
 
     #[cfg(feature = "telegram-auth")]
     for telegram_id in recipients {
-        if let Some(bot_token) = state.telegram_bot_token.clone() {
-            notify_telegram(telegram_id, bot_token, message.clone());
-        }
+        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.clone());
     }
 
     #[cfg(not(feature = "telegram-auth"))]

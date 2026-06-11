@@ -1,10 +1,10 @@
 use crate::ApiContext;
+use crate::api::extractor::{AuthUser, User};
+use crate::api::helpers;
 use crate::api::models::ApiError;
 use crate::api::models::user::UserResponse;
-use crate::api::{helpers};
 use axum::Json;
 use axum::extract::State;
-use crate::api::extractor::{AuthUser, User};
 
 pub async fn me(
     State(state): State<ApiContext>,

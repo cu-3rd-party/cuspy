@@ -6,7 +6,8 @@ use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct ReportKillRequest {
-    pub victim_id: Uuid,
+    pub killer_id: Option<Uuid>,
+    pub victim_id: Option<Uuid>,
     pub evidence_url: Option<String>,
     pub details: Option<Value>,
 }
@@ -134,12 +135,19 @@ impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
 }
 
 pub fn to_kill_response(record: KillEventRecord) -> KillEventResponse {
+    let evidence_url = record
+        .details
+        .as_object()
+        .and_then(|details| details.get("evidence_url"))
+        .and_then(Value::as_str)
+        .map(str::to_owned);
+
     KillEventResponse {
         kill_event_id: record.kill_event_id,
         killer_id: record.killer_id,
         victim_id: record.victim_id,
         status: record.status,
-        evidence_url: record.evidence_url, // TODO: after images module written, fetch relevant resource and return a link
+        evidence_url,
         details: record.details,
         killer_confirmed_at: record.killer_confirmed_at.map(helpers::format_timestamp),
         victim_confirmed_at: record.victim_confirmed_at.map(helpers::format_timestamp),

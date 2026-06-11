@@ -1,10 +1,13 @@
-use crate::{telegram, ApiContext};
+use crate::ApiContext;
 use crate::api::models::ApiError;
 use crate::api::models::auth::AuthClaims;
 use http::request::Parts;
-use http::{header, HeaderMap, HeaderValue};
-use jsonwebtoken::{decode, DecodingKey, Validation};
+use http::{HeaderMap, header};
+use jsonwebtoken::{DecodingKey, Validation, decode};
 use uuid::Uuid;
+
+#[cfg(feature = "telegram-auth")]
+use crate::telegram;
 
 pub const AUTH_HEADER_PREFIX: &str = "Bearer ";
 
@@ -38,9 +41,7 @@ impl axum::extract::FromRequestParts<ApiContext> for MaybeAuthUser {
         parts: &mut Parts,
         state: &ApiContext,
     ) -> Result<Self, Self::Rejection> {
-        Ok(Self(
-            User::from_headers(&state, &parts.headers).ok()
-        ))
+        Ok(Self(User::from_headers(&state, &parts.headers).ok()))
     }
 }
 
@@ -62,21 +63,47 @@ impl axum::extract::FromRequestParts<ApiContext> for AdminUser {
 
 impl User {
     pub fn from_headers(state: &ApiContext, header_map: &HeaderMap) -> Result<Self, ApiError> {
+        let has_valid_admin_header = header_map
+            .get("x-admin-secret")
+            .or_else(|| header_map.get("Admin"))
+            .and_then(|s| s.to_str().ok())
+            .map(|header| header == state.admin_secret)
+            .unwrap_or(false);
+
         let auth_token = header_map
             .get(header::AUTHORIZATION)
-            .ok_or(ApiError::BadRequest("no authorization header supplied".to_string()))?
-            .to_str()
-            .map_err(|_| ApiError::Unauthorized)?
-            .strip_prefix(AUTH_HEADER_PREFIX)
-            .ok_or(ApiError::Unauthorized)?;
+            .map(|value| value.to_str().map_err(|_| ApiError::Unauthorized))
+            .transpose()?
+            .map(|value| {
+                value
+                    .strip_prefix(AUTH_HEADER_PREFIX)
+                    .ok_or(ApiError::Unauthorized)
+            })
+            .transpose()?;
+
+        if auth_token.is_none() && has_valid_admin_header {
+            return Ok(Self {
+                user_id: Uuid::nil(),
+                is_admin: true,
+                #[cfg(feature = "telegram-auth")]
+                tg: telegram::TelegramInitData {
+                    user: telegram::TelegramUser { id: 0 },
+                },
+            });
+        }
+
+        let auth_token = auth_token.ok_or(ApiError::BadRequest(
+            "no authorization header supplied".to_string(),
+        ))?;
+
         #[cfg(feature = "telegram-auth")]
         let telegram_init_data = header_map
             .get("x-telegram-init-data")
-            .ok_or(ApiError::BadRequest("no authorization header supplied".to_string()))?
+            .ok_or(ApiError::BadRequest(
+                "no authorization header supplied".to_string(),
+            ))?
             .to_str()
-            .map_err(|_| ApiError::Unauthorized)?
-            .strip_prefix(AUTH_HEADER_PREFIX)
-            .ok_or(ApiError::Unauthorized)?;
+            .map_err(|_| ApiError::Unauthorized)?;
 
         let decoded = decode::<AuthClaims>(
             auth_token,
@@ -85,20 +112,15 @@ impl User {
         )
         .map_err(|_| ApiError::Unauthorized)?;
 
-        let has_valid_admin_header = header_map
-            .get("Admin")
-            .and_then(|s| s.to_str().ok())
-            .and_then(|header| Some(header == state.admin_secret))
-            .unwrap_or(false);
-
         Ok(Self {
             user_id: decoded.claims.user_id,
             is_admin: decoded.claims.is_admin || has_valid_admin_header,
             #[cfg(feature = "telegram-auth")]
             tg: telegram::TelegramInitData::from_header(
                 &state.telegram_bot_token,
-                telegram_init_data
-            ).ok_or(ApiError::Unauthorized)?,
+                telegram_init_data,
+            )
+            .ok_or(ApiError::Unauthorized)?,
         })
     }
 }

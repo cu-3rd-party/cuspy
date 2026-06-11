@@ -1,11 +1,11 @@
-use crate::ApiContext;
-use crate::api::{extractor, helpers};
+use crate::api::extractor::AuthUser;
 use crate::api::models::auth::{AuthResponse, AuthUserRecord, LoginRequest};
 use crate::api::models::{db_uuid, ApiError};
-use axum::Json;
+use crate::api::helpers;
+use crate::ApiContext;
 use axum::extract::State;
+use axum::Json;
 use sqlx::Row;
-use crate::api::extractor::AuthUser;
 
 pub async fn login(
     State(state): State<ApiContext>,
@@ -33,7 +33,6 @@ pub async fn login(
         }
     }
 
-
     let auth_user = sqlx::query_as::<_, AuthUserRecord>(
         r#"
         select
@@ -60,11 +59,11 @@ pub async fn login(
         where user_id = cast($1 as uuid)
         "#,
         )
-            .bind(db_uuid(auth_user.user_id))
-            .fetch_optional(&state.db)
-            .await?
-            .ok_or(ApiError::Unauthorized)?
-            .try_get("telegram_id")?;
+        .bind(db_uuid(auth_user.user_id))
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(ApiError::Unauthorized)?
+        .try_get("telegram_id")?;
         if auth_user.login_identifier != user_telegram_id.to_string() {
             return Err(ApiError::Forbidden);
         }

@@ -7,7 +7,7 @@ use http::HeaderMap;
 
 pub async fn create_agent_data(
     State(state): State<ApiContext>,
-    headers: HeaderMap,
+    _headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Result<Json<AgentData>, ApiError> {
     let mut agent_data: Option<AgentData> = None;
@@ -21,7 +21,6 @@ pub async fn create_agent_data(
             .ok_or_else(|| ApiError::BadRequest("no field name".to_string()))?
             .to_string();
 
-        let mut tx = state.db.begin().await?;
         match name.as_str() {
             "data" => {
                 // иные метаданные
@@ -47,13 +46,13 @@ pub async fn create_agent_data(
                 "#)
                     .bind(req.codename)
                     .bind(req.academic_group)
-                    .bind(req.academic_level.and_then(|s| Some(s.to_string())))
+                    .bind(req.academic_level.map(|s| s.to_string()))
                     .bind(req.course_number)
-                    .bind(req.bachelor_track.and_then(|s| Some(s.to_string())))
+                    .bind(req.bachelor_track.map(|s| s.to_string()))
                     .bind(req.identification_name)
                     .bind(req.physical_contact_allowed)
                     .bind(req.hugs_close_proximity_allowed)
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&state.db)
                     .await?);
             }
             "image" => {
@@ -72,5 +71,5 @@ pub async fn create_agent_data(
         return Err(ApiError::BadRequest("no data supplied".to_string()));
     }
 
-    todo!()
+    Ok(Json(agent_data.expect("validated above")))
 }

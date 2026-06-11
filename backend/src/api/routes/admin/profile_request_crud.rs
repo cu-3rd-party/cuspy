@@ -13,9 +13,9 @@ use uuid::Uuid;
 
 pub fn profile_request_router() -> Router<ApiContext> {
     Router::new()
-        .route("", get(admin_list_profile_requests))
+        .route("/", get(admin_list_profile_requests))
         .route(
-            "{request_id}",
+            "/{request_id}",
             get(admin_get_profile_request)
                 .patch(admin_update_profile_request)
                 .delete(admin_delete_profile_request),

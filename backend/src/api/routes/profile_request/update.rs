@@ -1,14 +1,14 @@
 use crate::ApiContext;
+use crate::api::db;
+use crate::api::extractor::AuthUser;
+use crate::api::helpers;
 use crate::api::models::profile::{
     ProfileRequestRecord, ProfileRequestResponse, UpdateProfileRequest,
 };
-use crate::api::models::{db_uuid, ApiError};
-use crate::api::{extractor, helpers};
+use crate::api::models::{ApiError, db_uuid};
 use axum::Json;
 use axum::extract::{Path, State};
-use http::HeaderMap;
 use uuid::Uuid;
-use crate::api::extractor::AuthUser;
 
 pub async fn update_profile_request(
     State(state): State<ApiContext>,
@@ -41,10 +41,19 @@ pub async fn update_profile_request(
         return Err(ApiError::Forbidden);
     }
 
+    if let Some(profile_data) = payload.requested_profile_data.as_ref() {
+        db::update_agent_data_from_profile(
+            &state.db,
+            existing.requested_profile_data_id,
+            profile_data,
+        )
+        .await?;
+    }
+
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         update profile_request
-        set requested_profile_data = coalesce(cast($2 as jsonb), requested_profile_data)
+        set updated_at = now()
         where profile_request_id = cast($1 as uuid)
         returning
             profile_request_id,
@@ -58,7 +67,6 @@ pub async fn update_profile_request(
         "#,
     )
     .bind(db_uuid(request_id))
-    .bind("")
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;

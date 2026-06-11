@@ -148,9 +148,9 @@ impl TestContext {
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
             #[cfg(feature = "telegram-auth")]
-            telegram_bot_token: Some(TELEGRAM_BOT_TOKEN.to_string()),
+            telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
             #[cfg(feature = "telegram-auth")]
-            public_webapp_url: Some("https://test.example.com".to_string()),
+            public_webapp_url: "https://test.example.com".to_string(),
         };
 
         Self {

@@ -90,16 +90,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     );
 
-    if let (Some(bot_token), Some(webapp_url)) =
-        (config.telegram_bot_token, config.public_webapp_url)
+    #[cfg(feature = "telegram-auth")]
     {
         tokio::select! {
             result = server => {
                 result?;
             }
-            _ = run_bot(bot_token, webapp_url) => {}
+            _ = run_bot(config.telegram_bot_token, config.public_webapp_url) => {}
         }
-    } else {
+    }
+
+    #[cfg(not(feature = "telegram-auth"))]
+    {
         server.await?;
     }
 
