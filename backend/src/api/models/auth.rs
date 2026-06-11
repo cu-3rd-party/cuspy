@@ -2,9 +2,10 @@ use crate::api::models::parse_uuid;
 use crate::api::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, any::AnyRow};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct RegisterRequest {
     pub email: Option<String>,
     pub password: Option<String>,
@@ -12,13 +13,13 @@ pub struct RegisterRequest {
     pub agent_name: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct LoginRequest {
     pub email: Option<String>,
     pub password: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct AuthResponse {
     pub access_token: String,
     pub user: UserResponse,

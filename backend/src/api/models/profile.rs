@@ -2,6 +2,7 @@ use crate::api::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{any::AnyRow, FromRow, Row};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub struct ProfileRequestRecord {
@@ -30,7 +31,7 @@ impl<'r> FromRow<'r, AnyRow> for ProfileRequestRecord {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ProfileRequestResponse {
     pub profile_request_id: Uuid,
     pub user_id: Uuid,
@@ -42,17 +43,17 @@ pub struct ProfileRequestResponse {
     pub updated_at: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateProfileRequest {
     pub requested_profile_data: Value,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct UpdateProfileRequest {
     pub requested_profile_data: Option<Value>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct AdminUpdateProfileRequest {
     pub requested_profile_data: Option<Value>,
     pub status: Option<String>,

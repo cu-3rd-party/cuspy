@@ -3,6 +3,15 @@ use crate::api::models::{ApiError, HealthResponse};
 use axum::Json;
 use axum::extract::State;
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    tag = "system",
+    responses(
+        (status = 200, description = "Health check passed", body = HealthResponse),
+        (status = 500, description = "Health check failed", body = crate::api::models::ErrorResponse),
+    )
+)]
 pub async fn health(State(state): State<ApiContext>) -> Result<Json<HealthResponse>, ApiError> {
     if !sqlx::query(r#"select 1"#)
         .fetch_one(&state.db)

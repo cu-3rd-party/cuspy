@@ -36,6 +36,18 @@ fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> Ap
     }
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    tag = "auth",
+    request_body = RegisterRequest,
+    responses(
+        (status = 201, description = "Registration succeeded", body = AuthResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn register(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

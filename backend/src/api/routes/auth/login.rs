@@ -7,6 +7,20 @@ use axum::extract::State;
 use axum::Json;
 use sqlx::Row;
 
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    tag = "auth",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Login succeeded", body = AuthResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn login(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

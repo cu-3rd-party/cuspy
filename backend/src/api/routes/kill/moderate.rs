@@ -6,9 +6,10 @@ use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::{Path, State};
 use serde::Deserialize;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Clone, Copy, Deserialize)]
+#[derive(Clone, Copy, Deserialize, ToSchema)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ModerationActions {
     Approve,
@@ -16,13 +17,26 @@ pub enum ModerationActions {
     // а какие еще нужны то
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ModerateKillRequest {
     pub action: ModerationActions,
     pub reason: Option<String>,
 }
 
-// Эндпоинт использует админ.
+#[utoipa::path(
+    post,
+    path = "/kill/{kill_id}/moderate",
+    tag = "kill",
+    params(("kill_id" = Uuid, Path, description = "Kill event id")),
+    request_body = ModerateKillRequest,
+    responses(
+        (status = 200, description = "Kill event moderated", body = KillEventResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "Kill event not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn moderate_kill(
     State(state): State<ApiContext>,
     AdminUser(user): AdminUser,

@@ -2,7 +2,7 @@ use crate::ApiContext;
 use axum::Router;
 use axum::routing::get;
 
-mod stats;
+pub mod stats;
 
 pub fn router() -> Router<ApiContext> {
     Router::new()

@@ -8,6 +8,19 @@ use axum::extract::State;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
+#[utoipa::path(
+    post,
+    path = "/kill",
+    tag = "kill",
+    request_body = ReportKillRequest,
+    responses(
+        (status = 201, description = "Kill event reported", body = KillEventResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn report_kill(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

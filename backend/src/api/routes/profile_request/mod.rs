@@ -7,11 +7,11 @@ use crate::api::routes::profile_request::update::update_profile_request;
 use axum::Router;
 use axum::routing::get;
 
-mod create;
-mod delete;
-mod get;
-mod list;
-mod update;
+pub mod create;
+pub mod delete;
+pub mod get;
+pub mod list;
+pub mod update;
 
 pub fn router() -> Router<ApiContext> {
     Router::new()

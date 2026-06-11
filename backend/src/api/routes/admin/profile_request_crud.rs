@@ -22,6 +22,17 @@ pub fn profile_request_router() -> Router<ApiContext> {
         )
 }
 
+#[utoipa::path(
+    get,
+    path = "/admin/profile-requests",
+    tag = "admin",
+    responses(
+        (status = 200, description = "List all profile requests", body = [ProfileRequestResponse]),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_list_profile_requests(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -52,6 +63,18 @@ pub async fn admin_list_profile_requests(
     ))
 }
 
+#[utoipa::path(
+    get,
+    path = "/admin/profile-requests/{request_id}",
+    tag = "admin",
+    params(("request_id" = Uuid, Path, description = "Profile request id")),
+    responses(
+        (status = 200, description = "Profile request details", body = ProfileRequestResponse),
+        (status = 404, description = "Profile request not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_get_profile_request(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -80,6 +103,20 @@ pub async fn admin_get_profile_request(
     Ok(Json(helpers::to_profile_request_response(request)))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/admin/profile-requests/{request_id}",
+    tag = "admin",
+    params(("request_id" = Uuid, Path, description = "Profile request id")),
+    request_body = AdminUpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile request updated", body = ProfileRequestResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_update_profile_request(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -167,6 +204,18 @@ pub async fn admin_update_profile_request(
     Ok(Json(helpers::to_profile_request_response(request)))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/admin/profile-requests/{request_id}",
+    tag = "admin",
+    params(("request_id" = Uuid, Path, description = "Profile request id")),
+    responses(
+        (status = 204, description = "Profile request deleted"),
+        (status = 404, description = "Profile request not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_delete_profile_request(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,

@@ -8,6 +8,17 @@ use axum::extract::{Path, State};
 use http::HeaderMap;
 use uuid::Uuid;
 
+#[utoipa::path(
+    get,
+    path = "/stats/rankings",
+    tag = "stats",
+    responses(
+        (status = 200, description = "Current ranking leaderboard", body = [RankingEntry]),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn rankings(
     State(state): State<ApiContext>,
     AuthUser(_user): AuthUser,
@@ -61,6 +72,19 @@ pub async fn rankings(
     Ok(Json(entries))
 }
 
+#[utoipa::path(
+    get,
+    path = "/stats/user/{user_id}",
+    tag = "stats",
+    params(("user_id" = Uuid, Path, description = "User id")),
+    responses(
+        (status = 200, description = "User gameplay statistics", body = UserStatsResponse),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn user_stats(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

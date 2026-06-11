@@ -20,6 +20,17 @@ pub fn users_router() -> Router<ApiContext> {
         )
 }
 
+#[utoipa::path(
+    get,
+    path = "/admin/user",
+    tag = "admin",
+    responses(
+        (status = 200, description = "List users", body = [UserResponse]),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_list_users(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -44,6 +55,18 @@ pub async fn admin_list_users(
     Ok(Json(users.iter().map(|u| u.into()).collect()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/admin/user",
+    tag = "admin",
+    request_body = CreateUserRequest,
+    responses(
+        (status = 201, description = "User created", body = UserResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_create_user(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -72,6 +95,18 @@ pub async fn admin_create_user(
     Ok((StatusCode::CREATED, Json(helpers::to_user_response(user))))
 }
 
+#[utoipa::path(
+    get,
+    path = "/admin/user/{user_id}",
+    tag = "admin",
+    params(("user_id" = Uuid, Path, description = "User id")),
+    responses(
+        (status = 200, description = "User details", body = UserResponse),
+        (status = 404, description = "User not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_get_user(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -81,6 +116,19 @@ pub async fn admin_get_user(
     Ok(Json(helpers::to_user_response(user)))
 }
 
+#[utoipa::path(
+    patch,
+    path = "/admin/user/{user_id}",
+    tag = "admin",
+    params(("user_id" = Uuid, Path, description = "User id")),
+    request_body = UpdateUserRequest,
+    responses(
+        (status = 200, description = "Updated user", body = UserResponse),
+        (status = 404, description = "User not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_update_user(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
@@ -115,6 +163,18 @@ pub async fn admin_update_user(
     Ok(Json(helpers::to_user_response(user)))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/admin/user/{user_id}",
+    tag = "admin",
+    params(("user_id" = Uuid, Path, description = "User id")),
+    responses(
+        (status = 204, description = "User deleted"),
+        (status = 404, description = "User not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn admin_delete_user(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,

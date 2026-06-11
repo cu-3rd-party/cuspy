@@ -2,6 +2,7 @@ use crate::api::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{any::AnyRow, FromRow, Row};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub struct UserRecord {
@@ -31,7 +32,7 @@ impl<'r> FromRow<'r, AnyRow> for UserRecord {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct UserResponse {
     pub user_id: Uuid,
     pub telegram_id: i64,
@@ -64,7 +65,7 @@ impl From<&UserRecord> for UserResponse {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateUserRequest {
     pub telegram_id: i64,
     pub agent_name: Option<String>,
@@ -72,7 +73,7 @@ pub struct CreateUserRequest {
     pub is_admin: Option<bool>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct UpdateUserRequest {
     pub telegram_id: Option<i64>,
     pub agent_name: Option<String>,

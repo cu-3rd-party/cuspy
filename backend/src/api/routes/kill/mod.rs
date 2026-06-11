@@ -1,8 +1,8 @@
-mod confirm;
+pub mod confirm;
 mod helpers;
-mod list;
-mod moderate;
-mod report;
+pub mod list;
+pub mod moderate;
+pub mod report;
 
 use crate::ApiContext;
 use axum::Router;

@@ -10,6 +10,19 @@ use axum::extract::State;
 use http::StatusCode;
 use uuid::Uuid;
 
+#[utoipa::path(
+    post,
+    path = "/profile-requests",
+    tag = "profile-request",
+    request_body = CreateProfileRequest,
+    responses(
+        (status = 201, description = "Profile request created", body = ProfileRequestResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn create_profile_request(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

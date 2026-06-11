@@ -6,9 +6,10 @@ use crate::api::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use axum::Json;
 use axum::extract::{Query, State};
 use serde::Deserialize;
+use utoipa::IntoParams;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct ListParams {
     status: Option<Vec<String>>,
     killer_user_id: Option<Uuid>,
@@ -58,8 +59,11 @@ impl ListParams {
     get,
     path = "/kill",
     tag = "kill",
+    params(ListParams),
     responses(
-        (status = 200, description = "Перечисление всех убийств"),
+        (status = 200, description = "List kill events", body = [KillEventResponse]),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

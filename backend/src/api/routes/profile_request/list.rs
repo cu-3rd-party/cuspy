@@ -7,6 +7,17 @@ use axum::Json;
 use axum::extract::State;
 use http::HeaderMap;
 
+#[utoipa::path(
+    get,
+    path = "/profile-requests",
+    tag = "profile-request",
+    responses(
+        (status = 200, description = "Current user's profile requests", body = [ProfileRequestResponse]),
+        (status = 401, description = "Unauthorized", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn list_profile_requests(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

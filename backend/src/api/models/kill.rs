@@ -2,9 +2,10 @@ use crate::api::helpers;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{FromRow, any::AnyRow};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ReportKillRequest {
     pub killer_id: Option<Uuid>,
     pub victim_id: Option<Uuid>,
@@ -12,13 +13,13 @@ pub struct ReportKillRequest {
     pub details: Option<Value>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ConfirmKillRequest {
     pub confirmed: bool,
     pub note: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct KillEventResponse {
     pub kill_event_id: Uuid,
     pub killer_id: Uuid,
@@ -37,7 +38,7 @@ pub struct KillEventResponse {
     pub updated_at: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct RankingEntry {
     pub rank: i64,
     pub user_id: Uuid,
@@ -47,7 +48,7 @@ pub struct RankingEntry {
     pub approved_deaths: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct UserStatsResponse {
     pub user_id: Uuid,
     pub rating: i64,

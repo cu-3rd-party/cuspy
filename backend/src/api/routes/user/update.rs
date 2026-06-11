@@ -8,6 +8,20 @@ use axum::extract::{Path, State};
 use http::HeaderMap;
 use uuid::Uuid;
 
+#[utoipa::path(
+    patch,
+    path = "/user/{user_id}",
+    tag = "user",
+    params(("user_id" = Uuid, Path, description = "User id")),
+    request_body = UpdateUserRequest,
+    responses(
+        (status = 200, description = "Updated user", body = UserResponse),
+        (status = 403, description = "Forbidden", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_user(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

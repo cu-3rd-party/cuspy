@@ -8,6 +8,21 @@ use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
 
+#[utoipa::path(
+    post,
+    path = "/kill/{kill_id}/confirm",
+    tag = "kill",
+    params(("kill_id" = Uuid, Path, description = "Kill event id")),
+    request_body = ConfirmKillRequest,
+    responses(
+        (status = 200, description = "Kill event confirmation updated", body = KillEventResponse),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "Kill event not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn confirm_kill(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

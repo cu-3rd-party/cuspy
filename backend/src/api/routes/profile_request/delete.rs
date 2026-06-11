@@ -6,6 +6,19 @@ use axum::extract::{Path, State};
 use http::{HeaderMap, StatusCode};
 use uuid::Uuid;
 
+#[utoipa::path(
+    delete,
+    path = "/profile-requests/{request_id}",
+    tag = "profile-request",
+    params(("request_id" = Uuid, Path, description = "Profile request id")),
+    responses(
+        (status = 204, description = "Profile request deleted"),
+        (status = 403, description = "Forbidden", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn delete_profile_request(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

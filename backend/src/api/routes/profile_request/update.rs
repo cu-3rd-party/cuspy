@@ -10,6 +10,20 @@ use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
 
+#[utoipa::path(
+    put,
+    path = "/profile-requests/{request_id}",
+    tag = "profile-request",
+    params(("request_id" = Uuid, Path, description = "Profile request id")),
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile request updated", body = ProfileRequestResponse),
+        (status = 403, description = "Forbidden", body = crate::api::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_profile_request(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,

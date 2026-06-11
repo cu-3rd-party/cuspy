@@ -4,6 +4,7 @@ use http::StatusCode;
 use serde::Serialize;
 use serde_json::json;
 use sqlx::{Row, any::AnyRow};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 fn decode_timestamp_value(value: &str) -> Result<sqlx::types::time::OffsetDateTime, sqlx::Error> {
@@ -105,8 +106,14 @@ impl IntoResponse for ApiError {
 }
 
 #[derive(Serialize)]
+#[derive(ToSchema)]
 pub struct HealthResponse {
     pub status: &'static str,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct ErrorResponse {
+    pub error: String,
 }
 
 pub fn parse_uuid(row: &AnyRow, column: &str) -> Result<Uuid, sqlx::Error> {

@@ -34,7 +34,8 @@ pub struct ApiContext {
 
 pub fn build_app(state: ApiContext) -> Router {
     api::router()
-        .route("/", axum::routing::get(|| async { "backend up" }))
+        .merge(api::docs_router())
+        .route("/", axum::routing::get(api::root))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
         .with_state(state)
@@ -85,10 +86,7 @@ async fn audit_request(
         "origin": origin
     });
 
-    info!(
-        "{}\t| {}\t| {}\t| {}ms\t",
-        &method, &uri, &status, &elapsed_ms
-    );
+    info!("{:<6} | {:<40} | {:>3} | {:>2}ms", method, uri, status, elapsed_ms);
 
     if let Err(error) = persist_audit_log(
         &state.db,
