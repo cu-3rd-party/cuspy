@@ -5,8 +5,8 @@ import { profileFlowTarget } from '$lib/pages/profile-flow';
 export const load: PageLoad = async ({ parent }) => {
 	const { sessionFlow, sessionUser } = await parent();
 
-	if (!sessionFlow?.canPlay) {
-		redirect(307, sessionFlow ? profileFlowTarget(sessionFlow) : '/');
+	if (sessionFlow && sessionFlow.status !== 'pending') {
+		redirect(307, profileFlowTarget(sessionFlow));
 	}
 
 	return { sessionFlow, sessionUser };

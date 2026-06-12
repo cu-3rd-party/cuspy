@@ -8,15 +8,20 @@ import type {
 
 export const buildSessionFlow = (
 	user: SessionUser | null,
-	latestProfileRequest: ProfileRequest | null
+	latestProfileRequest: ProfileRequest | null,
+	allRequests: ProfileRequest[] = []
 ): SessionFlow => {
 	const status = deriveSessionFlowStatus(user, latestProfileRequest);
+	const anyApproved = allRequests.length > 0
+		? allRequests.some((r) => r.status === 'approved')
+		: status === 'approved';
 
 	return {
 		status,
 		user,
 		latestProfileRequest,
-		canPlay: status === 'pending' || status === 'approved',
+		allRequests,
+		canPlay: anyApproved,
 		needsRegistration: status === 'no_profile' || status === 'guest',
 		needsProfileEdit: status === 'rejected'
 	};

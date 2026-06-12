@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
 	import { TerminalShell } from '$lib/shared/ui';
-	import { agentAvatar, dossierNav, roster } from '$lib/shared/config';
+	import { agentAvatar, gameplayNav, roster } from '$lib/shared/config';
 	import { sessionUser, type RankingEntry, type SessionUser } from '$lib/shared/model';
 
 	type RankingRow = {
@@ -66,7 +66,7 @@
 		meta: m.rankings_topbar_meta(),
 		avatar: agentAvatar
 	}}
-	nav={dossierNav}
+	nav={gameplayNav}
 >
 	<div class="mx-auto max-w-5xl">
 		<section class="relative mb-12 border-l-4 border-secondary-container pl-6">

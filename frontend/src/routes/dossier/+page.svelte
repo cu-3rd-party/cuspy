@@ -3,7 +3,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { ProfileStatePanel } from '$lib/shared/ui';
 	import { TerminalShell } from '$lib/shared/ui';
-	import { agentAvatar, dossierNav } from '$lib/shared/config';
+	import { agentAvatar, gameplayNav } from '$lib/shared/config';
 	import { sessionUser, type SessionFlow } from '$lib/shared/model';
 
 	let { data } = $props<{
@@ -191,7 +191,7 @@
 		meta: m.dossier_topbar_meta(),
 		avatar: agentAvatar
 	}}
-	nav={dossierNav}
+	nav={flow?.status === 'approved' ? gameplayNav : undefined}
 >
 	{#if !flow || flow.status === 'guest'}
 		<div class="mx-auto max-w-5xl space-y-8">

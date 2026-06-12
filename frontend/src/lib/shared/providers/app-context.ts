@@ -24,7 +24,8 @@ export type AppView =
 	| 'reveal-confirmation'
 	| 'rankings'
 	| 'admin-moderation'
-	| 'admin-events';
+	| 'admin-events'
+	| 'profile-request-moderation';
 
 export type LandingVerification = Promise<{
 	refId: string;
@@ -58,6 +59,7 @@ export const appViewFromPath = (path: string): AppView => {
 	if (normalized === '') return 'home';
 	if (normalized === 'admin/moderation') return 'admin-moderation';
 	if (normalized === 'admin/events') return 'admin-events';
+	if (normalized === 'profile-request-moderation') return 'profile-request-moderation';
 
 	return isAppView(normalized) ? normalized : 'home';
 };
@@ -86,5 +88,6 @@ const isAppView = (value: string): value is AppView =>
 		'reveal-confirmation',
 		'rankings',
 		'admin-moderation',
-		'admin-events'
+		'admin-events',
+		'profile-request-moderation'
 	].includes(value);

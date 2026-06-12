@@ -69,7 +69,12 @@ const backendBaseUrl = () => (env.PUBLIC_BACKEND_URL || DEFAULT_BACKEND_URL).rep
 const authHeaders = (token = readAccessToken()): Record<string, string> =>
 	token ? { authorization: `Bearer ${token}` } : {};
 
-export async function backendJson<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function backendJson<T>(
+	path: string,
+	options: RequestInit = {},
+	customFetch?: typeof fetch
+): Promise<T> {
+	const fetcher = customFetch ?? fetch;
 	const headers = new Headers(options.headers);
 	const token = readAccessToken();
 
@@ -81,7 +86,7 @@ export async function backendJson<T>(path: string, options: RequestInit = {}): P
 		headers.set('content-type', 'application/json');
 	}
 
-	const response = await fetch(`${backendBaseUrl()}${path}`, {
+	const response = await fetcher(`${backendBaseUrl()}${path}`, {
 		...options,
 		headers
 	});
@@ -105,66 +110,74 @@ export async function backendJson<T>(path: string, options: RequestInit = {}): P
 	return (await response.json()) as T;
 }
 
-export const registerUser = async (payload: {
-	email?: string | null;
-	password?: string | null;
-	telegram_id?: number | null;
-	agent_name?: string | null;
-}) => {
+export const registerUser = async (
+	payload: {
+		email?: string | null;
+		password?: string | null;
+		telegram_id?: number | null;
+		agent_name?: string | null;
+	},
+	customFetch?: typeof fetch
+) => {
 	const response = await backendJson<{ access_token: string; user: BackendUser }>(
 		'/auth/register',
 		{
 			method: 'POST',
 			body: JSON.stringify(payload)
-		}
+		},
+		customFetch
 	);
 
 	return {
 		access_token: response.access_token,
-		user: await normalizeUser(response.user)
+		user: await normalizeUser(response.user, customFetch)
 	};
 };
 
-export const getCurrentUser = async (token = readAccessToken()) => {
-	const user = await backendJson<BackendUser>('/auth/me', { headers: authHeaders(token) });
-	return normalizeUser(user);
+export const getCurrentUser = async (token = readAccessToken(), customFetch?: typeof fetch) => {
+	const user = await backendJson<BackendUser>('/auth/me', { headers: authHeaders(token) }, customFetch);
+	return normalizeUser(user, customFetch);
 };
 
-export const loginUser = async (payload: AuthPayload) => {
+export const loginUser = async (payload: AuthPayload, customFetch?: typeof fetch) => {
 	const response = await backendJson<{ access_token: string; user: BackendUser }>(
 		'/auth/login',
 		{
 			method: 'POST',
 			body: JSON.stringify(payload)
-		}
+		},
+		customFetch
 	);
 
 	return {
 		access_token: response.access_token,
-		user: await normalizeUser(response.user)
+		user: await normalizeUser(response.user, customFetch)
 	};
 };
 
-export const getSessionFlow = async (token = readAccessToken()): Promise<SessionFlow> => {
+export const getSessionFlow = async (
+	token = readAccessToken(),
+	customFetch?: typeof fetch
+): Promise<SessionFlow> => {
 	if (!token) {
 		return buildSessionFlow(null, null);
 	}
 
 	try {
-		const user = await getCurrentUser(token);
-		const requests = await listProfileRequests(token);
-		return buildSessionFlow(user, requests[0] ?? null);
+		const user = await getCurrentUser(token, customFetch);
+		const requests = await listProfileRequests(token, customFetch);
+		return buildSessionFlow(user, requests[0] ?? null, requests);
 	} catch {
 		// Token expired or invalid — try to re-login with stored telegram_id
 		const authPayload = readAuthPayload();
 
 		if (authPayload != null) {
 			try {
-				const loginPayload = await loginUser(authPayload);
+				const loginPayload = await loginUser(authPayload, customFetch);
 				writeAccessToken(loginPayload.access_token);
 				const user = loginPayload.user;
-				const requests = await listProfileRequests(loginPayload.access_token);
-				return buildSessionFlow(user, requests[0] ?? null);
+				const requests = await listProfileRequests(loginPayload.access_token, customFetch);
+				return buildSessionFlow(user, requests[0] ?? null, requests);
 			} catch {
 				// re-login also failed
 			}
@@ -175,7 +188,7 @@ export const getSessionFlow = async (token = readAccessToken()): Promise<Session
 	}
 };
 
-export const createAgentData = async (profileData: AgentProfileData) => {
+export const createAgentData = async (profileData: AgentProfileData, customFetch?: typeof fetch) => {
 	const formData = new FormData();
 	formData.set('data', JSON.stringify(toAgentDataMetadata(profileData)));
 
@@ -190,34 +203,38 @@ export const createAgentData = async (profileData: AgentProfileData) => {
 	const created = await backendJson<BackendAgentData>('/agent-data', {
 		method: 'POST',
 		body: formData
-	});
+	}, customFetch);
 
-	return normalizeAgentData(created, profileData.identificationImage);
+	return normalizeAgentData(created, profileData.identificationImage, customFetch);
 };
 
-export const getAgentData = async (agentDataId: string) => {
-	const data = await backendJson<BackendAgentData>(`/agent-data/${agentDataId}`);
-	return normalizeAgentData(data);
+export const getAgentData = async (agentDataId: string, customFetch?: typeof fetch) => {
+	const data = await backendJson<BackendAgentData>(`/agent-data/${agentDataId}`, {}, customFetch);
+	return normalizeAgentData(data, undefined, customFetch);
 };
 
-export const getResourceMetadata = (resourceId: string) =>
-	backendJson<BackendResource>(`/resource/${encodeURIComponent(resourceId)}`);
+export const getResourceMetadata = (resourceId: string, customFetch?: typeof fetch) =>
+	backendJson<BackendResource>(`/resource/${encodeURIComponent(resourceId)}`, {}, customFetch);
 
-export const createProfileRequest = async (agentDataId: string, token = readAccessToken()) =>
+export const deleteProfileRequest = async (requestId: string, token = readAccessToken()) =>
+	backendJson<undefined>(`/profile-requests/${encodeURIComponent(requestId)}`, { method: 'DELETE', headers: authHeaders(token) });
+
+export const createProfileRequest = async (agentDataId: string, token = readAccessToken(), customFetch?: typeof fetch) =>
 	normalizeProfileRequest(
 		await backendJson<BackendProfileRequest>('/profile-requests', {
 			method: 'POST',
 			headers: authHeaders(token),
 			body: JSON.stringify({ agent_data_id: agentDataId })
-		})
+		}, customFetch),
+		customFetch
 	);
 
-export const listProfileRequests = async (token = readAccessToken()) => {
+export const listProfileRequests = async (token = readAccessToken(), customFetch?: typeof fetch) => {
 	const requests = await backendJson<BackendProfileRequest[]>('/profile-requests', {
 		headers: authHeaders(token)
-	});
+	}, customFetch);
 
-	return hydrateProfileRequests(requests);
+	return hydrateProfileRequests(requests, customFetch);
 };
 
 export const listAdminProfileRequests = async (token = readAccessToken()) => {
@@ -311,23 +328,24 @@ export const moderateKillReport = ({
 		})
 	});
 
-const hydrateProfileRequests = async (requests: BackendProfileRequest[]) =>
-	Promise.all(requests.map((request) => normalizeProfileRequest(request)));
+const hydrateProfileRequests = async (requests: BackendProfileRequest[], customFetch?: typeof fetch) =>
+	Promise.all(requests.map((request) => normalizeProfileRequest(request, customFetch)));
 
-const normalizeUser = async (user: BackendUser): Promise<SessionUser> => ({
+const normalizeUser = async (user: BackendUser, customFetch?: typeof fetch): Promise<SessionUser> => ({
 	...user,
 	agent_data: user.agent_data_id
-		? await getAgentData(user.agent_data_id)
+		? await getAgentData(user.agent_data_id, customFetch)
 		: (user.agent_data ?? null)
 });
 
 const normalizeProfileRequest = async (
-	request: BackendProfileRequest
+	request: BackendProfileRequest,
+	customFetch?: typeof fetch
 ): Promise<ProfileRequest> => ({
 	...request,
 	status: normalizeProfileStatus(request.status),
 	requested_profile_data:
-		request.requested_profile_data ?? (await getAgentData(request.requested_profile_data_id))
+		request.requested_profile_data ?? (await getAgentData(request.requested_profile_data_id, customFetch))
 });
 
 const normalizeProfileStatus = (status: string): ProfileRequestStatus => {
@@ -339,7 +357,8 @@ const normalizeProfileStatus = (status: string): ProfileRequestStatus => {
 
 const normalizeAgentData = async (
 	data: BackendAgentData,
-	identificationImage?: string | null
+	identificationImage?: string | null,
+	customFetch?: typeof fetch
 ): Promise<AgentProfileData> => {
 	const identificationImageResourceId = data.identification_image_id ?? undefined;
 
@@ -365,7 +384,7 @@ const normalizeAgentData = async (
 		identificationName: data.identification_name ?? undefined,
 		identificationImageResourceId,
 		identificationImage:
-			identificationImage ?? (await resolveResourceFileLocation(identificationImageResourceId)),
+			identificationImage ?? (await resolveResourceFileLocation(identificationImageResourceId, customFetch)),
 		boundaries: {
 			physicalContact: data.physical_contact_allowed,
 			hugsCloseProximity: data.hugs_close_proximity_allowed
@@ -373,7 +392,7 @@ const normalizeAgentData = async (
 	};
 };
 
-const resolveResourceFileLocation = async (resourceId?: string) => {
+const resolveResourceFileLocation = async (resourceId?: string, customFetch?: typeof fetch) => {
 	if (!resourceId) {
 		return undefined;
 	}
@@ -382,7 +401,7 @@ const resolveResourceFileLocation = async (resourceId?: string) => {
 		return resourceId;
 	}
 
-	const metadata = await getResourceMetadata(resourceId);
+	const metadata = await getResourceMetadata(resourceId, customFetch);
 	return metadata.file_location ?? undefined;
 };
 

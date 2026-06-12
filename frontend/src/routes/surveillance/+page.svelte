@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { gameplayNav } from '$lib/shared/config';
 
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
-<TopBar config={{ title: 'SURVEILLANCE', icon: 'android_fingerprint' }} />
-
-<main class="technical-grid mx-auto min-h-screen max-w-7xl px-4 pt-20 pb-24 md:px-8">
+<TerminalShell topBar={{ title: 'SURVEILLANCE', icon: 'android_fingerprint' }} nav={gameplayNav}>
 	<section class="mt-8 mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
 		<div>
 			<h1
@@ -92,4 +91,4 @@
 			</div>
 		</div>
 	</div>
-</main>
+</TerminalShell>

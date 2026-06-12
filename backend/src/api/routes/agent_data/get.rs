@@ -29,7 +29,18 @@ pub async fn get_agent_data(
     // разрешено просматривать эти данные и сделать IP-TGID based lockdown
     let data = sqlx::query_as(
         r#"
-            select * from agent_data where agent_data_id = cast($1 as uuid)
+            select
+                cast(agent_data_id as text) as agent_data_id,
+                codename,
+                academic_group,
+                academic_level,
+                course_number,
+                bachelor_track,
+                identification_name,
+                cast(identification_image_id as text) as identification_image_id,
+                physical_contact_allowed,
+                hugs_close_proximity_allowed
+            from agent_data where agent_data_id = cast($1 as uuid)
         "#,
     )
     .bind(db_uuid(agent_data_id))

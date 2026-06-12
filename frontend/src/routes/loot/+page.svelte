@@ -1,16 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { gameplayNav } from '$lib/shared/config';
 
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
-<TopBar config={{ title: 'GEAR', icon: 'inventory_2' }} />
-
-<main
-	class="technical-grid relative flex min-h-screen flex-col items-center justify-center overflow-hidden pt-20 pb-24"
->
+<TerminalShell topBar={{ title: 'GEAR', icon: 'inventory_2' }} nav={gameplayNav}>
 	<div class="relative z-10 w-full max-w-5xl px-6 text-center">
 		<div class="mb-12">
 			<h1
@@ -67,4 +64,4 @@
 			CLAIM_ASSETS
 		</a>
 	</div>
-</main>
+</TerminalShell>

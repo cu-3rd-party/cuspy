@@ -73,7 +73,7 @@
 			saveDossierDraft(draft);
 
 			await app.refreshSession();
-			app.navigate('/dossier');
+			app.navigate('/waiting-clearance');
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to submit profile';
 		} finally {

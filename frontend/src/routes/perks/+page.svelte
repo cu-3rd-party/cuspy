@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { gameplayNav } from '$lib/shared/config';
 
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
-<TopBar config={{ title: 'PERKS', icon: 'bolt' }} />
-
-<main class="mx-auto min-h-screen max-w-7xl px-6 py-24">
+<TerminalShell topBar={{ title: 'PERKS', icon: 'bolt' }} nav={gameplayNav}>
 	<div class="mb-12">
 		<h2 class="font-display text-5xl font-extrabold tracking-tighter uppercase">UPGRADE_CENTER</h2>
 	</div>
@@ -74,4 +73,4 @@
 			{/each}
 		</div>
 	</section>
-</main>
+</TerminalShell>

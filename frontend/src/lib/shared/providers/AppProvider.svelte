@@ -4,16 +4,13 @@
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import {
-		getCurrentUser,
 		getSessionFlow,
 		listAdminProfileRequests,
 		listKillReports,
 		listKillTargets,
 		listRankings,
-		loginUser,
 		type KillTarget
 	} from '$lib/shared/api';
-	import { readAccessToken, readAuthPayload, writeAccessToken } from '$lib/shared/auth';
 	import { buildSessionFlow, profileFlowTarget } from '$lib/pages/profile-flow';
 	import { sessionUser as sessionUserStore } from '$lib/shared/model';
 	import type {
@@ -53,37 +50,14 @@
 
 	onMount(() => {
 		if (!browser) return;
+		void refreshSession();
 
-		// If we have a token but no user, try /auth/me then /auth/login recovery
-		if (readAccessToken() && !sessionUser) {
-			void recoverSession();
-		}
+		const pollTimer = setInterval(() => {
+			void refreshSession();
+		}, 5000);
+
+		return () => clearInterval(pollTimer);
 	});
-
-	const recoverSession = async () => {
-		try {
-			const user = await getCurrentUser();
-			sessionUser = user;
-			sessionUserStore.set(user);
-			sessionFlow = buildSessionFlow(user, sessionFlow?.latestProfileRequest ?? null);
-			return;
-		} catch {
-			// token expired — try login with stored telegram_id
-			const authPayload = readAuthPayload();
-
-			if (authPayload != null) {
-				try {
-					const loginPayload = await loginUser(authPayload);
-					writeAccessToken(loginPayload.access_token);
-					sessionUser = loginPayload.user;
-					sessionUserStore.set(loginPayload.user);
-					sessionFlow = buildSessionFlow(loginPayload.user, null);
-				} catch {
-					// login also failed — stay as guest
-				}
-			}
-		}
-	};
 
 	const adminViews: AppView[] = ['admin-moderation', 'admin-events'];
 	const protectedViews: AppView[] = [
@@ -98,7 +72,7 @@
 		'admin-moderation',
 		'admin-events'
 	];
-	const userViews: AppView[] = ['dossier', 'waiting-clearance'];
+	const userViews: AppView[] = ['dossier', 'waiting-clearance', 'profile-request-moderation'];
 
 	const guardedView = (targetView: AppView): AppView => {
 		if (userViews.includes(targetView) && !sessionUser) {
@@ -122,7 +96,12 @@
 
 		if (browser) {
 			window.scrollTo(0, 0);
-			replaceState('/', '');
+
+			try {
+				replaceState('/', '');
+			} catch {
+				// Router not yet initialized — URL will be updated on next navigation
+			}
 		}
 	};
 

@@ -45,10 +45,17 @@ export type ProfileRequest = {
 
 export type SessionFlowStatus = 'guest' | 'no_profile' | 'pending' | 'rejected' | 'approved';
 
+export type RequestState =
+	| { type: 'only-pending' }
+	| { type: 'approved-pending' }
+	| { type: 'approved-rejected' }
+	| { type: 'approved-multiple' };
+
 export type SessionFlow = {
 	status: SessionFlowStatus;
 	user: SessionUser | null;
 	latestProfileRequest: ProfileRequest | null;
+	allRequests: ProfileRequest[];
 	canPlay: boolean;
 	needsRegistration: boolean;
 	needsProfileEdit: boolean;
@@ -86,6 +93,20 @@ export type UserStats = {
 	approved_kills: number;
 	approved_deaths: number;
 	pending_kills: number;
+};
+
+export const deriveRequestState = (flow: SessionFlow): RequestState => {
+	const all = flow.allRequests;
+	const hasApproved = all.some((r) => r.status === 'approved');
+	const hasRejected = all.some((r) => r.status === 'rejected');
+	const extra = all.filter((r) => r.status !== 'approved');
+
+	if (!hasApproved) return { type: 'only-pending' };
+	if (hasRejected && extra.length > 1) return { type: 'approved-multiple' };
+	if (hasRejected) return { type: 'approved-rejected' };
+	if (extra.length > 1) return { type: 'approved-multiple' };
+	if (extra.length === 1) return { type: 'approved-pending' };
+	return { type: 'approved-pending' };
 };
 
 export const sessionUser = writable<SessionUser | null>(null);

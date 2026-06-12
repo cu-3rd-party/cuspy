@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { gameplayNav } from '$lib/shared/config';
 
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
-<TopBar config={{ title: 'MISSIONS', icon: 'assignment' }} />
-
-<main class="scan-sweep min-h-screen px-6 pb-32 lg:px-12">
+<TerminalShell topBar={{ title: 'MISSIONS', icon: 'assignment' }} nav={gameplayNav}>
 	<div class="mb-12 border-l-4 border-primary px-6 py-8">
 		<p class="mb-2 font-label text-xs tracking-[0.5em] text-primary/60 uppercase">
 			SYSTEM_LOG // ACCESS_GRANTED
@@ -97,4 +96,4 @@
 			</div>
 		</div>
 	</div>
-</main>
+</TerminalShell>

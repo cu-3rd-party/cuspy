@@ -38,16 +38,10 @@ export const enlistNav: BottomNavItem[] = [
 		label: m.nav_verify(),
 		icon: 'refresh',
 		group: 'enlist'
-	},
-	{
-		href: '/dossier',
-		label: m.nav_waiting(),
-		icon: 'security',
-		group: 'enlist'
 	}
 ];
 
-export const dossierNav: BottomNavItem[] = [
+export const gameplayNav: BottomNavItem[] = [
 	{
 		href: '/dossier',
 		label: m.nav_dossier(),
@@ -58,15 +52,11 @@ export const dossierNav: BottomNavItem[] = [
 	},
 	{ href: '/target-intel', label: m.nav_intel(), icon: 'target', group: 'dossier' },
 	{ href: '/rankings', label: m.nav_rank(), icon: 'leaderboard', group: 'dossier' },
-	{ href: '/', label: m.nav_rules(), icon: 'gavel', group: 'dossier' }
-];
-
-export const gameplayNav: BottomNavItem[] = [
-	{ href: '/target-intel', label: 'INTEL', icon: 'monitoring', group: 'gameplay' },
 	{ href: '/surveillance', label: 'TARGETS', icon: 'android_fingerprint', group: 'gameplay' },
 	{ href: '/missions', label: 'MISSIONS', icon: 'assignment', group: 'gameplay' },
 	{ href: '/loot', label: 'GEAR', icon: 'inventory_2', group: 'gameplay' },
-	{ href: '/perks', label: 'PERKS', icon: 'bolt', group: 'gameplay' }
+	{ href: '/perks', label: 'PERKS', icon: 'bolt', group: 'gameplay' },
+	{ href: '/', label: m.nav_rules(), icon: 'gavel', group: 'dossier' }, // TODO: add rulebook link here
 ];
 
 export const agentAvatar =

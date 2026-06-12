@@ -27,18 +27,30 @@ const makeRequest = (status: ProfileRequest['status']): ProfileRequest => ({
 });
 
 describe('profile flow', () => {
-	it('routes pending users to waiting screen and keeps gameplay access', () => {
-		const flow = buildSessionFlow(makeUser(), makeRequest('pending'));
+	it('routes pending users to waiting screen without gameplay access', () => {
+		const request = makeRequest('pending');
+		const flow = buildSessionFlow(makeUser(), request, [request]);
 
 		expect(flow.status).toBe('pending');
-		expect(flow.canPlay).toBe(true);
+		expect(flow.canPlay).toBe(false);
 		expect(profileFlowTarget(flow)).toBe('/waiting-clearance');
 	});
 
-	it('routes rejected users to edit mode', () => {
-		const flow = buildSessionFlow(makeUser(), makeRequest('rejected'));
+	it('grants gameplay access when at least one request is approved', () => {
+		const approved = makeRequest('approved');
+		const pending = makeRequest('pending');
+		const flow = buildSessionFlow(makeUser(), pending, [pending, approved]);
+
+		expect(flow.status).toBe('pending');
+		expect(flow.canPlay).toBe(true);
+	});
+
+	it('routes rejected users to edit mode without gameplay access', () => {
+		const request = makeRequest('rejected');
+		const flow = buildSessionFlow(makeUser(), request, [request]);
 
 		expect(flow.needsProfileEdit).toBe(true);
+		expect(flow.canPlay).toBe(false);
 		expect(profileFlowTarget(flow)).toBe('/agent-id?mode=edit');
 	});
 });

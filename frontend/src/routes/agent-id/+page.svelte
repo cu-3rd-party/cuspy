@@ -195,26 +195,25 @@
 			}
 
 			// Try to recover existing session from stored token
-			if (readAccessToken()) {
-				try {
-					const user = await getCurrentUser();
-					app.setSessionUser(user);
-					saveAndProceed();
-					return;
-				} catch {
-					// Token invalid — try to re-login with stored telegram_id
-					const storedAuthPayload = readAuthPayload();
+			try {
+				const user = await getCurrentUser();
+				app.setSessionUser(user);
+				saveAndProceed();
+				return;
+			} catch {
+				// Token invalid — try to re-login with stored telegram_id
+				const storedAuthPayload = readAuthPayload();
 
-					if (storedAuthPayload != null) {
-						try {
-							const loginPayload = await loginUser(storedAuthPayload);
-							writeAccessToken(loginPayload.access_token);
-							app.setSessionUser(loginPayload.user);
-							saveAndProceed();
-							return;
-						} catch {
-							// re-login also failed — fall through to registration
-						}
+				if (storedAuthPayload != null) {
+					try {
+						const loginPayload = await loginUser(storedAuthPayload);
+						writeAccessToken(loginPayload.access_token);
+						app.setSessionUser(loginPayload.user);
+						writeAuthPayload(storedAuthPayload);
+						saveAndProceed();
+						return;
+					} catch {
+						// re-login also failed — fall through to registration
 					}
 				}
 			}

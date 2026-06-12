@@ -47,7 +47,7 @@ impl<'r> FromRow<'r, AnyRow> for AuthUserRecord {
 }
 
 // This is what gets derived from user's auth token
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct AuthClaims {
     pub sub: String,
     pub user_id: Uuid,

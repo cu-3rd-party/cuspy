@@ -4,7 +4,7 @@
 	import type { Pathname } from '$app/types';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getAppContext } from '$lib/shared/providers';
-	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
+	import { profileFlowTarget } from '$lib/pages/profile-flow';
 	import { TerminalShell } from '$lib/shared/ui';
 	import { enlistNav, heroServerImage } from '$lib/shared/config';
 	import AgentIdPage from './agent-id/+page.svelte';
@@ -22,6 +22,7 @@
 	import RankingsPage from './rankings/+page.svelte';
 	import AdminModerationPage from './admin/moderation/+page.svelte';
 	import AdminEventsPage from './admin/events/+page.svelte';
+	import ProfileRequestModerationPage from './profile-request-moderation/+page.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -45,16 +46,10 @@
 		m.home_briefing_step_2(),
 		m.home_briefing_step_3()
 	];
-	const languageOptions: Array<{ value: Locale; label: string }> = [
-		{ value: 'en', label: 'EN' },
-		{ value: 'ru', label: 'RU' }
-	];
-
 	const bufferSegments = 4;
 	let verificationProgress = $state(8);
 	let encryptedBuffer = $state(0);
 	let accessGranted = $state(false);
-	let currentLocale = $state(getLocale());
 	let cta = $derived.by(() => {
 		if (!flow || flow.status === 'guest') {
 			return {
@@ -105,6 +100,8 @@
 		};
 	});
 
+	app.refreshSession();
+
 	$effect(() => {
 		const view = app.view;
 
@@ -129,8 +126,13 @@
 		}
 	});
 
+	$effect(() => {
+		if (flow && flow.status !== 'guest' && app.view === 'home') {
+			app.navigate(profileFlowTarget(flow));
+		}
+	});
+
 	onMount(() => {
-		currentLocale = getLocale();
 		let cancelled = false;
 
 		data.verification.then(() => {
@@ -159,13 +161,6 @@
 
 	const activeSegments = (progress: number, total: number) =>
 		Math.max(1, Math.min(total, Math.round((progress / 100) * total)));
-
-	const switchLanguage = (locale: Locale) => {
-		if (locale === currentLocale) return;
-
-		currentLocale = locale;
-		void setLocale(locale);
-	};
 </script>
 
 {#if app.view === 'agent-id'}
@@ -198,6 +193,8 @@
 	<AdminModerationPage data={childData} />
 {:else if app.view === 'admin-events'}
 	<AdminEventsPage data={childData} />
+{:else if app.view === 'profile-request-moderation'}
+	<ProfileRequestModerationPage data={childData} />
 {:else}
 	<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}>
 	<section class="mb-12">
@@ -210,26 +207,7 @@
 				class="absolute inset-0 size-full object-cover opacity-40 mix-blend-overlay grayscale"
 			/>
 			<div class="absolute inset-0 bg-linear-to-t from-background to-transparent"></div>
-			<div
-				class="absolute top-4 right-4 z-20 flex items-center gap-1 bg-background/70 p-1 backdrop-blur-sm"
-			>
-				{#each languageOptions as option (option.value)}
-					<button
-						type="button"
-						onclick={() => switchLanguage(option.value)}
-						class={[
-							'px-3 py-1 font-label text-[10px] font-bold tracking-[0.25em] transition-colors',
-							currentLocale === option.value
-								? 'bg-primary text-on-primary'
-								: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
-						]}
-						aria-pressed={currentLocale === option.value}
-					>
-						{option.label}
-					</button>
-				{/each}
-			</div>
-			<div class="relative z-10 max-w-2xl">
+				<div class="relative z-10 max-w-2xl">
 				<div
 					class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-xs font-bold text-on-primary-container"
 				>

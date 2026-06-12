@@ -2,14 +2,14 @@
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
 	import { TerminalShell } from '$lib/shared/ui';
-	import { agentAvatar, dossierNav, targetImage } from '$lib/shared/config';
+	import { agentAvatar, gameplayNav, targetImage } from '$lib/shared/config';
 
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TerminalShell
 	topBar={{ title: m.target_intel_topbar_title(), icon: 'security', avatar: agentAvatar }}
-	nav={dossierNav}
+	nav={gameplayNav}
 >
 	<div class="scanning-grid pointer-events-none fixed inset-0 opacity-5"></div>
 	<div class="relative mx-auto max-w-2xl">
