@@ -1,16 +1,17 @@
 -- "Smite" (Global Events) System
-create table if not exists global_event (
-    global_event_id uuid primary key default uuid_generate_v1mc(),
-    event_type text not null check (event_type in ('GLOBAL_TARGET', 'NIGHT_HUNT', 'SMIITE')),
-    trigger_id uuid not null references "user" (user_id) on delete set null,
-    target_id uuid references "user" (user_id) on delete set null,
+create table if not exists global_event
+(
+    global_event_id   uuid primary key     default uuid_generate_v1mc(),
+    event_type        text        not null check (event_type in ('GLOBAL_TARGET', 'NIGHT_HUNT', 'SMIITE')),
+    trigger_id        uuid        not null references "user" (user_id) on delete set null,
+    target_id         uuid        references "user" (user_id) on delete set null,
     image_resource_id uuid,
-    foreign key (image_resource_id) references "resource"(resource_id),
-    start_time timestamptz not null,
-    end_time timestamptz not null,
-    payload jsonb not null default '{}'::jsonb,
-    created_at timestamptz not null default now(),
-    updated_at timestamptz
+    foreign key (image_resource_id) references "resource" (resource_id),
+    start_time        timestamptz not null,
+    end_time          timestamptz not null,
+    payload           jsonb       not null default '{}'::jsonb,
+    created_at        timestamptz not null default now(),
+    updated_at        timestamptz
 );
 
 select trigger_updated_at('global_event');

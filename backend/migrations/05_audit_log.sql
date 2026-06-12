@@ -2,28 +2,29 @@ create extension if not exists pgcrypto;
 create extension if not exists btree_gin;
 create extension if not exists pg_trgm;
 
-create table if not exists audit_log (
-    audit_log_id uuid primary key default uuid_generate_v1mc(),
-    request_id uuid not null,
-    actor_user_id uuid references "user" (user_id) on delete set null,
-    method text not null,
-    request_uri text not null,
-    matched_path text,
-    status_code integer not null check (status_code between 100 and 599),
-    duration_ms bigint not null check (duration_ms >= 0),
-    access_context jsonb not null default '{}'::jsonb,
-    ip_address inet generated always as (
+create table if not exists audit_log
+(
+    audit_log_id   uuid primary key     default uuid_generate_v1mc(),
+    request_id     uuid        not null,
+    actor_user_id  uuid        references "user" (user_id) on delete set null,
+    method         text        not null,
+    request_uri    text        not null,
+    matched_path   text,
+    status_code    integer     not null check (status_code between 100 and 599),
+    duration_ms    bigint      not null check (duration_ms >= 0),
+    access_context jsonb       not null default '{}'::jsonb,
+    ip_address     inet generated always as (
         nullif(
-            coalesce(
-                access_context ->> 'real_ip',
-                split_part(coalesce(access_context ->> 'forwarded_for', ''), ',', 1),
-                access_context ->> 'remote_addr'
-            ),
-            ''
+                coalesce(
+                        access_context ->> 'real_ip',
+                        split_part(coalesce(access_context ->> 'forwarded_for', ''), ',', 1),
+                        access_context ->> 'remote_addr'
+                ),
+                ''
         )::inet
-    ) stored,
-    user_agent text generated always as (nullif(access_context ->> 'user_agent', '')) stored,
-    created_at timestamptz not null default now()
+        ) stored,
+    user_agent     text generated always as (nullif(access_context ->> 'user_agent', '')) stored,
+    created_at     timestamptz not null default now()
 );
 
 create index if not exists audit_log_created_at_idx on audit_log (created_at desc);

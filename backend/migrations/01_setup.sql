@@ -29,7 +29,7 @@ create or replace function set_updated_at()
 $$
 begin
     NEW.updated_at = now();
-return NEW;
+    return NEW;
 end;
 $$ language plpgsql;
 
@@ -37,7 +37,7 @@ create or replace function trigger_updated_at(tablename regclass)
     returns void as
 $$
 begin
-execute format('CREATE TRIGGER set_updated_at
+    execute format('CREATE TRIGGER set_updated_at
         BEFORE UPDATE
         ON %s
         FOR EACH ROW
