@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import { clearAccessToken, readAccessToken } from '$lib/shared/auth';
+import {clearAccessToken, readAccessToken, writeAccessToken, readAuthPayload, type AuthPayload} from '$lib/shared/auth';
 import { buildSessionFlow } from '$lib/pages/profile-flow';
 import type {
 	AgentProfileData,
@@ -130,6 +130,21 @@ export const getCurrentUser = async (token = readAccessToken()) => {
 	return normalizeUser(user);
 };
 
+export const loginUser = async (payload: AuthPayload) => {
+	const response = await backendJson<{ access_token: string; user: BackendUser }>(
+		'/auth/login',
+		{
+			method: 'POST',
+			body: JSON.stringify(payload)
+		}
+	);
+
+	return {
+		access_token: response.access_token,
+		user: await normalizeUser(response.user)
+	};
+};
+
 export const getSessionFlow = async (token = readAccessToken()): Promise<SessionFlow> => {
 	if (!token) {
 		return buildSessionFlow(null, null);
@@ -140,6 +155,21 @@ export const getSessionFlow = async (token = readAccessToken()): Promise<Session
 		const requests = await listProfileRequests(token);
 		return buildSessionFlow(user, requests[0] ?? null);
 	} catch {
+		// Token expired or invalid — try to re-login with stored telegram_id
+		const authPayload = readAuthPayload();
+
+		if (authPayload != null) {
+			try {
+				const loginPayload = await loginUser(authPayload);
+				writeAccessToken(loginPayload.access_token);
+				const user = loginPayload.user;
+				const requests = await listProfileRequests(loginPayload.access_token);
+				return buildSessionFlow(user, requests[0] ?? null);
+			} catch {
+				// re-login also failed
+			}
+		}
+
 		clearAccessToken();
 		return buildSessionFlow(null, null);
 	}

@@ -27,3 +27,26 @@ export const clearAccessToken = () => {
 	window.localStorage.removeItem(TOKEN_KEY);
 	document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
 };
+
+const AUTH_PAYLOAD_KEY = 'auth-data';
+
+export interface AuthPayload {
+	email: string;
+	password: string;
+	telegram_id: number;
+	agent_name: string;
+}
+
+export const readAuthPayload = (): AuthPayload | null => {
+	if (!browser) return null;
+	const raw = window.localStorage.getItem(AUTH_PAYLOAD_KEY);
+	return raw ? JSON.parse(raw) : null;
+};
+
+export const writeAuthPayload = (
+	payload: AuthPayload
+) => {
+	if (!browser) return;
+	window.localStorage.setItem(AUTH_PAYLOAD_KEY, JSON.stringify(payload));
+};
+

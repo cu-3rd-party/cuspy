@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import {
+		getCurrentUser,
 		getSessionFlow,
 		listAdminProfileRequests,
 		listKillReports,
 		listKillTargets,
 		listRankings,
+		loginUser,
 		type KillTarget
 	} from '$lib/shared/api';
+	import { readAccessToken, readAuthPayload, writeAccessToken } from '$lib/shared/auth';
 	import { buildSessionFlow, profileFlowTarget } from '$lib/pages/profile-flow';
 	import { sessionUser as sessionUserStore } from '$lib/shared/model';
 	import type {
@@ -50,6 +54,40 @@
 	});
 
 	sessionUserStore.set(getInitialSessionUser());
+
+	onMount(() => {
+		if (!browser) return;
+
+		// If we have a token but no user, try /auth/me then /auth/login recovery
+		if (readAccessToken() && !sessionUser) {
+			void recoverSession();
+		}
+	});
+
+	const recoverSession = async () => {
+		try {
+			const user = await getCurrentUser();
+			sessionUser = user;
+			sessionUserStore.set(user);
+			sessionFlow = buildSessionFlow(user, sessionFlow?.latestProfileRequest ?? null);
+			return;
+		} catch {
+			// token expired — try login with stored telegram_id
+			const authPayload = readAuthPayload();
+
+			if (authPayload != null) {
+				try {
+					const loginPayload = await loginUser(authPayload);
+					writeAccessToken(loginPayload.access_token);
+					sessionUser = loginPayload.user;
+					sessionUserStore.set(loginPayload.user);
+					sessionFlow = buildSessionFlow(loginPayload.user, null);
+				} catch {
+					// login also failed — stay as guest
+				}
+			}
+		}
+	};
 
 	const adminViews: AppView[] = ['admin-moderation', 'admin-events'];
 	const protectedViews: AppView[] = [

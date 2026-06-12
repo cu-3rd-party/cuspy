@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { writeAccessToken } from '$lib/shared/auth';
+	import {
+		readAccessToken,
+		writeAccessToken,
+		writeAuthPayload,
+		readAuthPayload,
+		type AuthPayload
+	} from '$lib/shared/auth';
 	import { m } from '$lib/paraglide/messages.js';
-	import { registerUser } from '$lib/shared/api';
+	import { loginUser, registerUser, getCurrentUser } from '$lib/shared/api';
 	import { getAppContext } from '$lib/shared/providers';
 	import { applyProfileDataToDraft } from '$lib/pages/profile-flow';
 	import {
@@ -162,6 +168,13 @@
 		draft.agentId.identificationImage = imageData;
 	};
 
+	const saveAndProceed = () => {
+		draft.registrationCompleted = true;
+		draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
+		saveDossierDraft(draft);
+		app.navigate('/operational-boundaries');
+	};
+
 	const handleSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 
@@ -174,27 +187,49 @@
 
 		try {
 			if (activeSessionUser) {
-				draft.registrationCompleted = true;
-				draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
-				saveDossierDraft(draft);
 				app.setSessionUser(activeSessionUser);
-				app.navigate('/operational-boundaries');
+				saveAndProceed();
 				return;
 			}
 
-			const payload = await registerUser({
+			// Try to recover existing session from stored token
+			if (readAccessToken()) {
+				try {
+					const user = await getCurrentUser();
+					app.setSessionUser(user);
+					saveAndProceed();
+					return;
+				} catch {
+					// Token invalid — try to re-login with stored telegram_id
+					const storedAuthPayload = readAuthPayload();
+
+					if (storedAuthPayload != null) {
+						try {
+							const loginPayload = await loginUser(storedAuthPayload);
+							writeAccessToken(loginPayload.access_token);
+							app.setSessionUser(loginPayload.user);
+							saveAndProceed();
+							return;
+						} catch {
+							// re-login also failed — fall through to registration
+						}
+					}
+				}
+			}
+
+			// No viable session — register a new user
+			const telegramId = Date.now(); // backend automatically infers telegram id from tg webapp data, so we can use any value here
+			const payload: AuthPayload = {
 				email: `${draft.agentId.codename.toLowerCase()}@dev.local`,
 				password: 'password123',
-				telegram_id: Date.now(), // TODO: this shi is bad ash
+				telegram_id: telegramId,
 				agent_name: draft.agentId.codename
-			});
-			writeAccessToken(payload.access_token);
-			app.setSessionUser(payload.user);
-
-			draft.registrationCompleted = true;
-			draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
-			saveDossierDraft(draft);
-			app.navigate('/operational-boundaries');
+			};
+			const response = await registerUser(payload);
+			writeAccessToken(response.access_token);
+			writeAuthPayload(payload);
+			app.setSessionUser(response.user);
+			saveAndProceed();
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to register';
 		} finally {
