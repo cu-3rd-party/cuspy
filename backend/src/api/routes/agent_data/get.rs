@@ -1,10 +1,10 @@
-use axum::extract::{Path, State};
-use axum::Json;
-use uuid::Uuid;
+use crate::ApiContext;
 use crate::api::extractor::AuthUser;
 use crate::api::models::agent_data::AgentData;
-use crate::api::models::{db_uuid, ApiError};
-use crate::ApiContext;
+use crate::api::models::{ApiError, db_uuid};
+use axum::Json;
+use axum::extract::{Path, State};
+use uuid::Uuid;
 
 #[utoipa::path(
     get,
@@ -30,10 +30,10 @@ pub async fn get_agent_data(
     let data = sqlx::query_as(
         r#"
             select * from agent_data where agent_data_id=$1
-        "#
+        "#,
     )
-        .bind(db_uuid(agent_data_id))
-        .fetch_one(&state.db)
-        .await?;
+    .bind(db_uuid(agent_data_id))
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(data))
 }

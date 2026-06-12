@@ -9,6 +9,7 @@ use std::time::Instant;
 
 use crate::api::extractor::MaybeAuthUser;
 use crate::api::models::{db_json, db_optional_uuid, db_uuid};
+use api::docs;
 use axum::{
     Router,
     extract::{MatchedPath, Request, State},
@@ -36,7 +37,7 @@ pub struct ApiContext {
 
 pub fn build_app(state: ApiContext) -> Router {
     api::router()
-        .merge(api::docs_router())
+        .merge(docs::docs_router())
         .route("/", axum::routing::get(api::root))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
