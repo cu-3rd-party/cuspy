@@ -15,9 +15,6 @@ pub struct Config {
     #[clap(long, env)]
     pub jwt_secret: String,
 
-    #[clap(long, env)]
-    pub upload_path: PathBuf,
-
     #[arg(env = "S3_ACCESS_KEY", default_value = "")]
     pub access_key: String,
 

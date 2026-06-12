@@ -1,6 +1,6 @@
 create table if not exists "resource" (
     resource_id uuid primary key default uuid_generate_v1mc(),
-    file_url varchar(512) not null,
+    file_path varchar(512) not null,
     file_size int not null, -- метаданные на будущее
     mime_type varchar(20),  -- метаданные на будущее
     checksum varchar(64) unique,   -- дедубликация

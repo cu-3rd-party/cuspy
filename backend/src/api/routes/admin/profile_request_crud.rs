@@ -24,7 +24,7 @@ pub fn profile_request_router() -> Router<ApiContext> {
 
 #[utoipa::path(
     get,
-    path = "/admin/profile-requests",
+    path = "/admin/profile-requests/",
     tag = "admin",
     responses(
         (status = 200, description = "List all profile requests", body = [ProfileRequestResponse]),

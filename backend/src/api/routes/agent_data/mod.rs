@@ -6,5 +6,5 @@ pub mod create;
 
 pub fn router() -> Router<ApiContext> {
     Router::new()
-        .route("", post(create::create_agent_data))
+        .route("/", post(create::create_agent_data))
 }
