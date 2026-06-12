@@ -4,9 +4,10 @@ use sqlx::any::AnyRow;
 use sqlx::{Error, FromRow, Row};
 use std::fmt::Display;
 use std::str::FromStr;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub enum AcademicLevel {
     Bachelor,
     Master,
@@ -34,7 +35,7 @@ impl Display for AcademicLevel {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub enum BachelorTrack {
     SWE,
     AI,
@@ -65,7 +66,7 @@ impl Display for BachelorTrack {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct AgentData {
     pub agent_data_id: Uuid,
     pub codename: Option<String>,
@@ -102,7 +103,7 @@ impl<'r> FromRow<'r, AnyRow> for AgentData {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct AgentDataMetadata {
     pub codename: Option<String>,
     pub academic_group: Option<String>,

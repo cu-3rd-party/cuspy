@@ -3,18 +3,21 @@ use base64::Engine;
 use sha2::{Digest, Sha256};
 use sqlx::any::AnyRow;
 use sqlx::{Error, FromRow, Row};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::api::models::{parse_optional_timestamp, parse_timestamp, parse_uuid, ApiError};
 use crate::ApiContext;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct Resource {
     pub id: Uuid,
     pub file_path: String,
     pub file_size: i64,
     pub mime_type: Option<String>,
     pub checksum: Option<String>,
+    #[schema(value_type = String, format = DateTime)]
     pub created_at: time::OffsetDateTime,
+    #[schema(value_type = String, format = DateTime)]
     pub updated_at: Option<time::OffsetDateTime>,
 }
 

@@ -5,7 +5,31 @@ use axum::Json;
 use axum::extract::{Multipart, State};
 use http::{header, HeaderMap};
 use crate::api::models::resource::Resource;
+use utoipa::ToSchema;
 
+#[derive(ToSchema)]
+pub struct CreateAgentDataMultipartRequest {
+    #[schema(example = json!(r#"{"codename":"Cipher","physical_contact_allowed":true,"hugs_close_proximity_allowed":false}"#))]
+    pub data: String,
+    #[schema(value_type = String, format = Binary)]
+    pub image: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/agent-data",
+    tag = "agent-data",
+    request_body(
+        content = CreateAgentDataMultipartRequest,
+        content_type = "multipart/form-data",
+        description = "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file"
+    ),
+    responses(
+        (status = 200, description = "Agent data created", body = AgentData),
+        (status = 400, description = "Bad request", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    )
+)]
 pub async fn create_agent_data(
     State(state): State<ApiContext>,
     _headers: HeaderMap,

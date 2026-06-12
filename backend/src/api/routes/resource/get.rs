@@ -6,6 +6,17 @@ use crate::api::models::resource::Resource;
 use crate::ApiContext;
 
 // используется по сути только для получения метаданных
+#[utoipa::path(
+    get,
+    path = "/resource/{resource_id}",
+    tag = "resource",
+    params(("resource_id" = Uuid, Path, description = "Resource id")),
+    responses(
+        (status = 200, description = "Resource metadata", body = Resource),
+        (status = 404, description = "Resource not found", body = crate::api::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::api::models::ErrorResponse),
+    )
+)]
 pub async fn get_resource(
     State(state): State<ApiContext>,
     Path(resource_id): Path<Uuid>
