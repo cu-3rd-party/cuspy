@@ -66,7 +66,7 @@ impl Display for BachelorTrack {
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Default)]
 pub struct AgentData {
     pub agent_data_id: Uuid,
     pub codename: Option<String>,

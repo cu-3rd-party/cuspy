@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::api::models::ApiError;
+use crate::api::models::{db_uuid, ApiError};
 use crate::api::models::agent_data::{AgentData, AgentDataMetadata};
 use axum::Json;
 use axum::extract::{Multipart, State};
@@ -36,6 +36,7 @@ pub async fn create_agent_data(
     mut multipart: Multipart,
 ) -> Result<Json<AgentData>, ApiError> {
     let mut agent_data: Option<AgentData> = None;
+    let mut resource = None;
     while let Some(field) = multipart
         .next_field()
         .await
@@ -89,11 +90,11 @@ pub async fn create_agent_data(
                 let content = field.bytes().await.map_err(|e| {
                         ApiError::BadRequest(format!("failed to parse field body: {e}"))
                     })?;
-                Resource::new(
+                resource = Some(Resource::new(
                     &state,
                     content,
                     content_type,
-                ).await?;
+                ).await?);
             }
             _ => {
                 return Err(ApiError::BadRequest(format!(
@@ -103,9 +104,19 @@ pub async fn create_agent_data(
         };
     }
 
-    if let None = agent_data {
-        return Err(ApiError::BadRequest("no data supplied".to_string()));
+
+    let mut agent_data = agent_data
+        .ok_or_else(|| ApiError::BadRequest("no data supplied".to_string()))?;
+
+    if let Some(resource) = resource {
+        agent_data = sqlx::query_as(r#"
+            update "agent_data" set identification_image_id = $2 where agent_data_id = $1
+        "#)
+            .bind(db_uuid(agent_data.agent_data_id))
+            .bind(db_uuid(resource.id))
+            .fetch_one(&state.db)
+            .await?;
     }
 
-    Ok(Json(agent_data.expect("validated above")))
+    Ok(Json(agent_data))
 }
