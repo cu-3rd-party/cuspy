@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TopBar config={{ title: 'PERKS', icon: 'bolt' }} />
@@ -46,7 +48,7 @@
 			<h3 class="font-display text-xl font-bold tracking-widest uppercase">AVAILABLE_PERKS</h3>
 		</div>
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-			{#each [{ name: 'Elo Multiplier', cost: '1,200G', color: 'primary', icon: 'psychology' }, { name: 'Identity Mask', cost: '3,500G', color: 'secondary', icon: 'android_fingerprint' }, { name: 'Rapid Breach', cost: '800G', color: 'primary', icon: 'bolt' }] as perk}
+			{#each [{ name: 'Elo Multiplier', cost: '1,200G', color: 'primary', icon: 'psychology' }, { name: 'Identity Mask', cost: '3,500G', color: 'secondary', icon: 'android_fingerprint' }, { name: 'Rapid Breach', cost: '800G', color: 'primary', icon: 'bolt' }] as perk (perk.name)}
 				<div
 					class="group flex flex-col border border-outline-variant/10 bg-surface-container transition-all hover:bg-surface-container-high"
 				>

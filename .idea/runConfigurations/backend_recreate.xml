@@ -1,0 +1,30 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="backend recreate" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+    <option name="buildProfileId" value="dev" />
+    <option name="command" value="run" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$/backend" />
+    <envs>
+      <env name="ADMIN_SECRET" value="dev-admin-secret" />
+      <env name="DATABASE_URL" value="postgresql://postgres:password@localhost:5432/db" />
+      <env name="JWT_SECRET" value="dev-jwt-secret" />
+      <env name="RUST_LOG" value="info" />
+      <env name="S3_ACCESS_KEY" value="admin" />
+      <env name="S3_SECRET_KEY" value="admin" />
+      <env name="S3_ENDPOINT" value="http://localhost:9000" />
+    </envs>
+    <option name="emulateTerminal" value="true" />
+    <option name="channel" value="DEFAULT" />
+    <option name="requiredFeatures" value="true" />
+    <option name="allFeatures" value="false" />
+    <option name="withSudo" value="false" />
+    <option name="buildTarget" value="REMOTE" />
+    <option name="backtrace" value="SHORT" />
+    <option name="isRedirectInput" value="false" />
+    <option name="redirectInputPath" value="" />
+    <method v="2">
+      <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      <option name="RunConfigurationTask" enabled="false" run_configuration_name="recreate db" run_configuration_type="docker-deploy" />
+      <option name="RunConfigurationTask" enabled="false" run_configuration_name="recreate rustfs" run_configuration_type="docker-deploy" />
+    </method>
+  </configuration>
+</component>

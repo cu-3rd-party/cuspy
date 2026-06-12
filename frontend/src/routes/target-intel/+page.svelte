@@ -3,6 +3,8 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { TerminalShell } from '$lib/shared/ui';
 	import { agentAvatar, dossierNav, targetImage } from '$lib/shared/config';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TerminalShell

@@ -17,7 +17,7 @@ use axum::{
     middleware::{self, Next},
     response::Response,
 };
-use log::{error, info};
+use log::{error, info, warn};
 use s3::Bucket;
 use serde_json::{Value, json};
 use sqlx::AnyPool;
@@ -96,10 +96,18 @@ async fn audit_request(
         "origin": origin
     });
 
-    info!(
-        "{:<6} | {:<40} | {:>3} | {:>2}ms",
-        method, uri, status, elapsed_ms
-    );
+    if status.as_u16() >= 200 && status.as_u16() < 300 {
+        info!(
+            "{:<7} | {:<40} | {:>3} | {:>2}ms",
+            method, uri, status, elapsed_ms
+        );
+    } else {
+        warn!(
+            "{:<7} | {:<40} | {:>3} | {:>2}ms",
+            method, uri, status, elapsed_ms
+        );
+
+    }
 
     if let Err(error) = persist_audit_log(
         &state.db,

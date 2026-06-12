@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="run" type="CompoundRunConfigurationType">
-    <toRun name="backend" type="CargoCommandRunConfiguration" />
+    <toRun name="backend recreate" type="CargoCommandRunConfiguration" />
     <toRun name="frontend" type="js.build_tools.npm" />
     <method v="2" />
   </configuration>

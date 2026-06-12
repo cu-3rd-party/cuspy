@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TopBar config={{ title: 'GEAR', icon: 'inventory_2' }} />
@@ -58,7 +61,7 @@
 			</div>
 		</div>
 		<a
-			href="/perks"
+			href={resolve('/perks')}
 			class="font-display inline-block bg-primary-container px-16 py-5 text-xl font-black tracking-[0.3em] text-on-primary-container uppercase shadow-[0_0_30px_rgba(0,122,27,0.3)] transition-all hover:scale-105 active:scale-95"
 		>
 			CLAIM_ASSETS

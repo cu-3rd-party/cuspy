@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TopBar config={{ title: 'MISSIONS', icon: 'assignment' }} />
@@ -43,7 +46,7 @@
 		<div class="space-y-12 lg:col-span-9">
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 				<a
-					href="/report-kill"
+					href={resolve('/report-kill')}
 					class="group space-y-4 border-l-4 border-primary bg-surface-container-low p-6 transition-all hover:bg-surface-container-high"
 				>
 					<div class="flex items-start justify-between">
@@ -69,7 +72,7 @@
 				</a>
 
 				<a
-					href="/loot"
+					href={resolve('/loot')}
 					class="group flex flex-col items-center justify-between gap-6 border-2 border-primary/30 bg-surface-container-low p-6 transition-all hover:bg-surface-container-high md:col-span-2 md:flex-row"
 				>
 					<div class="flex-grow">

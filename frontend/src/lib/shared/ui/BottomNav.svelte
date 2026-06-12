@@ -4,6 +4,9 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
+	import { appPathFromView, getAppContext } from '$lib/shared/providers';
+	import type { AppContext } from '$lib/shared/providers';
 	import Icon from './Icon.svelte';
 	import type { BottomNavItem } from '$lib/shared/config';
 
@@ -12,9 +15,18 @@
 
 	let { items } = $props<{ items: BottomNavItem[] }>();
 	let unlockedStep = $state<1 | 2 | 3>(1);
+	let app: AppContext | null = null;
+
+	try {
+		app = getAppContext();
+	} catch {
+		app = null;
+	}
+
+	let activePath = $derived(app ? appPathFromView(app.view) : page.url.pathname);
 
 	const isActive = (item: BottomNavItem) => {
-		const current = page.url.pathname;
+		const current = activePath;
 		return item.match === 'prefix' ? current.startsWith(item.href) : current === item.href;
 	};
 
@@ -75,7 +87,7 @@
 >
 	{#each items as item (item.href)}
 		<a
-			href={isLocked(item) ? undefined : resolve(item.href)}
+			href={resolve(item.href as Pathname)}
 			aria-disabled={isLocked(item)}
 			class={isActive(item)
 				? 'flex w-full flex-col items-center justify-center p-2 text-emerald-400 transition-all duration-75 active:scale-95'

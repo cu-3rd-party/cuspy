@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { writeAccessToken } from '$lib/shared/auth';
 	import { m } from '$lib/paraglide/messages.js';
 	import { registerUser } from '$lib/shared/api';
+	import { getAppContext } from '$lib/shared/providers';
 	import { applyProfileDataToDraft } from '$lib/pages/profile-flow';
 	import {
 		isAgentIdComplete,
@@ -18,7 +17,6 @@
 	import { enlistNav } from '$lib/shared/config';
 	import { Countdown } from '$lib/shared/ui';
 	import { NodeConnectivity } from '$lib/shared/ui';
-	import { sessionUser } from '$lib/shared/model';
 	import type { SessionFlow } from '$lib/shared/model';
 	import { Icon } from '$lib/shared/ui';
 
@@ -28,6 +26,7 @@
 			sessionUser?: SessionFlow['user'];
 		};
 	}>();
+	const app = getAppContext();
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let uploadError = $state(false);
@@ -36,8 +35,8 @@
 	let isSubmitting = $state(false);
 	let popupTimeout: number | undefined;
 	let hydratedRejectedRequestId = $state<string | null>(null);
-	let flow = $derived(data.sessionFlow ?? null);
-	let activeSessionUser = $derived(data.sessionUser ?? flow?.user ?? $sessionUser);
+	let flow = $derived(app.sessionFlow ?? data.sessionFlow ?? null);
+	let activeSessionUser = $derived(app.sessionUser ?? data.sessionUser ?? flow?.user ?? null);
 	let rejectedRequest = $derived(flow?.status === 'rejected' ? flow.latestProfileRequest : null);
 
 	const academicLevels = [
@@ -178,24 +177,24 @@
 				draft.registrationCompleted = true;
 				draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
 				saveDossierDraft(draft);
-				sessionUser.set(activeSessionUser);
-				await goto(resolve('/operational-boundaries'));
+				app.setSessionUser(activeSessionUser);
+				app.navigate('/operational-boundaries');
 				return;
 			}
 
 			const payload = await registerUser({
 				email: `${draft.agentId.codename.toLowerCase()}@dev.local`,
 				password: 'password123',
-				telegram_id: Date.now(),
+				telegram_id: Date.now(), // TODO: this shi is bad ash
 				agent_name: draft.agentId.codename
 			});
 			writeAccessToken(payload.access_token);
-			sessionUser.set(payload.user);
+			app.setSessionUser(payload.user);
 
 			draft.registrationCompleted = true;
 			draft.unlockedStep = Math.max(draft.unlockedStep, 2) as DossierDraft['unlockedStep'];
 			saveDossierDraft(draft);
-			await goto(resolve('/operational-boundaries'));
+			app.navigate('/operational-boundaries');
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to register';
 		} finally {

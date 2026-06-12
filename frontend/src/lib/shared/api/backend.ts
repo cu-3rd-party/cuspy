@@ -30,6 +30,14 @@ type BackendAgentData = {
 	hugs_close_proximity_allowed: boolean;
 };
 
+type BackendResource = {
+	resource_id?: string;
+	file_location?: string | null;
+	content_type?: string | null;
+	filename?: string | null;
+	[key: string]: unknown;
+};
+
 type BackendProfileRequest = Omit<ProfileRequest, 'requested_profile_data' | 'status'> & {
 	status: string;
 	requested_profile_data?: AgentProfileData;
@@ -63,6 +71,11 @@ const authHeaders = (token = readAccessToken()): Record<string, string> =>
 
 export async function backendJson<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const headers = new Headers(options.headers);
+	const token = readAccessToken();
+
+	if (token && !headers.has('authorization')) {
+		headers.set('authorization', `Bearer ${token}`);
+	}
 
 	if (options.body && !(options.body instanceof FormData) && !headers.has('content-type')) {
 		headers.set('content-type', 'application/json');
@@ -98,10 +111,13 @@ export const registerUser = async (payload: {
 	telegram_id?: number | null;
 	agent_name?: string | null;
 }) => {
-	const response = await backendJson<{ access_token: string; user: BackendUser }>('/auth/register', {
-		method: 'POST',
-		body: JSON.stringify(payload)
-	});
+	const response = await backendJson<{ access_token: string; user: BackendUser }>(
+		'/auth/register',
+		{
+			method: 'POST',
+			body: JSON.stringify(payload)
+		}
+	);
 
 	return {
 		access_token: response.access_token,
@@ -141,7 +157,7 @@ export const createAgentData = async (profileData: AgentProfileData) => {
 		formData.set('image', imageFile);
 	}
 
-	const created = await backendJson<BackendAgentData>('/agent-data/', {
+	const created = await backendJson<BackendAgentData>('/agent-data', {
 		method: 'POST',
 		body: formData
 	});
@@ -154,9 +170,12 @@ export const getAgentData = async (agentDataId: string) => {
 	return normalizeAgentData(data);
 };
 
+export const getResourceMetadata = (resourceId: string) =>
+	backendJson<BackendResource>(`/resource/${encodeURIComponent(resourceId)}`);
+
 export const createProfileRequest = async (agentDataId: string, token = readAccessToken()) =>
 	normalizeProfileRequest(
-		await backendJson<BackendProfileRequest>('/profile-requests/', {
+		await backendJson<BackendProfileRequest>('/profile-requests', {
 			method: 'POST',
 			headers: authHeaders(token),
 			body: JSON.stringify({ agent_data_id: agentDataId })
@@ -267,10 +286,14 @@ const hydrateProfileRequests = async (requests: BackendProfileRequest[]) =>
 
 const normalizeUser = async (user: BackendUser): Promise<SessionUser> => ({
 	...user,
-	agent_data: user.agent_data_id ? await getAgentData(user.agent_data_id) : (user.agent_data ?? null)
+	agent_data: user.agent_data_id
+		? await getAgentData(user.agent_data_id)
+		: (user.agent_data ?? null)
 });
 
-const normalizeProfileRequest = async (request: BackendProfileRequest): Promise<ProfileRequest> => ({
+const normalizeProfileRequest = async (
+	request: BackendProfileRequest
+): Promise<ProfileRequest> => ({
 	...request,
 	status: normalizeProfileStatus(request.status),
 	requested_profile_data:
@@ -284,35 +307,54 @@ const normalizeProfileStatus = (status: string): ProfileRequestStatus => {
 	return 'pending';
 };
 
-const normalizeAgentData = (
+const normalizeAgentData = async (
 	data: BackendAgentData,
 	identificationImage?: string | null
-): AgentProfileData => ({
-	agentDataId: data.agent_data_id,
-	codename: data.codename ?? undefined,
-	academicGroup: data.academic_group ?? undefined,
-	academicLevel:
-		data.academic_level === 'Bachelor'
-			? 'bachelor'
-			: data.academic_level === 'Master'
-				? 'master'
-				: undefined,
-	courseNumber: data.course_number == null ? undefined : String(data.course_number),
-	bachelorTrack:
-		data.bachelor_track === 'SWE'
-			? 'development'
-			: data.bachelor_track === 'AI'
-				? 'ai'
-				: data.bachelor_track === 'BA'
-					? 'business'
+): Promise<AgentProfileData> => {
+	const identificationImageResourceId = data.identification_image_id ?? undefined;
+
+	return {
+		agentDataId: data.agent_data_id,
+		codename: data.codename ?? undefined,
+		academicGroup: data.academic_group ?? undefined,
+		academicLevel:
+			data.academic_level === 'Bachelor'
+				? 'bachelor'
+				: data.academic_level === 'Master'
+					? 'master'
 					: undefined,
-	identificationName: data.identification_name ?? undefined,
-	identificationImage: identificationImage ?? data.identification_image_id ?? undefined,
-	boundaries: {
-		physicalContact: data.physical_contact_allowed,
-		hugsCloseProximity: data.hugs_close_proximity_allowed
+		courseNumber: data.course_number == null ? undefined : String(data.course_number),
+		bachelorTrack:
+			data.bachelor_track === 'SWE'
+				? 'development'
+				: data.bachelor_track === 'AI'
+					? 'ai'
+					: data.bachelor_track === 'BA'
+						? 'business'
+						: undefined,
+		identificationName: data.identification_name ?? undefined,
+		identificationImageResourceId,
+		identificationImage:
+			identificationImage ?? (await resolveResourceFileLocation(identificationImageResourceId)),
+		boundaries: {
+			physicalContact: data.physical_contact_allowed,
+			hugsCloseProximity: data.hugs_close_proximity_allowed
+		}
+	};
+};
+
+const resolveResourceFileLocation = async (resourceId?: string) => {
+	if (!resourceId) {
+		return undefined;
 	}
-});
+
+	if (resourceId.startsWith('http://') || resourceId.startsWith('https://') || resourceId.startsWith('data:')) {
+		return resourceId;
+	}
+
+	const metadata = await getResourceMetadata(resourceId);
+	return metadata.file_location ?? undefined;
+};
 
 const toAgentDataMetadata = (profileData: AgentProfileData) => ({
 	codename: profileData.codename || null,

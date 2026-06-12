@@ -1,5 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import type { Pathname } from '$app/types';
+	import { appPathFromView, getAppContext } from '$lib/shared/providers';
+	import type { AppContext } from '$lib/shared/providers';
 	import type { SessionFlow } from '$lib/shared/model';
 
 	let {
@@ -9,6 +13,13 @@
 		flow?: SessionFlow;
 		homeHref?: string;
 	} = $props();
+	let app: AppContext | null = null;
+
+	try {
+		app = getAppContext();
+	} catch {
+		app = null;
+	}
 
 	let codename = $derived(
 		(flow?.user?.agent_data?.codename as string | undefined) ??
@@ -30,6 +41,7 @@
 		{ href: '/surveillance', label: 'DATABASE', icon: 'group' },
 		{ href: '/rankings', label: 'RANKINGS', icon: 'leaderboard' }
 	]);
+	let activePath = $derived(app ? appPathFromView(app.view) : page.url.pathname);
 </script>
 
 <aside
@@ -56,9 +68,9 @@
 	<nav class="flex flex-col gap-2">
 		{#each links as link (link.href)}
 			<a
-				href={link.href}
-				class="group flex items-center gap-4 p-3 font-headline font-medium uppercase transition-all {page
-					.url.pathname === link.href
+				href={resolve(link.href as Pathname)}
+				class="group flex items-center gap-4 p-3 font-headline font-medium uppercase transition-all {activePath ===
+					link.href
 					? 'bg-surface-container pl-6 text-secondary'
 					: 'text-on-surface opacity-70 hover:bg-surface-container-high hover:pl-6'}"
 			>

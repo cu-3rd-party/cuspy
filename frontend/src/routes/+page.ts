@@ -1,4 +1,3 @@
-import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -11,22 +10,7 @@ const makeRefId = () => {
 	return `PX-${digits}-${suffix}`;
 };
 
-export const load: PageLoad = async ({ parent }) => {
-	const { sessionFlow } = await parent();
-
-	if (sessionFlow?.user) {
-		redirect(
-			307,
-			sessionFlow.status === 'approved'
-				? '/target-intel'
-				: sessionFlow.status === 'pending'
-					? '/waiting-clearance'
-					: sessionFlow.status === 'rejected'
-						? '/agent-id?mode=edit'
-						: '/agent-id'
-		);
-	}
-
+export const load: PageLoad = async () => {
 	const verification = (async () => {
 		await delay(3000);
 

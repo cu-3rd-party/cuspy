@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
 	import { TerminalShell } from '$lib/shared/ui';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TerminalShell
@@ -124,7 +126,7 @@
 
 		<footer class="pt-12 text-center">
 			<div class="flex justify-center gap-8">
-				{#each [[m.reveal_latency(), '24MS'], [m.reveal_node(), 'HK_09'], [m.reveal_signal(), m.reveal_stable()]] as [label, value]}
+				{#each [[m.reveal_latency(), '24MS'], [m.reveal_node(), 'HK_09'], [m.reveal_signal(), m.reveal_stable()]] as [label, value] (label)}
 					<div class="opacity-30">
 						<div class="font-label text-[10px] uppercase">{label}</div>
 						<div class="font-headline text-xs font-bold">{value}</div>

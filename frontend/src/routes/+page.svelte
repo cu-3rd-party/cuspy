@@ -1,17 +1,44 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	// import { goto } from '$app/navigation';
+	import type { Pathname } from '$app/types';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getAppContext } from '$lib/shared/providers';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
 	import { TerminalShell } from '$lib/shared/ui';
 	import { enlistNav, heroServerImage } from '$lib/shared/config';
+	import AgentIdPage from './agent-id/+page.svelte';
+	import OperationalBoundariesPage from './operational-boundaries/+page.svelte';
+	import DossierVerificationPage from './dossier-verification/+page.svelte';
+	import DossierPage from './dossier/+page.svelte';
+	import WaitingClearancePage from './waiting-clearance/+page.svelte';
+	import TargetIntelPage from './target-intel/+page.svelte';
+	import SurveillancePage from './surveillance/+page.svelte';
+	import MissionsPage from './missions/+page.svelte';
+	import LootPage from './loot/+page.svelte';
+	import PerksPage from './perks/+page.svelte';
+	import ReportKillPage from './report-kill/+page.svelte';
+	import RevealConfirmationPage from './reveal-confirmation/+page.svelte';
+	import RankingsPage from './rankings/+page.svelte';
+	import AdminModerationPage from './admin/moderation/+page.svelte';
+	import AdminEventsPage from './admin/events/+page.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 
-	const flow = $derived(data.sessionFlow ?? null);
+	const app = getAppContext();
+	const flow = $derived(app.sessionFlow ?? data.sessionFlow ?? null);
 	const isGuest = $derived(!flow || flow.status === 'guest');
+	const childData = $derived({
+		sessionFlow: app.sessionFlow ?? data.sessionFlow,
+		sessionUser: app.sessionUser ?? data.sessionUser ?? null,
+		rankings: app.rankings,
+		targets: app.killTargets,
+		requests: app.adminProfileRequests,
+		reports: app.killReports
+	});
+
+	const loadedViews: string[] = [];
 
 	const briefingSteps = [
 		m.home_briefing_step_1(),
@@ -29,9 +56,9 @@
 	let accessGranted = $state(false);
 	let currentLocale = $state(getLocale());
 	let cta = $derived.by(() => {
-		if (isGuest) {
+		if (!flow || flow.status === 'guest') {
 			return {
-				href: resolve('/agent-id'),
+				href: '/agent-id',
 				label: m.home_start_registration(),
 				copy: accessGranted ? m.home_system_breach_logged() : m.home_registration_terminal_locked(),
 				disabled: !accessGranted,
@@ -41,7 +68,7 @@
 
 		if (flow.status === 'no_profile') {
 			return {
-				href: resolve('/agent-id'),
+				href: '/agent-id',
 				label: 'Complete agent registration',
 				copy: 'Identity shell active. Finish profile intake to unlock dossier review.',
 				disabled: false,
@@ -51,7 +78,7 @@
 
 		if (flow.status === 'rejected') {
 			return {
-				href: resolve('/agent-id'),
+				href: '/agent-id',
 				label: 'Revise rejected profile',
 				copy: 'Reviewer flagged dossier mismatch. Reload latest submission and resend corrected intel.',
 				disabled: false,
@@ -61,7 +88,7 @@
 
 		if (flow.status === 'pending') {
 			return {
-				href: resolve('/dossier'),
+				href: '/dossier',
 				label: 'Open dossier review hub',
 				copy: 'Profile request in queue. Monitor review state and operative access from dossier hub.',
 				disabled: false,
@@ -70,7 +97,7 @@
 		}
 
 		return {
-			href: resolve('/dossier'),
+			href: '/dossier',
 			label: 'Open operative dossier hub',
 			copy: 'Clearance confirmed. Resume dossier command view for mission intel, status feeds, and live access routes.',
 			disabled: false,
@@ -79,10 +106,34 @@
 	});
 
 	$effect(() => {
-		const verification = data.verification;
+		const view = app.view;
+
+		if (view === 'rankings' && !loadedViews.includes(view)) {
+			loadedViews.push(view);
+			void app.loadRankings();
+		}
+
+		if (view === 'report-kill' && !loadedViews.includes(view)) {
+			loadedViews.push(view);
+			void app.loadKillTargets();
+		}
+
+		if (view === 'admin-moderation' && !loadedViews.includes(view)) {
+			loadedViews.push(view);
+			void app.loadAdminProfileRequests();
+		}
+
+		if (view === 'admin-events' && !loadedViews.includes(view)) {
+			loadedViews.push(view);
+			void app.loadKillReports();
+		}
+	});
+
+	onMount(() => {
+		currentLocale = getLocale();
 		let cancelled = false;
 
-		verification.then(() => {
+		data.verification.then(() => {
 			if (cancelled) {
 				return;
 			}
@@ -90,14 +141,6 @@
 			accessGranted = true;
 			verificationProgress = 100;
 		});
-
-		return () => {
-			cancelled = true;
-		};
-	});
-
-	onMount(() => {
-		currentLocale = getLocale();
 
 		const verificationTimer = window.setInterval(() => {
 			verificationProgress = Math.min(verificationProgress + 3, 88);
@@ -108,6 +151,7 @@
 		}, 45);
 
 		return () => {
+			cancelled = true;
 			window.clearInterval(verificationTimer);
 			window.clearInterval(bufferTimer);
 		};
@@ -124,7 +168,38 @@
 	};
 </script>
 
-<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}>
+{#if app.view === 'agent-id'}
+	<AgentIdPage data={childData} />
+{:else if app.view === 'operational-boundaries'}
+	<OperationalBoundariesPage data={childData} />
+{:else if app.view === 'dossier-verification'}
+	<DossierVerificationPage data={childData} />
+{:else if app.view === 'dossier'}
+	<DossierPage data={childData} />
+{:else if app.view === 'waiting-clearance'}
+	<WaitingClearancePage data={childData} />
+{:else if app.view === 'target-intel'}
+	<TargetIntelPage data={childData} />
+{:else if app.view === 'surveillance'}
+	<SurveillancePage data={childData} />
+{:else if app.view === 'missions'}
+	<MissionsPage data={childData} />
+{:else if app.view === 'loot'}
+	<LootPage data={childData} />
+{:else if app.view === 'perks'}
+	<PerksPage data={childData} />
+{:else if app.view === 'report-kill'}
+	<ReportKillPage data={childData} />
+{:else if app.view === 'reveal-confirmation'}
+	<RevealConfirmationPage data={childData} />
+{:else if app.view === 'rankings'}
+	<RankingsPage data={childData} />
+{:else if app.view === 'admin-moderation'}
+	<AdminModerationPage data={childData} />
+{:else if app.view === 'admin-events'}
+	<AdminEventsPage data={childData} />
+{:else}
+	<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}>
 	<section class="mb-12">
 		<div
 			class="scan-sweep-soft relative flex h-72 items-end overflow-hidden bg-surface-container p-6 sm:p-8"
@@ -298,7 +373,7 @@
 
 				<div class="mt-8">
 					<a
-						href={cta.href}
+					href={resolve(cta.href as Pathname)}
 						aria-disabled={cta.disabled}
 						class={`glitch-burst tactical-button flex w-full items-center justify-between px-8 py-5 font-headline font-extrabold tracking-[0.2em] uppercase transition-[filter,transform,brightness,opacity] hover:brightness-110 ${cta.disabled ? 'pointer-events-none opacity-50 saturate-0' : ''}`}
 					>
@@ -340,4 +415,5 @@
 			>
 		</div>
 	</section>
-</TerminalShell>
+	</TerminalShell>
+{/if}

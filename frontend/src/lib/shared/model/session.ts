@@ -8,6 +8,7 @@ export type AgentProfileData = {
 	bachelorTrack?: string;
 	identificationName?: string;
 	identificationImage?: string;
+	identificationImageResourceId?: string;
 	agentDataId?: string;
 	boundaries?: {
 		physicalContact?: boolean;

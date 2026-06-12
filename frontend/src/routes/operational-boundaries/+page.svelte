@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
+	import { getAppContext } from '$lib/shared/providers';
 	import {
 		canAccessStep,
 		loadDossierDraft,
@@ -12,6 +11,9 @@
 	import { ProgressBar } from '$lib/shared/ui';
 	import { TerminalShell } from '$lib/shared/ui';
 	import { boundariesImage, enlistNav } from '$lib/shared/config';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
+	const app = getAppContext();
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let toggles = $state([
@@ -45,7 +47,7 @@
 	onMount(() => {
 		draft = loadDossierDraft();
 		if (!canAccessStep(draft, 2)) {
-			goto(resolve('/agent-id'), { replaceState: true });
+			app.navigate('/agent-id');
 			return;
 		}
 
@@ -65,10 +67,10 @@
 		saveDossierDraft(draft);
 	});
 
-	const handleSubmit = async () => {
+	const handleSubmit = () => {
 		draft.unlockedStep = Math.max(draft.unlockedStep, 3) as DossierDraft['unlockedStep'];
 		saveDossierDraft(draft);
-		await goto(resolve('/dossier-verification'));
+		app.navigate('/dossier-verification');
 	};
 </script>
 
@@ -91,7 +93,7 @@
 		</section>
 
 		<div class="grid gap-4 md:grid-cols-2">
-			{#each toggles as toggle, index}
+			{#each toggles as toggle, index (toggle.code)}
 				<button
 					type="button"
 					onclick={() => toggleBoundary(index)}
@@ -145,7 +147,7 @@
 			</div>
 
 			<div class="bg-surface-container-lowest p-6">
-				{#each [[m.boundaries_agent_id(), 'RX-9042-ALFA', 'primary'], [m.boundaries_consent_hash(), 'E92_D77_01X', 'secondary'], [m.common_timestamp(), '2024-05-21 14:02:11', 'on-surface']] as [label, value, tone]}
+				{#each [[m.boundaries_agent_id(), 'RX-9042-ALFA', 'primary'], [m.boundaries_consent_hash(), 'E92_D77_01X', 'secondary'], [m.common_timestamp(), '2024-05-21 14:02:11', 'on-surface']] as [label, value, tone] (label)}
 					<div
 						class="flex justify-between border-b border-outline-variant/30 py-3 first:pt-0 last:border-b-0 last:pb-0"
 					>
@@ -170,7 +172,7 @@
 						>{m.boundaries_scanning_bio_rhythms()}</span
 					>
 					<div class="animated-stage-grid">
-						{#each Array.from({ length: bioStageLen }, (_, index) => index) as index}
+						{#each Array.from({ length: bioStageLen }, (_, index) => index) as index (index)}
 							<span class:active={bioStage.includes(index)}></span>
 						{/each}
 					</div>

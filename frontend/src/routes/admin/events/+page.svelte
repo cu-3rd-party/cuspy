@@ -1,13 +1,20 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
 	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
 	import { moderateKillReport } from '$lib/shared/api';
-	import type { PageProps } from './$types';
-	import type { KillReport } from '$lib/shared/model';
+	import { getAppContext } from '$lib/shared/providers';
+	import type { KillReport, SessionFlow, SessionUser } from '$lib/shared/model';
 
-	let { data }: PageProps = $props();
-	let reports = $derived(data.reports as KillReport[]);
+	let { data } = $props<{
+		data: {
+			sessionFlow: SessionFlow;
+			sessionUser: SessionUser | null;
+			reports: KillReport[];
+		};
+	}>();
+	const app = getAppContext();
+	let loadedFromApp = $state(false);
+	let reports = $derived((loadedFromApp ? app.killReports : data.reports) as KillReport[]);
 	let activeId = $state('');
 	let reviewerNote = $state('');
 	let actionError = $state('');
@@ -30,7 +37,8 @@
 
 		try {
 			await moderateKillReport({ reportId: activeReport.kill_report_id, decision, reviewerNote });
-			await invalidateAll();
+			await app.loadKillReports();
+			loadedFromApp = true;
 		} catch (error) {
 			actionError = error instanceof Error ? error.message : 'Moderation request failed.';
 		} finally {

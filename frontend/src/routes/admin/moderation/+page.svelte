@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
 	import { TopBar } from '$lib/shared/ui';
 	import { moderateProfileRequest } from '$lib/shared/api';
-	import type { ProfileRequest, SessionFlow } from '$lib/shared/model';
-	import type { PageProps } from './$types';
+	import { getAppContext } from '$lib/shared/providers';
+	import type { ProfileRequest, SessionFlow, SessionUser } from '$lib/shared/model';
 
 	type QueueRequest = ProfileRequest & {
 		requested_profile_data: ProfileRequest['requested_profile_data'] & {
@@ -13,8 +12,18 @@
 		};
 	};
 
-	let { data }: PageProps = $props();
-	let requests = $derived(data.requests as QueueRequest[]);
+	let { data } = $props<{
+		data: {
+			sessionFlow: SessionFlow;
+			sessionUser: SessionUser | null;
+			requests: ProfileRequest[];
+		};
+	}>();
+	const app = getAppContext();
+	let loadedFromApp = $state(false);
+	let requests = $derived(
+		(loadedFromApp ? app.adminProfileRequests : data.requests) as QueueRequest[]
+	);
 	let selectedId = $state<string | null>(null);
 	let actionError = $state('');
 	let isSubmitting = $state(false);
@@ -44,7 +53,8 @@
 				decision,
 				reviewerNote
 			});
-			await invalidateAll();
+			await app.loadAdminProfileRequests();
+			loadedFromApp = true;
 		} catch (error) {
 			actionError = error instanceof Error ? error.message : 'Moderation request failed.';
 		} finally {

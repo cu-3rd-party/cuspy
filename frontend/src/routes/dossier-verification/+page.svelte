@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
 	import { createAgentData, createProfileRequest } from '$lib/shared/api';
+	import { getAppContext } from '$lib/shared/providers';
 	import {
 		canAccessStep,
 		loadDossierDraft,
@@ -12,8 +11,10 @@
 	} from '$lib/pages/profile-flow';
 	import { TerminalShell } from '$lib/shared/ui';
 	import { enlistNav, verificationImage } from '$lib/shared/config';
-	import { sessionUser } from '$lib/shared/model';
 	import type { AgentProfileData } from '$lib/shared/model';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
+	const app = getAppContext();
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let profileImage = $derived(draft.agentId.identificationImage || verificationImage);
@@ -38,7 +39,7 @@
 	onMount(() => {
 		draft = loadDossierDraft();
 		if (!canAccessStep(draft, 3)) {
-			goto(resolve('/agent-id'), { replaceState: true });
+			app.navigate('/agent-id');
 		}
 	});
 
@@ -69,18 +70,8 @@
 			draft.unlockedStep = 3;
 			saveDossierDraft(draft);
 
-			sessionUser.update((current) =>
-				current
-					? {
-							...current,
-							agent_name: draft.agentId.codename,
-							agent_data_id: agentData.agentDataId ?? current.agent_data_id,
-							agent_data: agentData
-						}
-					: current
-			);
-
-			await goto(resolve('/dossier'), { invalidateAll: true });
+			await app.refreshSession();
+			app.navigate('/dossier');
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to submit profile';
 		} finally {

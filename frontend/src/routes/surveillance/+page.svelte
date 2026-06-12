@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { TopBar } from '$lib/shared/ui';
 	import { Icon } from '$lib/shared/ui';
+
+	let { data: _data = undefined } = $props<{ data?: unknown }>();
 </script>
 
 <TopBar config={{ title: 'SURVEILLANCE', icon: 'android_fingerprint' }} />
@@ -28,7 +31,7 @@
 
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
 		<div class="space-y-6 lg:col-span-8">
-			{#each [{ name: 'PHANTOM_STRIKE', id: 'CAM_01', color: 'primary', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDmThpWSfMtoWM96Q13EIVkgH8GeW1YmobA4_Twl-Azmm8p6DuZ8HNen3BL001b8wlg4C6U5mSBfLVGRatqSu7nUqMSgTLuCeIn9fl04mgst0qJF73EYc_fxuU9qR_ro4lqY7x1zsJMg-Rmc2WpNG7trJp9FF7s8l7Qv7e89g2AS4jv4FFjay3PcD3kjTL8F561dHQw7NQrnP35n8mNWFuWzJe9rDwUUhCeVWe7SY3u1d531ueFRBMDpxDpmonk4njLAaU_A8y0ucQ' }, { name: 'NEON_WIDOW', id: 'CAM_04', color: 'secondary', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCREGMi-Wz9FQ3-DFiXTMYYROvQPcA2l0BfN36j86q9UgNfP0APQ_m3KNVABqVcoICX5-erzW2qXVc8ujHqndPvwAFHNJgniUOmXbkfGOmgZlz5mMURUVD40AJwGDzxhbnlSFvHBjigdTM-sKp868FzHYnXojMJSwWny25nAusp4g1872LzP5oaanRZxFJc5fvOPvrH7hkhQvJn0icmPXOjkoKi2YIm-S7WUvmPESwKVG8ghmOBCog-XATFcPMpIjiwdCvOQBD_YH8' }] as target}
+			{#each [{ name: 'PHANTOM_STRIKE', id: 'CAM_01', color: 'primary', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDmThpWSfMtoWM96Q13EIVkgH8GeW1YmobA4_Twl-Azmm8p6DuZ8HNen3BL001b8wlg4C6U5mSBfLVGRatqSu7nUqMSgTLuCeIn9fl04mgst0qJF73EYc_fxuU9qR_ro4lqY7x1zsJMg-Rmc2WpNG7trJp9FF7s8l7Qv7e89g2AS4jv4FFjay3PcD3kjTL8F561dHQw7NQrnP35n8mNWFuWzJe9rDwUUhCeVWe7SY3u1d531ueFRBMDpxDpmonk4njLAaU_A8y0ucQ' }, { name: 'NEON_WIDOW', id: 'CAM_04', color: 'secondary', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCREGMi-Wz9FQ3-DFiXTMYYROvQPcA2l0BfN36j86q9UgNfP0APQ_m3KNVABqVcoICX5-erzW2qXVc8ujHqndPvwAFHNJgniUOmXbkfGOmgZlz5mMURUVD40AJwGDzxhbnlSFvHBjigdTM-sKp868FzHYnXojMJSwWny25nAusp4g1872LzP5oaanRZxFJc5fvOPvrH7hkhQvJn0icmPXOjkoKi2YIm-S7WUvmPESwKVG8ghmOBCog-XATFcPMpIjiwdCvOQBD_YH8' }] as target (target.id)}
 				<div
 					class="group relative overflow-hidden bg-surface-container-low transition-all duration-300 hover:bg-surface-container-high"
 				>
@@ -59,7 +62,7 @@
 							</div>
 							<div class="mt-8 flex justify-end">
 								<a
-									href="/target-intel"
+						href={resolve('/target-intel')}
 									class="press-scale bg-primary-container px-8 py-3 font-label text-sm font-bold tracking-widest text-on-primary-container uppercase hover:brightness-110"
 									>OPEN_DOSSIER</a
 								>
