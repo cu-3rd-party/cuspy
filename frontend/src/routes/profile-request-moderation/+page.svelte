@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { TerminalShell } from '$lib/shared/ui';
+	import { TerminalShell, ProfileAvatar } from '$lib/shared/ui';
 	import { getAppContext } from '$lib/shared/providers';
 	import type { ProfileRequest, SessionFlow } from '$lib/shared/model';
 
@@ -78,7 +78,6 @@
 
 		{#each rejected as req (req.profile_request_id)}
 			{@const profile = req.requested_profile_data}
-			{@const avatarUrl = profile?.identificationImage}
 			{@const isNew = newlyRejected.includes(req.profile_request_id)}
 			{@const sectionClass = isNew ? 'border-l-4 border-warning bg-warning/10 p-6 transition-all' : 'border-l-4 border-error bg-error/5 p-6 transition-all'}
 			<section class={sectionClass}>
@@ -90,9 +89,7 @@
 						>
 								{isNew ? 'NEW MODERATION RESULT' : 'Rejected'}
 							</div>
-							{#if avatarUrl}
-								<img src={avatarUrl} alt="" class="size-10 rounded-full object-cover" />
-							{/if}
+							<ProfileAvatar {profile} name={profile?.codename ?? 'N/A'} size={40} />
 						</div>
 						<div class="mt-2 space-y-2">
 							<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
@@ -131,7 +128,6 @@
 		{#if approved.length > 0}
 			{@const current = approved[approved.length - 1]}
 			{@const currentProfile = current.requested_profile_data}
-			{@const currentAvatar = currentProfile?.identificationImage}
 			<section class="border-l-4 border-secondary bg-secondary/5 p-6">
 				<div class="flex items-center gap-3">
 					<div
@@ -139,9 +135,7 @@
 					>
 						Active operative profile
 					</div>
-					{#if currentAvatar}
-						<img src={currentAvatar} alt="" class="size-10 rounded-full object-cover" />
-					{/if}
+					<ProfileAvatar profile={currentProfile} name={currentProfile?.codename ?? 'N/A'} size={40} />
 				</div>
 				<div class="mt-2">
 					<span class="font-headline font-bold text-on-surface uppercase"

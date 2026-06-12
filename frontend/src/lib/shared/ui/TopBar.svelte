@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
+	import ProfileAvatar from './ProfileAvatar.svelte';
 	import type { TopBarConfig } from '$lib/shared/config';
 	import type { SessionFlow } from '$lib/shared/model';
 	import { deriveRequestState } from '$lib/shared/model';
@@ -99,21 +100,12 @@
 					>
 						{#each flow!.allRequests as req (req.profile_request_id)}
 							{@const profile = req.requested_profile_data}
-							{@const avatarUrl = profile?.identificationImage}
 							{@const nameVal = profile?.codename ?? 'N/A'}
 							<div
 								class="flex items-center gap-3 border-b border-outline-variant/10 px-4 py-3"
 								role="menuitem"
 							>
-								{#if avatarUrl}
-									<img src={avatarUrl} alt="" class="size-8 rounded-full object-cover" />
-								{:else}
-									<div
-										class="flex size-8 items-center justify-center rounded-full bg-surface-container-high font-label text-[10px] text-outline"
-									>
-										{nameVal.charAt(0).toUpperCase()}
-									</div>
-								{/if}
+								<ProfileAvatar {profile} name={nameVal} size={32} />
 								<div class="min-w-0 flex-1">
 									<div class="truncate font-label text-xs font-bold uppercase">{nameVal}</div>
 									<div

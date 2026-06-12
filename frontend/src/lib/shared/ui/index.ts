@@ -3,6 +3,7 @@ export { default as BottomNav } from './BottomNav.svelte';
 export { default as Countdown } from './Countdown.svelte';
 export { default as Icon } from './Icon.svelte';
 export { default as NodeConnectivity } from './NodeConnectivity.svelte';
+export { default as ProfileAvatar } from './ProfileAvatar.svelte';
 export { default as ProfileStatePanel } from './ProfileStatePanel.svelte';
 export { default as ProgressBar } from './ProgressBar.svelte';
 export { default as Sidebar } from './Sidebar.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TopBar } from '$lib/shared/ui';
-	import { moderateProfileRequest } from '$lib/shared/api';
+	import { moderateProfileRequest, resolveAgentImage } from '$lib/shared/api';
 	import { getAppContext } from '$lib/shared/providers';
 	import type { ProfileRequest, SessionFlow, SessionUser } from '$lib/shared/model';
 
@@ -193,15 +193,17 @@
 										2
 									)}</pre>
 							</div>
-							{#if activeRequest.requested_profile_data.identificationImage}
-								<div class="overflow-hidden bg-surface-container">
-									<img
-										src={activeRequest.requested_profile_data.identificationImage}
-										alt="Submitted identification"
-										class="max-h-[28rem] w-full object-cover"
-									/>
-								</div>
-							{/if}
+							{#await resolveAgentImage(activeRequest.requested_profile_data) then imageUrl}
+								{#if imageUrl}
+									<div class="overflow-hidden bg-surface-container">
+										<img
+											src={imageUrl}
+											alt="Submitted identification"
+											class="max-h-[28rem] w-full object-cover"
+										/>
+									</div>
+								{/if}
+							{/await}
 						</div>
 
 						<div class="space-y-4 bg-surface-container p-4">

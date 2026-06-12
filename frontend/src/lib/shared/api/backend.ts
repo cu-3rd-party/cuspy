@@ -213,9 +213,16 @@ export const createAgentData = async (profileData: AgentProfileData, customFetch
 	return normalizeAgentData(created, profileData.identificationImage, customFetch);
 };
 
+const agentDataCache = new Map<string, AgentProfileData>();
+
 export const getAgentData = async (agentDataId: string, customFetch?: typeof fetch) => {
+	const cached = agentDataCache.get(agentDataId);
+	if (cached) return cached;
+
 	const data = await backendJson<BackendAgentData>(`/agent-data/${agentDataId}`, {}, customFetch);
-	return normalizeAgentData(data, undefined, customFetch);
+	const profile = await normalizeAgentData(data, undefined, customFetch);
+	agentDataCache.set(agentDataId, profile);
+	return profile;
 };
 
 export const getResourceMetadata = (resourceId: string, customFetch?: typeof fetch) =>
@@ -388,14 +395,35 @@ const normalizeAgentData = async (
 						: undefined,
 		identificationName: data.identification_name ?? undefined,
 		identificationImageResourceId,
-		identificationImage:
-			identificationImage ?? (await resolveResourceFileLocation(identificationImageResourceId, customFetch)),
+		identificationImage: identificationImage ?? undefined,
 		boundaries: {
 			physicalContact: data.physical_contact_allowed,
 			hugsCloseProximity: data.hugs_close_proximity_allowed
 		}
 	};
 };
+
+const resourceImageCache = new Map<string, string>();
+
+export async function resolveAgentImage(profile: {
+	identificationImage?: string;
+	identificationImageResourceId?: string;
+}): Promise<string | undefined> {
+	if (profile.identificationImage) return profile.identificationImage;
+	if (!profile.identificationImageResourceId) return undefined;
+
+	const cached = resourceImageCache.get(profile.identificationImageResourceId);
+	if (cached) return cached;
+
+	try {
+		const metadata = await getResourceMetadata(profile.identificationImageResourceId);
+		const url = metadata.file_location ?? undefined;
+		if (url) resourceImageCache.set(profile.identificationImageResourceId, url);
+		return url;
+	} catch {
+		return undefined;
+	}
+}
 
 const resolveResourceFileLocation = async (resourceId?: string, customFetch?: typeof fetch) => {
 	if (!resourceId) {
