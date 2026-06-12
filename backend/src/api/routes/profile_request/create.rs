@@ -3,7 +3,7 @@ use crate::api::models::profile::{
     CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::{db, helpers};
+use crate::api::helpers;
 use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::State;

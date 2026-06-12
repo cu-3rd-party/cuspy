@@ -1,12 +1,12 @@
 use crate::ApiContext;
-use crate::api::extractor::{AuthUser, User};
+use crate::api::extractor::AuthUser;
 use crate::api::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
 use crate::api::models::user::UserRecord;
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::{extractor, helpers};
+use crate::api::helpers;
 use axum::Json;
 use axum::extract::State;
-use http::{HeaderMap, StatusCode};
+use http::StatusCode;
 use log::error;
 use uuid::Uuid;
 

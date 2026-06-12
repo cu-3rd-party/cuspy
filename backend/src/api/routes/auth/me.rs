@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::api::extractor::{AuthUser, User};
+use crate::api::extractor::AuthUser;
 use crate::api::helpers;
 use crate::api::models::ApiError;
 use crate::api::models::user::UserResponse;

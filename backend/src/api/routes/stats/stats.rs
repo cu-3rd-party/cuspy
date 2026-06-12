@@ -2,10 +2,9 @@ use crate::ApiContext;
 use crate::api::extractor::AuthUser;
 use crate::api::models::kill::{RankingEntry, UserStatsResponse};
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::{extractor, helpers};
+use crate::api::helpers;
 use axum::Json;
 use axum::extract::{Path, State};
-use http::HeaderMap;
 use uuid::Uuid;
 
 #[utoipa::path(
@@ -87,7 +86,7 @@ pub async fn rankings(
 )]
 pub async fn user_stats(
     State(state): State<ApiContext>,
-    AuthUser(user): AuthUser,
+    AuthUser(_user): AuthUser,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<UserStatsResponse>, ApiError> {
     let stats = sqlx::query_as::<_, UserStatsResponse>(

@@ -12,6 +12,7 @@ use teloxide::{
 };
 use url::Url;
 
+#[allow(dead_code)]
 async fn handle_bot_message(bot: Bot, message: Message, webapp_url: String) -> ResponseResult<()> {
     if let Some(text) = message.text()
         && text.starts_with("/start")
@@ -34,6 +35,7 @@ async fn handle_bot_message(bot: Bot, message: Message, webapp_url: String) -> R
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn run_bot(bot_token: String, webapp_url: String) {
     let bot = Bot::new(bot_token);
     let handler = Update::filter_message().endpoint(move |bot: Bot, message: Message| {

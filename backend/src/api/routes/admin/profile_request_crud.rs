@@ -3,12 +3,12 @@ use crate::api::models::profile::{
     AdminUpdateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
 use crate::api::models::{ApiError, db_optional_timestamp, db_uuid};
-use crate::api::{extractor, helpers};
+use crate::api::helpers;
 use crate::{ApiContext, notifier};
 use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router};
-use http::{HeaderMap, StatusCode};
+use http::StatusCode;
 use uuid::Uuid;
 
 pub fn profile_request_router() -> Router<ApiContext> {

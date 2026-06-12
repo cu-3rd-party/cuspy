@@ -2,10 +2,9 @@ use crate::ApiContext;
 use crate::api::extractor::AuthUser;
 use crate::api::models::user::{UpdateUserRequest, UserRecord, UserResponse};
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::{extractor, helpers};
+use crate::api::helpers;
 use axum::Json;
 use axum::extract::{Path, State};
-use http::HeaderMap;
 use uuid::Uuid;
 
 #[utoipa::path(

@@ -39,6 +39,7 @@ pub async fn fetch_kill(state: &ApiContext, kill_id: Uuid) -> Result<KillEventRe
         .ok_or(ApiError::NotFound)
 }
 
+#[allow(dead_code)]
 pub async fn update_kill(
     state: &ApiContext,
     kill_id: Uuid,

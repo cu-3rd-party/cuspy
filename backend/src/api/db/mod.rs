@@ -21,6 +21,7 @@ fn optional_i64(map: &Map<String, Value>, key: &str) -> Option<i64> {
     map.get(key)?.as_i64()
 }
 
+#[allow(dead_code)]
 pub async fn insert_agent_data_from_profile(
     db: &AnyPool,
     payload: &Value,
