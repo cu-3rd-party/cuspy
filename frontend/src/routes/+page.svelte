@@ -6,7 +6,7 @@
 	import { getAppContext } from '$lib/shared/providers';
 	import { profileFlowTarget } from '$lib/pages/profile-flow';
 	import { TerminalShell } from '$lib/shared/ui';
-	import { enlistNav, heroServerImage } from '$lib/shared/config';
+	import { heroServerImage } from '$lib/shared/config';
 	import AgentIdPage from './agent-id/+page.svelte';
 	import OperationalBoundariesPage from './operational-boundaries/+page.svelte';
 	import DossierVerificationPage from './dossier-verification/+page.svelte';

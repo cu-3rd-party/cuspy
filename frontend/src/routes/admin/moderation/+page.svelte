@@ -114,26 +114,26 @@
 						onclick={() => selectRequest(request.profile_request_id)}
 						class={`w-full border p-4 text-left transition-colors ${request.profile_request_id === activeId ? 'border-primary bg-surface-container text-on-surface' : 'border-outline-variant/20 bg-surface-container-lowest hover:border-primary/40 hover:bg-surface-container-low'}`}
 					>
-						<div class="flex items-start justify-between gap-4">
-							<div>
-								<div class="font-display text-lg font-bold uppercase">
+						<span class="flex items-start justify-between gap-4">
+							<span>
+								<span class="font-display text-lg font-bold uppercase">
 									{request.requested_profile_data.codename ?? 'UNNAMED_AGENT'}
-								</div>
-								<div
+								</span>
+								<span
 									class="mt-2 font-label text-[10px] tracking-[0.25em] text-on-surface-variant uppercase"
 								>
 									{request.requested_profile_data.academicGroup ?? 'GROUP_UNSET'}
-								</div>
-							</div>
+								</span>
+							</span>
 							<span
 								class={`px-2 py-1 font-label text-[10px] uppercase ${request.status === 'pending' ? 'bg-primary-container text-on-primary-container' : request.status === 'approved' ? 'bg-secondary-container text-on-secondary-container' : 'bg-error text-white'}`}
 							>
 								{request.status}
 							</span>
-						</div>
-						<div class="mt-4 font-label text-[10px] text-on-surface-variant uppercase">
+						</span>
+						<span class="mt-4 font-label text-[10px] text-on-surface-variant uppercase">
 							{formatDate(request.created_at)}
-						</div>
+						</span>
 					</button>
 				{/each}
 			</section>
