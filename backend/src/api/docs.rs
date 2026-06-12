@@ -40,6 +40,7 @@ impl utoipa::Modify for SecurityAddon {
         routes::user::update::update_user,
         routes::user::delete::delete_user,
         routes::agent_data::create::create_agent_data,
+        routes::agent_data::get::get_agent_data,
         routes::resource::get::get_resource,
         routes::kill::list::list_kills,
         routes::kill::report::report_kill,
