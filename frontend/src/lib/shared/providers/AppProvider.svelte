@@ -46,6 +46,7 @@
 		if (!browser) return;
 		void refreshSession();
 
+		// TODO: заменить это на gRPC server-side streaming и на бекенде пушить события в вебсокет, а тут просто слушать
 		const pollTimer = setInterval(() => {
 			void refreshSession();
 		}, 5000);
