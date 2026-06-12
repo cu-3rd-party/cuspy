@@ -3,7 +3,8 @@ use crate::api::models::ApiError;
 use crate::api::models::agent_data::{AgentData, AgentDataMetadata};
 use axum::Json;
 use axum::extract::{Multipart, State};
-use http::HeaderMap;
+use http::{header, HeaderMap};
+use crate::api::models::resource::Resource;
 
 pub async fn create_agent_data(
     State(state): State<ApiContext>,
@@ -56,8 +57,19 @@ pub async fn create_agent_data(
                     .await?);
             }
             "image" => {
-                // создать ресурс и сохранить айди
-                // let resouce = sqlx::query_as()
+                let content_type =
+                    field.headers()
+                        .get(header::CONTENT_TYPE)
+                        .and_then(|value| value.to_str().ok())
+                        .map(String::from);
+                let content = field.bytes().await.map_err(|e| {
+                        ApiError::BadRequest(format!("failed to parse field body: {e}"))
+                    })?;
+                Resource::new(
+                    &state,
+                    content,
+                    content_type,
+                ).await?;
             }
             _ => {
                 return Err(ApiError::BadRequest(format!(

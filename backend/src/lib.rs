@@ -5,6 +5,7 @@ pub mod notifier;
 #[cfg(feature = "telegram-auth")]
 pub mod telegram;
 
+use std::path::PathBuf;
 use std::time::Instant;
 
 use crate::api::extractor::MaybeAuthUser;
@@ -17,6 +18,7 @@ use axum::{
     response::Response,
 };
 use log::{error, info};
+use s3::Bucket;
 use serde_json::{Value, json};
 use sqlx::AnyPool;
 use uuid::Uuid;
@@ -24,6 +26,7 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct ApiContext {
     pub db: AnyPool,
+    pub bucket: Box<Bucket>,
     pub admin_secret: String,
     pub jwt_secret: String,
     #[cfg(feature = "telegram-auth")]

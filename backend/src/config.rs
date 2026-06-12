@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+use clap::Parser;
+
 #[derive(clap::Parser)]
 pub struct Config {
     #[clap(long, env)]
@@ -11,6 +14,24 @@ pub struct Config {
 
     #[clap(long, env)]
     pub jwt_secret: String,
+
+    #[clap(long, env)]
+    pub upload_path: PathBuf,
+
+    #[arg(env = "S3_ACCESS_KEY", default_value = "")]
+    pub access_key: String,
+
+    #[arg(env = "S3_SECRET_KEY", default_value = "")]
+    pub secret_key: String,
+
+    #[arg(env = "S3_ENDPOINT", default_value = "")]
+    pub endpoint: String,
+
+    #[arg(env = "S3_REGION", default_value = "us-east-1")]
+    pub region: String,
+
+    #[arg(env = "S3_BUCKET_NAME", default_value = "cukiller")]
+    pub bucket_name: String,
 
     #[clap(long, env)]
     #[cfg(feature = "telegram-auth")]

@@ -40,8 +40,8 @@ impl<'r> FromRow<'r, AnyRow> for AuthUserRecord {
         Ok(Self {
             auth_user_id: parse_uuid(row, "auth_user_id")?,
             user_id: parse_uuid(row, "user_id")?,
-            login_identifier: row.try_get("login_identifier")?,
-            password_hash: row.try_get("password_hash")?,
+            login_identifier: row.get("login_identifier"),
+            password_hash: row.try_get("password_hash").ok(),
         })
     }
 }

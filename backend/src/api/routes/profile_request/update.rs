@@ -30,6 +30,7 @@ pub async fn update_profile_request(
     Path(request_id): Path<Uuid>,
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<ProfileRequestResponse>, ApiError> {
+    let mut tx = state.db.begin().await?;
     let existing = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
@@ -46,7 +47,7 @@ pub async fn update_profile_request(
         "#,
     )
     .bind(db_uuid(request_id))
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?
     .ok_or(ApiError::NotFound)?;
 
@@ -81,7 +82,7 @@ pub async fn update_profile_request(
         "#,
     )
     .bind(db_uuid(request_id))
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await?
     .ok_or(ApiError::NotFound)?;
 

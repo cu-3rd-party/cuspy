@@ -22,9 +22,9 @@ impl<'r> FromRow<'r, AnyRow> for ProfileRequestRecord {
             profile_request_id: parse_uuid(row, "profile_request_id")?,
             user_id: parse_uuid(row, "user_id")?,
             requested_profile_data_id: parse_uuid(row, "requested_profile_data_id")?,
-            status: row.try_get("status")?,
-            reviewer_note: row.try_get("reviewer_note")?,
-            reviewed_at: parse_optional_timestamp(row, "reviewed_at")?,
+            status: row.get("status"),
+            reviewer_note: row.try_get("reviewer_note").ok(),
+            reviewed_at: parse_optional_timestamp(row, "reviewed_at").ok().flatten(),
             created_at: parse_timestamp(row, "created_at")?,
             updated_at: parse_timestamp(row, "updated_at")?,
         })
@@ -45,7 +45,7 @@ pub struct ProfileRequestResponse {
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateProfileRequest {
-    pub requested_profile_data: Value,
+    pub agent_data_id: Uuid,
 }
 
 #[derive(Deserialize, ToSchema)]

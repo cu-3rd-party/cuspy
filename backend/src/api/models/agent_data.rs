@@ -83,8 +83,8 @@ impl<'r> FromRow<'r, AnyRow> for AgentData {
     fn from_row(row: &'r AnyRow) -> Result<Self, Error> {
         Ok(Self {
             agent_data_id: parse_uuid(row, "agent_data_id")?,
-            codename: row.try_get("codename")?,
-            academic_group: row.try_get("academic_group")?,
+            codename: row.try_get("codename").ok(),
+            academic_group: row.try_get("academic_group").ok(),
             academic_level: row
                 .try_get("academic_level")
                 .ok()

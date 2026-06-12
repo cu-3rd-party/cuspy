@@ -1,6 +1,7 @@
 use axum::Json;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
+use s3::error::S3Error;
 use serde::Serialize;
 use serde_json::json;
 use sqlx::{Row, any::AnyRow};
@@ -56,6 +57,7 @@ pub mod kill;
 pub mod profile;
 pub mod similarity;
 pub mod user;
+pub mod resource;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
@@ -102,6 +104,12 @@ impl IntoResponse for ApiError {
 
         let body = Json(json!({ "error": message }));
         (status, body).into_response()
+    }
+}
+
+impl From<S3Error> for ApiError {
+    fn from(value: S3Error) -> Self {
+        Self::Internal(value.to_string())
     }
 }
 

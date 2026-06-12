@@ -3,6 +3,9 @@ use cukiller_backend::{ApiContext, build_app, config};
 use log::info;
 use sqlx::{AnyPool, any::AnyPoolOptions, migrate::Migrator};
 use std::path::Path;
+use s3::creds::Credentials;
+use s3::{Bucket, BucketConfiguration, Region};
+use s3::error::S3Error;
 use teloxide::{
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo},
@@ -72,8 +75,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     run_migrations(&db).await?;
 
+    let credentials = Credentials {
+        access_key: Some(config.access_key.clone()),
+        secret_key: Some(config.secret_key.clone()),
+        security_token: None,
+        session_token: None,
+        expiration: None,
+    };
+
+    let region = Region::Custom {
+        region: config.region.clone(),
+        endpoint: config.endpoint.clone(),
+    };
+
+    let bucket = Bucket::new(
+        &config.bucket_name,
+        region.clone(),
+        credentials.clone(),
+    )?
+        .with_path_style();
+    match bucket.head_object("").await {
+        Ok(_) => Ok::<(), anyhow::Error>(()),
+        Err(S3Error::HttpFailWithBody(404, _)) => {
+            Bucket::create_with_path_style(
+                &config.bucket_name,
+                region.clone(),
+                credentials.clone(),
+                BucketConfiguration::default(),
+            )
+                .await?;
+            Ok(())
+        }
+        Err(e) => Err(e.into()),
+    }?;
+
     let state = ApiContext {
         db,
+        bucket,
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,
         #[cfg(feature = "telegram-auth")]

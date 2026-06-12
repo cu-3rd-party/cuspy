@@ -63,12 +63,12 @@ impl<'r> FromRow<'r, AnyRow> for RankingEntry {
         use sqlx::Row;
 
         Ok(Self {
-            rank: row.try_get("rank")?,
+            rank: row.get("rank"),
             user_id: parse_uuid(row, "user_id")?,
-            agent_name: row.try_get("agent_name")?,
-            rating: row.try_get("rating")?,
-            approved_kills: row.try_get("approved_kills")?,
-            approved_deaths: row.try_get("approved_deaths")?,
+            agent_name: row.try_get("agent_name").ok(),
+            rating: row.get("rating"),
+            approved_kills: row.get("approved_kills"),
+            approved_deaths: row.get("approved_deaths"),
         })
     }
 }
@@ -80,10 +80,10 @@ impl<'r> FromRow<'r, AnyRow> for UserStatsResponse {
 
         Ok(Self {
             user_id: parse_uuid(row, "user_id")?,
-            rating: row.try_get("rating")?,
-            approved_kills: row.try_get("approved_kills")?,
-            approved_deaths: row.try_get("approved_deaths")?,
-            pending_kills: row.try_get("pending_kills")?,
+            rating: row.get("rating"),
+            approved_kills: row.get("approved_kills"),
+            approved_deaths: row.get("approved_deaths"),
+            pending_kills: row.get("pending_kills"),
         })
     }
 }
@@ -118,19 +118,19 @@ impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
             kill_event_id: parse_uuid(row, "kill_event_id")?,
             killer_id: parse_uuid(row, "killer_id")?,
             victim_id: parse_uuid(row, "victim_id")?,
-            status: row.try_get("status")?,
-            evidence_resource_id: parse_optional_uuid(row, "evidence_resource_id")?,
+            status: row.get("status"),
+            evidence_resource_id: parse_optional_uuid(row, "evidence_resource_id").ok().flatten(),
             details: parse_json(row, "details")?,
-            killer_confirmed_at: parse_optional_timestamp(row, "killer_confirmed_at")?,
-            victim_confirmed_at: parse_optional_timestamp(row, "victim_confirmed_at")?,
+            killer_confirmed_at: parse_optional_timestamp(row, "killer_confirmed_at").ok().flatten(),
+            victim_confirmed_at: parse_optional_timestamp(row, "victim_confirmed_at").ok().flatten(),
             reported_at: parse_timestamp(row, "reported_at")?,
-            confirmed_at: parse_optional_timestamp(row, "confirmed_at")?,
-            moderated_at: parse_optional_timestamp(row, "moderated_at")?,
-            moderator_id: parse_optional_uuid(row, "moderator_id")?,
-            moderation_reason: row.try_get("moderation_reason")?,
-            rating_applied_at: parse_optional_timestamp(row, "rating_applied_at")?,
+            confirmed_at: parse_optional_timestamp(row, "confirmed_at").ok().flatten(),
+            moderated_at: parse_optional_timestamp(row, "moderated_at").ok().flatten(),
+            moderator_id: parse_optional_uuid(row, "moderator_id").ok().flatten(),
+            moderation_reason: row.try_get("moderation_reason").ok(),
+            rating_applied_at: parse_optional_timestamp(row, "rating_applied_at").ok().flatten(),
             created_at: parse_timestamp(row, "created_at")?,
-            updated_at: parse_optional_timestamp(row, "updated_at")?,
+            updated_at: parse_optional_timestamp(row, "updated_at").ok().flatten(),
         })
     }
 }

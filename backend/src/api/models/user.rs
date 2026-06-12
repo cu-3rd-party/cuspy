@@ -18,16 +18,16 @@ pub struct UserRecord {
 
 impl<'r> FromRow<'r, AnyRow> for UserRecord {
     fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
-        let is_admin: i64 = row.try_get("is_admin")?;
+        let is_admin: i64 = row.get("is_admin");
         Ok(Self {
             user_id: parse_uuid(row, "user_id")?,
-            telegram_id: row.try_get("telegram_id")?,
-            agent_name: row.try_get("agent_name")?,
+            telegram_id: row.get("telegram_id"),
+            agent_name: row.try_get("agent_name").ok(),
             agent_data_id: parse_uuid(row, "agent_data_uuid").ok(),
-            rating: row.try_get("rating")?,
+            rating: row.get("rating"),
             is_admin: if is_admin != 0 { true } else { false },
             created_at: parse_timestamp(row, "created_at")?,
-            updated_at: parse_optional_timestamp(row, "updated_at")?,
+            updated_at: parse_optional_timestamp(row, "updated_at").ok().flatten(),
         })
     }
 }

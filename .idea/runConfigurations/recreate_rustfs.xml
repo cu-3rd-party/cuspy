@@ -1,0 +1,42 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="recreate rustfs" type="docker-deploy" factoryName="docker-image" server-name="local">
+    <deployment type="docker-image">
+      <settings>
+        <option name="imageTag" value="rustfs/rustfs:latest" />
+        <option name="containerName" value="rustfs" />
+        <option name="envVars">
+          <list>
+            <DockerEnvVarImpl>
+              <option name="name" value="RUSTFS_ACCESS_KEY" />
+              <option name="value" value="admin" />
+            </DockerEnvVarImpl>
+            <DockerEnvVarImpl>
+              <option name="name" value="RUSTFS_SECRET_KEY" />
+              <option name="value" value="admin" />
+            </DockerEnvVarImpl>
+            <DockerEnvVarImpl>
+              <option name="name" value="RUSTFS_CONSOLE_ENABLE" />
+              <option name="value" value="true" />
+            </DockerEnvVarImpl>
+          </list>
+        </option>
+        <option name="portBindings">
+          <list>
+            <DockerPortBindingImpl>
+              <option name="containerPort" value="9000" />
+              <option name="hostPort" value="9000" />
+            </DockerPortBindingImpl>
+            <DockerPortBindingImpl>
+              <option name="containerPort" value="9001" />
+              <option name="hostPort" value="9001" />
+            </DockerPortBindingImpl>
+          </list>
+        </option>
+        <option name="showCommandPreview" value="true" />
+      </settings>
+    </deployment>
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="rm rustfs" run_configuration_type="ShConfigurationType" />
+    </method>
+  </configuration>
+</component>

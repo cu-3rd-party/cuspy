@@ -5,7 +5,7 @@ edition = "2024"
 
 [features]
 default = []
-telegram-auth = ["dep:hmac", "dep:sha2", "dep:hex"]
+telegram-auth = ["dep:hmac", "dep:hex"]
 
 [dependencies]
 axum = { version = "0.8.9", features = ["multipart", "tower-log"] }
@@ -25,13 +25,17 @@ argon2 = "0.5.3"
 jsonwebtoken = "9.3.1"
 time = { version = "0.3.44", features = ["parsing", "formatting"] }
 hmac = { version = "0.12.1", optional = true }
-sha2 = { version = "0.10.9", optional = true }
+sha2 = "0.10.9"
 hex = { version = "0.4.3", optional = true }
 teloxide = { version = "0.17.0", features = ["macros"] }
 url = "2.5.7"
 utoipa = { version = "5.5.0", features = ["uuid", "yaml", "chrono", "config", "preserve_order"] }
 utoipa-axum = "0.2.0"
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+bytes = "1.11.1"
+rust-s3 = { version = "0.37.2", features = ["tokio-rustls-tls", "fail-on-err"] }
+anyhow = "1.0.102"
+base64 = "0.22.1"
 
 [dev-dependencies]
 http-body-util = "0.1.3"

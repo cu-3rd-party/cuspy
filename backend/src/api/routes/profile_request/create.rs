@@ -28,9 +28,6 @@ pub async fn create_profile_request(
     AuthUser(user): AuthUser,
     Json(payload): Json<CreateProfileRequest>,
 ) -> Result<(StatusCode, Json<ProfileRequestResponse>), ApiError> {
-    let requested_profile_data_id =
-        db::insert_agent_data_from_profile(&state.db, &payload.requested_profile_data).await?;
-
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         insert into profile_request (
@@ -53,7 +50,7 @@ pub async fn create_profile_request(
     )
     .bind(db_uuid(Uuid::now_v7()))
     .bind(db_uuid(user.user_id))
-    .bind(db_uuid(requested_profile_data_id))
+    .bind(db_uuid(payload.agent_data_id))
     .fetch_one(&state.db)
     .await?;
 

@@ -21,4 +21,6 @@ pub fn router() -> Router<ApiContext> {
         .nest("/stats", stats::router())
         .nest("/profile-requests", profile_request::router())
         .nest("/admin", admin::router())
+        .nest("/agent-data", agent_data::router())
+        .nest("/resource", resource::router())
 }
