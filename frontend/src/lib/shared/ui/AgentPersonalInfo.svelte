@@ -8,7 +8,7 @@
 	};
 
 	let {
-		agentId,
+		agentId = $bindable(),
 		uploadError = false,
 		handleIdentificationChange
 	}: {
@@ -37,7 +37,7 @@
 		{m.agent_id_upload_label()}
 	</p>
 	<div
-		class={`group relative flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center overflow-hidden border-2 border-dashed bg-surface-container-high transition-colors hover:bg-surface-container-highest ${uploadError ? 'border-error' : 'border-outline-variant'}`}
+		class={`group relative flex aspect-4/3 w-full cursor-pointer flex-col items-center justify-center overflow-hidden border-2 border-dashed bg-surface-container-high transition-colors hover:bg-surface-container-highest ${uploadError ? 'border-error' : 'border-outline-variant'}`}
 	>
 		{#if agentId.identificationImage}
 			<img

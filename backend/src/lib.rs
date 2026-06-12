@@ -5,7 +5,7 @@ pub mod notifier;
 #[cfg(feature = "telegram-auth")]
 pub mod telegram;
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crate::api::extractor::MaybeAuthUser;
 use crate::api::models::{db_json, db_optional_uuid, db_uuid};
@@ -52,19 +52,13 @@ pub fn build_app(state: ApiContext) -> Router {
                     Method::PUT,
                     Method::PATCH,
                     Method::DELETE,
-                    Method::OPTIONS,
-                    Method::CONNECT,
                 ])
                 .allow_headers([
                     header::AUTHORIZATION,
-                    header::ACCEPT,
                     header::CONTENT_TYPE,
-                    header::USER_AGENT,
-                    header::ACCEPT_LANGUAGE,
-                    header::ACCEPT_ENCODING,
-                    header::CONNECTION,
                 ])
                 .allow_credentials(true)
+                .max_age(Duration::from_hours(24))
         )
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
@@ -118,12 +112,12 @@ async fn audit_request(
 
     if status.as_u16() >= 200 && status.as_u16() < 300 {
         info!(
-            "{:<7} | {:<40} | {:>3} | {:>2}ms",
+            "{:<7} | {:<50} | {:>3} | {:>2}ms",
             method, uri, status, elapsed_ms
         );
     } else {
         warn!(
-            "{:<7} | {:<40} | {:>3} | {:>2}ms",
+            "{:<7} | {:<50} | {:>3} | {:>2}ms",
             method, uri, status, elapsed_ms
         );
 

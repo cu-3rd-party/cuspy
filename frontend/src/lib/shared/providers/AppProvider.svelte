@@ -1,26 +1,20 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { replaceState } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import type { Snippet } from 'svelte';
+	import {browser} from '$app/environment';
+	import {replaceState} from '$app/navigation';
+	import type {Snippet} from 'svelte';
+	import {onMount} from 'svelte';
 	import {
 		getSessionFlow,
+		type KillTarget,
 		listAdminProfileRequests,
 		listKillReports,
 		listKillTargets,
-		listRankings,
-		type KillTarget
+		listRankings
 	} from '$lib/shared/api';
-	import { buildSessionFlow, profileFlowTarget } from '$lib/pages/profile-flow';
-	import { sessionUser as sessionUserStore } from '$lib/shared/model';
-	import type {
-		KillReport,
-		ProfileRequest,
-		RankingEntry,
-		SessionFlow,
-		SessionUser
-	} from '$lib/shared/model';
-	import { appViewFromPath, setAppContext, type AppContext, type AppView } from './app-context';
+	import {buildSessionFlow, profileFlowTarget} from '$lib/pages/profile-flow';
+	import type {KillReport, ProfileRequest, RankingEntry, SessionFlow, SessionUser} from '$lib/shared/model';
+	import {sessionUser as sessionUserStore} from '$lib/shared/model';
+	import {type AppContext, type AppView, appViewFromPath, setAppContext} from './app-context';
 
 	type Props = {
 		initialSessionFlow?: SessionFlow | null;
@@ -91,8 +85,7 @@
 	};
 
 	const navigate = (target: AppView | string) => {
-		const targetView = guardedView(appViewFromPath(target));
-		view = targetView;
+		view = guardedView(appViewFromPath(target));
 
 		if (browser) {
 			window.scrollTo(0, 0);

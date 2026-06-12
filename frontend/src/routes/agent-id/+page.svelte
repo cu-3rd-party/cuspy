@@ -281,7 +281,7 @@
 			</div>
 
 			<form class="space-y-10 p-8" onsubmit={handleSubmit}>
-				<AgentPersonalInfo {handleIdentificationChange} {uploadError} agentId={draft.agentId} />
+				<AgentPersonalInfo {handleIdentificationChange} {uploadError} bind:agentId={draft.agentId} />
 
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
