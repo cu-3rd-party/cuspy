@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
+	import { TerminalShell } from '$lib/shared/ui';
 </script>
 
 <TerminalShell

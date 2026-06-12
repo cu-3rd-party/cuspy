@@ -5,11 +5,11 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			accessToken: string | null;
-			sessionUser: import('$lib/stores/session').SessionUser | null;
+			sessionUser: import('$lib/shared/model').SessionUser | null;
 		}
 		interface PageData {
-			sessionFlow?: import('$lib/stores/session').SessionFlow;
-			sessionUser?: import('$lib/stores/session').SessionUser | null;
+			sessionFlow?: import('$lib/shared/model').SessionFlow;
+			sessionUser?: import('$lib/shared/model').SessionUser | null;
 		}
 		// interface PageState {}
 		// interface Platform {}

@@ -2,24 +2,25 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { writeAccessToken } from '$lib/auth/session';
+	import { writeAccessToken } from '$lib/shared/auth';
 	import { m } from '$lib/paraglide/messages.js';
-	import { applyProfileDataToDraft } from '$lib/profile-flow';
+	import { registerUser } from '$lib/shared/api';
+	import { applyProfileDataToDraft } from '$lib/pages/profile-flow';
 	import {
 		isAgentIdComplete,
 		loadDossierDraft,
 		saveDossierDraft,
 		type DossierDraft
-	} from '$lib/prototype/dossierDraft';
-	import ProgressBar from '$lib/components/ProgressBar.svelte';
-	import AgentPersonalInfo from '$lib/components/AgentPersonalInfo.svelte';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { enlistNav } from '$lib/prototype/data';
-	import Countdown from '$lib/components/Countdown.svelte';
-	import NodeConnectivity from '$lib/components/NodeConnectivity.svelte';
-	import { sessionUser } from '$lib/stores/session';
-	import type { SessionFlow } from '$lib/stores/session';
-	import Icon from "$lib/components/Icon.svelte";
+	} from '$lib/pages/profile-flow';
+	import { ProgressBar } from '$lib/shared/ui';
+	import { AgentPersonalInfo } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { enlistNav } from '$lib/shared/config';
+	import { Countdown } from '$lib/shared/ui';
+	import { NodeConnectivity } from '$lib/shared/ui';
+	import { sessionUser } from '$lib/shared/model';
+	import type { SessionFlow } from '$lib/shared/model';
+	import { Icon } from '$lib/shared/ui';
 
 	let { data } = $props<{
 		data: {
@@ -182,33 +183,12 @@
 				return;
 			}
 
-			const response = await fetch('/auth/dev-register', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({
-					email: `${draft.agentId.codename.toLowerCase()}@dev.local`,
-					password: 'password123',
-					telegram_id: Date.now(),
-					rating: 0,
-					agent_name: draft.agentId.codename,
-					agent_data: {
-						codename: draft.agentId.codename,
-						academicGroup: draft.agentId.academicGroup,
-						academicLevel: draft.agentId.academicLevel,
-						courseNumber: draft.agentId.courseNumber,
-						bachelorTrack: draft.agentId.bachelorTrack,
-						identificationName: draft.agentId.identificationName,
-						identificationImage: draft.agentId.identificationImage
-					}
-				})
+			const payload = await registerUser({
+				email: `${draft.agentId.codename.toLowerCase()}@dev.local`,
+				password: 'password123',
+				telegram_id: Date.now(),
+				agent_name: draft.agentId.codename
 			});
-
-			if (!response.ok) {
-				const payload = await response.json().catch(() => ({ error: 'Request failed' }));
-				throw new Error(payload.error ?? 'Request failed');
-			}
-
-			const payload = await response.json();
 			writeAccessToken(payload.access_token);
 			sessionUser.set(payload.user);
 
@@ -221,7 +201,6 @@
 		} finally {
 			isSubmitting = false;
 		}
-
 	};
 </script>
 
@@ -236,7 +215,9 @@
 		{/if}
 
 		{#if submitError}
-			<div class="mt-4 bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase">
+			<div
+				class="mt-4 bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase"
+			>
 				{submitError}
 			</div>
 		{/if}
@@ -265,7 +246,7 @@
 			</div>
 
 			<form class="space-y-10 p-8" onsubmit={handleSubmit}>
-				<AgentPersonalInfo {handleIdentificationChange} uploadError={uploadError} agentId={draft.agentId} />
+				<AgentPersonalInfo {handleIdentificationChange} {uploadError} agentId={draft.agentId} />
 
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">
@@ -324,10 +305,10 @@
 
 				{#if showBachelorTrack}
 					<div class="space-y-4">
-					<div class="flex items-center justify-between">
-						<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
-							{m.agent_id_bachelor_track()}
-						</p>
+						<div class="flex items-center justify-between">
+							<p class="font-label text-xs tracking-[0.25em] text-on-surface-variant uppercase">
+								{m.agent_id_bachelor_track()}
+							</p>
 							<span class="font-label text-[10px] text-primary/40 uppercase"
 								>{m.common_required()}</span
 							>

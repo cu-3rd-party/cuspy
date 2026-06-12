@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { agentAvatar, dossierNav, roster } from '$lib/prototype/data';
-	import { sessionUser, type RankingEntry, type SessionUser } from '$lib/stores/session';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { agentAvatar, dossierNav, roster } from '$lib/shared/config';
+	import { sessionUser, type RankingEntry, type SessionUser } from '$lib/shared/model';
 
 	type RankingRow = {
 		rank: string;

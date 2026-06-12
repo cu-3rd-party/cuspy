@@ -1,0 +1,375 @@
+import { env } from '$env/dynamic/public';
+import { clearAccessToken, readAccessToken } from '$lib/shared/auth';
+import { buildSessionFlow } from '$lib/pages/profile-flow';
+import type {
+	AgentProfileData,
+	KillReport,
+	ProfileRequest,
+	ProfileRequestStatus,
+	RankingEntry,
+	SessionFlow,
+	SessionUser
+} from '$lib/shared/model';
+
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:3000';
+
+type BackendUser = Omit<SessionUser, 'agent_data'> & {
+	agent_data?: AgentProfileData | null;
+};
+
+type BackendAgentData = {
+	agent_data_id: string;
+	codename: string | null;
+	academic_group: string | null;
+	academic_level: 'Bachelor' | 'Master' | null;
+	course_number: number | null;
+	bachelor_track: 'SWE' | 'AI' | 'BA' | null;
+	identification_name: string | null;
+	identification_image_id: string | null;
+	physical_contact_allowed: boolean;
+	hugs_close_proximity_allowed: boolean;
+};
+
+type BackendProfileRequest = Omit<ProfileRequest, 'requested_profile_data' | 'status'> & {
+	status: string;
+	requested_profile_data?: AgentProfileData;
+};
+
+type BackendKillEvent = {
+	kill_event_id: string;
+	killer_id: string;
+	victim_id: string;
+	status: string;
+	evidence_url: string | null;
+	details: Record<string, unknown> | null;
+	moderation_reason: string | null;
+	reported_at: string;
+	created_at: string;
+	updated_at: string | null;
+	reviewed_at?: string | null;
+};
+
+export type KillTarget = {
+	target_id: string;
+	identifier: string;
+	last_known_location: string;
+	status: 'active' | 'eliminated';
+};
+
+const backendBaseUrl = () => (env.PUBLIC_BACKEND_URL || DEFAULT_BACKEND_URL).replace(/\/$/, '');
+
+const authHeaders = (token = readAccessToken()): Record<string, string> =>
+	token ? { authorization: `Bearer ${token}` } : {};
+
+export async function backendJson<T>(path: string, options: RequestInit = {}): Promise<T> {
+	const headers = new Headers(options.headers);
+
+	if (options.body && !(options.body instanceof FormData) && !headers.has('content-type')) {
+		headers.set('content-type', 'application/json');
+	}
+
+	const response = await fetch(`${backendBaseUrl()}${path}`, {
+		...options,
+		headers
+	});
+
+	if (!response.ok) {
+		let message = `Backend request failed with status ${response.status}`;
+		try {
+			const payload = (await response.json()) as { error?: string };
+			message = payload.error ?? message;
+		} catch {
+			// ignore non-json backend errors
+		}
+
+		throw new Error(message);
+	}
+
+	if (response.status === 204) {
+		return undefined as T;
+	}
+
+	return (await response.json()) as T;
+}
+
+export const registerUser = async (payload: {
+	email?: string | null;
+	password?: string | null;
+	telegram_id?: number | null;
+	agent_name?: string | null;
+}) => {
+	const response = await backendJson<{ access_token: string; user: BackendUser }>('/auth/register', {
+		method: 'POST',
+		body: JSON.stringify(payload)
+	});
+
+	return {
+		access_token: response.access_token,
+		user: await normalizeUser(response.user)
+	};
+};
+
+export const getCurrentUser = async (token = readAccessToken()) => {
+	const user = await backendJson<BackendUser>('/auth/me', { headers: authHeaders(token) });
+	return normalizeUser(user);
+};
+
+export const getSessionFlow = async (token = readAccessToken()): Promise<SessionFlow> => {
+	if (!token) {
+		return buildSessionFlow(null, null);
+	}
+
+	try {
+		const user = await getCurrentUser(token);
+		const requests = await listProfileRequests(token);
+		return buildSessionFlow(user, requests[0] ?? null);
+	} catch {
+		clearAccessToken();
+		return buildSessionFlow(null, null);
+	}
+};
+
+export const createAgentData = async (profileData: AgentProfileData) => {
+	const formData = new FormData();
+	formData.set('data', JSON.stringify(toAgentDataMetadata(profileData)));
+
+	const imageFile = await dataUrlToFile(
+		profileData.identificationImage,
+		profileData.identificationName || 'identification.png'
+	);
+	if (imageFile) {
+		formData.set('image', imageFile);
+	}
+
+	const created = await backendJson<BackendAgentData>('/agent-data/', {
+		method: 'POST',
+		body: formData
+	});
+
+	return normalizeAgentData(created, profileData.identificationImage);
+};
+
+export const getAgentData = async (agentDataId: string) => {
+	const data = await backendJson<BackendAgentData>(`/agent-data/${agentDataId}`);
+	return normalizeAgentData(data);
+};
+
+export const createProfileRequest = async (agentDataId: string, token = readAccessToken()) =>
+	normalizeProfileRequest(
+		await backendJson<BackendProfileRequest>('/profile-requests/', {
+			method: 'POST',
+			headers: authHeaders(token),
+			body: JSON.stringify({ agent_data_id: agentDataId })
+		})
+	);
+
+export const listProfileRequests = async (token = readAccessToken()) => {
+	const requests = await backendJson<BackendProfileRequest[]>('/profile-requests/', {
+		headers: authHeaders(token)
+	});
+
+	return hydrateProfileRequests(requests);
+};
+
+export const listAdminProfileRequests = async (token = readAccessToken()) => {
+	const requests = await backendJson<BackendProfileRequest[]>('/admin/profile-requests/', {
+		headers: authHeaders(token)
+	});
+
+	return hydrateProfileRequests(requests);
+};
+
+export const moderateProfileRequest = async ({
+	requestId,
+	decision,
+	reviewerNote,
+	token = readAccessToken()
+}: {
+	requestId: string;
+	decision: 'approved' | 'rejected';
+	reviewerNote: string;
+	token?: string | null;
+}) =>
+	normalizeProfileRequest(
+		await backendJson<BackendProfileRequest>(`/admin/profile-requests/${requestId}`, {
+			method: 'PATCH',
+			headers: authHeaders(token),
+			body: JSON.stringify({
+				status: decision === 'approved' ? 'confirmed' : 'rejected',
+				reviewer_note: reviewerNote || null
+			})
+		})
+	);
+
+export const listRankings = (token = readAccessToken()) =>
+	backendJson<RankingEntry[]>('/stats/rankings', { headers: authHeaders(token) });
+
+export const listKillTargets = async (token = readAccessToken()): Promise<KillTarget[]> => {
+	const rankings = await listRankings(token);
+	return rankings.map((entry) => ({
+		target_id: entry.user_id,
+		identifier: entry.agent_name ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
+		last_known_location: 'CLASSIFIED',
+		status: 'active'
+	}));
+};
+
+export const reportKill = ({
+	victimId,
+	modusOperandi,
+	witnessPresent,
+	token = readAccessToken()
+}: {
+	victimId: string;
+	modusOperandi: string;
+	witnessPresent: boolean;
+	token?: string | null;
+}) =>
+	backendJson<BackendKillEvent>('/kill/', {
+		method: 'POST',
+		headers: authHeaders(token),
+		body: JSON.stringify({
+			victim_id: victimId,
+			details: {
+				modus_operandi: modusOperandi,
+				witness_present: witnessPresent
+			}
+		})
+	});
+
+export const listKillReports = async (token = readAccessToken()): Promise<KillReport[]> => {
+	const reports = await backendJson<BackendKillEvent[]>('/kill/', { headers: authHeaders(token) });
+	return reports.map(normalizeKillReport);
+};
+
+export const moderateKillReport = ({
+	reportId,
+	decision,
+	reviewerNote,
+	token = readAccessToken()
+}: {
+	reportId: string;
+	decision: 'confirmed' | 'rejected';
+	reviewerNote: string;
+	token?: string | null;
+}) =>
+	backendJson<BackendKillEvent>(`/kill/${reportId}/moderate`, {
+		method: 'POST',
+		headers: authHeaders(token),
+		body: JSON.stringify({
+			action: decision === 'confirmed' ? 'APPROVE' : 'REJECT',
+			reason: reviewerNote || null
+		})
+	});
+
+const hydrateProfileRequests = async (requests: BackendProfileRequest[]) =>
+	Promise.all(requests.map((request) => normalizeProfileRequest(request)));
+
+const normalizeUser = async (user: BackendUser): Promise<SessionUser> => ({
+	...user,
+	agent_data: user.agent_data_id ? await getAgentData(user.agent_data_id) : (user.agent_data ?? null)
+});
+
+const normalizeProfileRequest = async (request: BackendProfileRequest): Promise<ProfileRequest> => ({
+	...request,
+	status: normalizeProfileStatus(request.status),
+	requested_profile_data:
+		request.requested_profile_data ?? (await getAgentData(request.requested_profile_data_id))
+});
+
+const normalizeProfileStatus = (status: string): ProfileRequestStatus => {
+	const normalized = status.toLowerCase();
+	if (normalized === 'confirmed' || normalized === 'approved') return 'approved';
+	if (normalized === 'rejected') return 'rejected';
+	return 'pending';
+};
+
+const normalizeAgentData = (
+	data: BackendAgentData,
+	identificationImage?: string | null
+): AgentProfileData => ({
+	agentDataId: data.agent_data_id,
+	codename: data.codename ?? undefined,
+	academicGroup: data.academic_group ?? undefined,
+	academicLevel:
+		data.academic_level === 'Bachelor'
+			? 'bachelor'
+			: data.academic_level === 'Master'
+				? 'master'
+				: undefined,
+	courseNumber: data.course_number == null ? undefined : String(data.course_number),
+	bachelorTrack:
+		data.bachelor_track === 'SWE'
+			? 'development'
+			: data.bachelor_track === 'AI'
+				? 'ai'
+				: data.bachelor_track === 'BA'
+					? 'business'
+					: undefined,
+	identificationName: data.identification_name ?? undefined,
+	identificationImage: identificationImage ?? data.identification_image_id ?? undefined,
+	boundaries: {
+		physicalContact: data.physical_contact_allowed,
+		hugsCloseProximity: data.hugs_close_proximity_allowed
+	}
+});
+
+const toAgentDataMetadata = (profileData: AgentProfileData) => ({
+	codename: profileData.codename || null,
+	academic_group: profileData.academicGroup || null,
+	academic_level:
+		profileData.academicLevel === 'bachelor'
+			? 'Bachelor'
+			: profileData.academicLevel === 'master'
+				? 'Master'
+				: null,
+	course_number: profileData.courseNumber ? Number(profileData.courseNumber) : null,
+	bachelor_track:
+		profileData.bachelorTrack === 'development'
+			? 'SWE'
+			: profileData.bachelorTrack === 'ai'
+				? 'AI'
+				: profileData.bachelorTrack === 'business'
+					? 'BA'
+					: null,
+	identification_name: profileData.identificationName || null,
+	physical_contact_allowed: profileData.boundaries?.physicalContact ?? true,
+	hugs_close_proximity_allowed: profileData.boundaries?.hugsCloseProximity ?? false
+});
+
+const normalizeKillReport = (report: BackendKillEvent): KillReport => {
+	const details = report.details ?? {};
+	const status = report.status.toUpperCase();
+
+	return {
+		kill_report_id: report.kill_event_id,
+		reporter_user_id: report.killer_id,
+		reporter_codename: `USER_${report.killer_id.slice(0, 4).toUpperCase()}`,
+		target_id: report.victim_id,
+		target_identifier: `USER_${report.victim_id.slice(0, 4).toUpperCase()}`,
+		modus_operandi: String(details.modus_operandi ?? 'No details supplied'),
+		witness_present: Boolean(details.witness_present),
+		status:
+			status === 'ADMIN_APPROVED' || status === 'CONFIRMED'
+				? 'confirmed'
+				: status === 'REJECTED' || status === 'ADMIN_REJECTED'
+					? 'rejected'
+					: 'pending',
+		reviewer_note: report.moderation_reason,
+		created_at: report.created_at,
+		updated_at: report.updated_at ?? report.created_at,
+		reviewed_at: report.reviewed_at ?? null
+	};
+};
+
+const dataUrlToFile = async (dataUrl: unknown, fallbackName: string) => {
+	if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+		return null;
+	}
+
+	const response = await fetch(dataUrl);
+	const blob = await response.blob();
+	const extension = blob.type.split('/')[1] || 'png';
+	const safeName = fallbackName.includes('.') ? fallbackName : `${fallbackName}.${extension}`;
+	return new File([blob], safeName, { type: blob.type });
+};

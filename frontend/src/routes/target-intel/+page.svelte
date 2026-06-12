@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { agentAvatar, dossierNav, targetImage } from '$lib/prototype/data';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { agentAvatar, dossierNav, targetImage } from '$lib/shared/config';
 </script>
 
 <TerminalShell

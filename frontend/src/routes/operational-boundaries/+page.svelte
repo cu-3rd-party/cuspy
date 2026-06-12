@@ -8,10 +8,10 @@
 		loadDossierDraft,
 		saveDossierDraft,
 		type DossierDraft
-	} from '$lib/prototype/dossierDraft';
-	import ProgressBar from '$lib/components/ProgressBar.svelte';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { boundariesImage, enlistNav } from '$lib/prototype/data';
+	} from '$lib/pages/profile-flow';
+	import { ProgressBar } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { boundariesImage, enlistNav } from '$lib/shared/config';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let toggles = $state([
@@ -32,7 +32,7 @@
 			status_authorized: m.common_authorized(),
 			status_restricted: m.common_restricted(),
 			active: false
-		},
+		}
 	]);
 
 	let bioStage = $state([0, 1]);
@@ -115,7 +115,8 @@
 					<span class="flex items-center justify-between">
 						<span class="font-label text-xs tracking-[0.2em] text-outline uppercase"
 							>{m.common_status()}:
-							<span class={toggle.active ? 'text-primary' : 'text-error'}>{toggle.active ? toggle.status_authorized : toggle.status_restricted}</span
+							<span class={toggle.active ? 'text-primary' : 'text-error'}
+								>{toggle.active ? toggle.status_authorized : toggle.status_restricted}</span
 							></span
 						>
 						<span

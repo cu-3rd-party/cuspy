@@ -27,5 +27,8 @@ export const handle: Handle = async ({ event, resolve }) =>
 	handleParaglide({
 		event,
 		resolve: (localizedEvent, opts) =>
-			handleSession({ event: localizedEvent, resolve: (sessionEvent) => resolve(sessionEvent, opts) })
+			handleSession({
+				event: localizedEvent,
+				resolve: (sessionEvent) => resolve(sessionEvent, opts)
+			})
 	});

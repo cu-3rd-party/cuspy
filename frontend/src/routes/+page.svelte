@@ -4,8 +4,8 @@
 	// import { goto } from '$app/navigation';
 	import { m } from '$lib/paraglide/messages.js';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { enlistNav, heroServerImage } from '$lib/prototype/data';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { enlistNav, heroServerImage } from '$lib/shared/config';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -33,9 +33,7 @@
 			return {
 				href: resolve('/agent-id'),
 				label: m.home_start_registration(),
-				copy: accessGranted
-					? m.home_system_breach_logged()
-					: m.home_registration_terminal_locked(),
+				copy: accessGranted ? m.home_system_breach_logged() : m.home_registration_terminal_locked(),
 				disabled: !accessGranted,
 				badge: null as string | null
 			};
@@ -270,7 +268,9 @@
 			<div class="flex h-full flex-col justify-between bg-surface-container-high p-6">
 				<div>
 					{#if cta.badge}
-						<div class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-[10px] font-bold tracking-[0.24em] text-on-primary-container uppercase">
+						<div
+							class="mb-4 inline-block bg-primary-container px-3 py-1 font-label text-[10px] font-bold tracking-[0.24em] text-on-primary-container uppercase"
+						>
 							{cta.badge}
 						</div>
 					{/if}
@@ -280,7 +280,9 @@
 						{m.home_mission_briefing()}
 					</h3>
 					{#if !isGuest}
-						<p class="mb-6 border-l-4 border-primary/50 bg-surface-container px-4 py-3 text-sm leading-relaxed text-on-surface-variant">
+						<p
+							class="mb-6 border-l-4 border-primary/50 bg-surface-container px-4 py-3 text-sm leading-relaxed text-on-surface-variant"
+						>
 							{cta.copy}
 						</p>
 					{/if}

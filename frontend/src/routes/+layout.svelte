@@ -3,13 +3,13 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
-	import BottomNav from '$lib/components/BottomNav.svelte';
-	import Sidebar from '$lib/components/Sidebar.svelte';
-	import TopBar from '$lib/components/TopBar.svelte';
+	import { BottomNav } from '$lib/shared/ui';
+	import { Sidebar } from '$lib/shared/ui';
+	import { TopBar } from '$lib/shared/ui';
 	import favicon from '$lib/assets/favicon.svg';
-	import { profileFlowTarget } from '$lib/profile-flow';
-	import { gameplayNav, dossierNav, enlistNav } from '$lib/prototype/data';
-	import { sessionUser, canAccessGameplay } from '$lib/stores/session';
+	import { profileFlowTarget } from '$lib/pages/profile-flow';
+	import { gameplayNav, dossierNav, enlistNav } from '$lib/shared/config';
+	import { sessionUser, canAccessGameplay } from '$lib/shared/model';
 	import './layout.css';
 
 	import type { LayoutProps } from './$types';

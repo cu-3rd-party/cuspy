@@ -3,9 +3,6 @@
   "info": {
     "title": "cukiller-backend",
     "description": "",
-    "license": {
-      "name": ""
-    },
     "version": "0.1.0"
   },
   "paths": {
@@ -29,7 +26,7 @@
         }
       }
     },
-    "/admin/profile-requests": {
+    "/admin/profile-requests/": {
       "get": {
         "tags": [
           "admin"
@@ -257,7 +254,7 @@
         ]
       }
     },
-    "/admin/user": {
+    "/admin/user/": {
       "get": {
         "tags": [
           "admin"
@@ -528,6 +525,124 @@
         ]
       }
     },
+    "/agent-data/": {
+      "post": {
+        "tags": [
+          "agent-data"
+        ],
+        "operationId": "create_agent_data",
+        "requestBody": {
+          "description": "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentDataMultipartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Agent data created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-data/{agent_data_id}": {
+      "get": {
+        "tags": [
+          "agent-data"
+        ],
+        "operationId": "get_agent_data",
+        "parameters": [
+          {
+            "name": "agent_data_id",
+            "in": "path",
+            "description": "Profile request id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentData"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agent data not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -743,7 +858,7 @@
         }
       }
     },
-    "/kill": {
+    "/kill/": {
       "get": {
         "tags": [
           "kill"
@@ -1051,7 +1166,7 @@
         ]
       }
     },
-    "/profile-requests": {
+    "/profile-requests/": {
       "get": {
         "tags": [
           "profile-request"
@@ -1360,6 +1475,58 @@
             "bearer_auth": []
           }
         ]
+      }
+    },
+    "/resource/{resource_id}": {
+      "get": {
+        "tags": [
+          "resource"
+        ],
+        "operationId": "get_resource",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "in": "path",
+            "description": "Resource id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resource metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Resource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/stats/rankings": {
@@ -1680,6 +1847,13 @@
   },
   "components": {
     "schemas": {
+      "AcademicLevel": {
+        "type": "string",
+        "enum": [
+          "Bachelor",
+          "Master"
+        ]
+      },
       "AdminUpdateProfileRequest": {
         "type": "object",
         "properties": {
@@ -1698,6 +1872,138 @@
           }
         }
       },
+      "AgentData": {
+        "type": "object",
+        "required": [
+          "agent_data_id",
+          "physical_contact_allowed",
+          "hugs_close_proximity_allowed"
+        ],
+        "properties": {
+          "agent_data_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "academic_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "academic_level": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AcademicLevel"
+              }
+            ]
+          },
+          "course_number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "bachelor_track": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BachelorTrack"
+              }
+            ]
+          },
+          "identification_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "identification_image_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "physical_contact_allowed": {
+            "type": "boolean"
+          },
+          "hugs_close_proximity_allowed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgentDataMetadata": {
+        "type": "object",
+        "required": [
+          "physical_contact_allowed",
+          "hugs_close_proximity_allowed"
+        ],
+        "properties": {
+          "codename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "academic_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "academic_level": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AcademicLevel"
+              }
+            ]
+          },
+          "course_number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "bachelor_track": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BachelorTrack"
+              }
+            ]
+          },
+          "identification_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "physical_contact_allowed": {
+            "type": "boolean"
+          },
+          "hugs_close_proximity_allowed": {
+            "type": "boolean"
+          }
+        }
+      },
       "AuthResponse": {
         "type": "object",
         "required": [
@@ -1712,6 +2018,14 @@
             "$ref": "#/components/schemas/UserResponse"
           }
         }
+      },
+      "BachelorTrack": {
+        "type": "string",
+        "enum": [
+          "SWE",
+          "AI",
+          "BA"
+        ]
       },
       "ConfirmKillRequest": {
         "type": "object",
@@ -1730,13 +2044,33 @@
           }
         }
       },
+      "CreateAgentDataMultipartRequest": {
+        "type": "object",
+        "required": [
+          "data",
+          "image"
+        ],
+        "properties": {
+          "data": {
+            "type": "string",
+            "example": "{\"codename\":\"Cipher\",\"physical_contact_allowed\":true,\"hugs_close_proximity_allowed\":false}"
+          },
+          "image": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
       "CreateProfileRequest": {
         "type": "object",
         "required": [
-          "requested_profile_data"
+          "agent_data_id"
         ],
         "properties": {
-          "requested_profile_data": {}
+          "agent_data_id": {
+            "type": "string",
+            "format": "uuid"
+          }
         }
       },
       "CreateUserRequest": {
@@ -2052,6 +2386,49 @@
           "details": {}
         }
       },
+      "Resource": {
+        "type": "object",
+        "required": [
+          "id",
+          "file_path",
+          "file_size",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "file_path": {
+            "type": "string"
+          },
+          "file_size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "mime_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "checksum": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "UpdateProfileRequest": {
         "type": "object",
         "properties": {
@@ -2185,6 +2562,14 @@
     {
       "name": "user",
       "description": "User endpoints"
+    },
+    {
+      "name": "agent-data",
+      "description": "Agent data endpoints"
+    },
+    {
+      "name": "resource",
+      "description": "Resource endpoints"
     },
     {
       "name": "kill",

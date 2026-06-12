@@ -2,19 +2,18 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { readAccessToken } from '$lib/auth/session';
 	import { m } from '$lib/paraglide/messages.js';
+	import { createAgentData, createProfileRequest } from '$lib/shared/api';
 	import {
 		canAccessStep,
 		loadDossierDraft,
 		saveDossierDraft,
 		type DossierDraft
-	} from '$lib/prototype/dossierDraft';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { enlistNav, verificationImage } from '$lib/prototype/data';
-	import { sessionUser } from '$lib/stores/session';
-	import type { AgentProfileData } from '$lib/stores/session';
-	import type { SessionUser } from '$lib/stores/session';
+	} from '$lib/pages/profile-flow';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { enlistNav, verificationImage } from '$lib/shared/config';
+	import { sessionUser } from '$lib/shared/model';
+	import type { AgentProfileData } from '$lib/shared/model';
 
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let profileImage = $derived(draft.agentId.identificationImage || verificationImage);
@@ -33,7 +32,7 @@
 			m.dossier_verification_hugs(),
 			draft.boundaries.hugsCloseProximity ? m.common_authorized() : m.common_restricted(),
 			statusTone(draft.boundaries.hugsCloseProximity)
-		],
+		]
 	] as const);
 
 	onMount(() => {
@@ -58,66 +57,28 @@
 	});
 
 	const handleSubmit = async () => {
-		const token = readAccessToken();
-		if (!token) {
-			submitError = 'Missing session token';
-			return;
-		}
-
 		isSubmitting = true;
 		submitError = '';
 
 		try {
 			const requestedProfileData = buildRequestedProfileData();
-			const response = await fetch('/profile-creation-requests', {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json',
-					authorization: `Bearer ${token}`
-				},
-				body: JSON.stringify({
-					requested_profile_data: requestedProfileData
-				})
-			});
-
-			if (!response.ok) {
-				const payload = await response.json().catch(() => ({ error: 'Request failed' }));
-				throw new Error(payload.error ?? 'Request failed');
-			}
-
-			const payload = (await response.json().catch(() => ({}))) as {
-				user?: SessionUser;
-			};
+			const agentData = await createAgentData(requestedProfileData);
+			await createProfileRequest(agentData.agentDataId as string);
 
 			draft.registrationCompleted = true;
 			draft.unlockedStep = 3;
 			saveDossierDraft(draft);
 
-			if (payload.user) {
-				sessionUser.set({
-					...payload.user,
-					agent_name: payload.user.agent_name ?? draft.agentId.codename,
-					agent_data: {
-						...requestedProfileData,
-						...payload.user.agent_data,
-						boundaries: requestedProfileData.boundaries
-					}
-				});
-			} else {
-				sessionUser.update((current) =>
-					current
-						? {
+			sessionUser.update((current) =>
+				current
+					? {
 							...current,
 							agent_name: draft.agentId.codename,
-							agent_data: {
-								...current.agent_data,
-								...requestedProfileData,
-								boundaries: requestedProfileData.boundaries
-							}
+							agent_data_id: agentData.agentDataId ?? current.agent_data_id,
+							agent_data: agentData
 						}
-						: current
-				);
-			}
+					: current
+			);
 
 			await goto(resolve('/dossier'), { invalidateAll: true });
 		} catch (error) {
@@ -239,14 +200,14 @@
 		</footer>
 
 		{#if submitError}
-			<div class="mb-6 bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase">
+			<div
+				class="mb-6 bg-error px-4 py-3 font-label text-[11px] tracking-[0.16em] text-white uppercase"
+			>
 				{submitError}
 			</div>
 		{/if}
 
-		<div
-			class="inset-x-0 mt-4 bg-linear-to-t from-background via-background to-transparent"
-		>
+		<div class="inset-x-0 mt-4 bg-linear-to-t from-background via-background to-transparent">
 			<div class="mx-auto flex justify-end md:pr-0">
 				<button
 					type="button"

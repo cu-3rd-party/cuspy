@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildSessionFlow, profileFlowTarget } from '$lib/profile-flow';
-import type { ProfileRequest, SessionUser } from '$lib/stores/session';
+import { buildSessionFlow, profileFlowTarget } from '$lib/pages/profile-flow';
+import type { ProfileRequest, SessionUser } from '$lib/shared/model';
 
 const makeUser = (): SessionUser => ({
 	user_id: 'user-1',
 	telegram_id: 1,
 	rating: 1000,
 	agent_name: 'Alpha',
+	agent_data_id: null,
 	agent_data: {},
 	is_admin: false,
 	created_at: '1',
@@ -16,6 +17,7 @@ const makeUser = (): SessionUser => ({
 const makeRequest = (status: ProfileRequest['status']): ProfileRequest => ({
 	profile_request_id: 'request-1',
 	user_id: 'user-1',
+	requested_profile_data_id: 'agent-data-1',
 	requested_profile_data: {},
 	status,
 	reviewer_note: null,
@@ -26,7 +28,7 @@ const makeRequest = (status: ProfileRequest['status']): ProfileRequest => ({
 
 describe('profile flow', () => {
 	it('routes pending users to waiting screen and keeps gameplay access', () => {
-		const flow = buildSessionFlow(makeUser(), makeRequest('sent'));
+		const flow = buildSessionFlow(makeUser(), makeRequest('pending'));
 
 		expect(flow.status).toBe('pending');
 		expect(flow.canPlay).toBe(true);

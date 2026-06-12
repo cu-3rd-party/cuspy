@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { m } from '$lib/paraglide/messages.js';
-	import ProfileStatePanel from '$lib/components/ProfileStatePanel.svelte';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { agentAvatar, dossierNav } from '$lib/prototype/data';
-	import { sessionUser, type SessionFlow } from '$lib/stores/session';
+	import { ProfileStatePanel } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { agentAvatar, dossierNav } from '$lib/shared/config';
+	import { sessionUser, type SessionFlow } from '$lib/shared/model';
 
 	let { data } = $props<{
 		data: {
@@ -15,7 +15,9 @@
 
 	let flow = $derived(data.sessionFlow ?? null);
 	let user = $derived(data.sessionUser ?? flow?.user ?? $sessionUser);
-	let codename = $derived((user?.agent_data?.codename as string | undefined) || user?.agent_name || 'AGENT');
+	let codename = $derived(
+		(user?.agent_data?.codename as string | undefined) || user?.agent_name || 'AGENT'
+	);
 	let clearance = $derived(user?.rating ? `Rating ${user.rating}` : m.dossier_clearance_level_4());
 	let reviewerNote = $derived(
 		flow?.latestProfileRequest?.reviewer_note?.trim() ||
@@ -122,28 +124,60 @@
 
 		if (flow.status === 'no_profile') {
 			return [
-				{ href: resolve('/agent-id'), label: 'Resume registration', copy: 'Transmit missing identity data' },
-				{ href: resolve('/'), label: 'Return to landing terminal', copy: 'Review onboarding channel' }
+				{
+					href: resolve('/agent-id'),
+					label: 'Resume registration',
+					copy: 'Transmit missing identity data'
+				},
+				{
+					href: resolve('/'),
+					label: 'Return to landing terminal',
+					copy: 'Review onboarding channel'
+				}
 			];
 		}
 
 		if (flow.status === 'rejected') {
 			return [
-				{ href: resolve('/agent-id'), label: 'Reload profile editor', copy: 'Patch rejected identity packet' },
-				{ href: resolve('/dossier'), label: 'Review rejection state', copy: 'Inspect reviewer note and queue state' }
+				{
+					href: resolve('/agent-id'),
+					label: 'Reload profile editor',
+					copy: 'Patch rejected identity packet'
+				},
+				{
+					href: resolve('/dossier'),
+					label: 'Review rejection state',
+					copy: 'Inspect reviewer note and queue state'
+				}
 			];
 		}
 
 		if (flow.status === 'pending') {
 			return [
-				{ href: resolve('/waiting-clearance'), label: 'Open waiting screen', copy: 'Track review queue and live access' },
-				{ href: resolve('/rankings'), label: m.nav_rank(), copy: 'Monitor operator standings while waiting' },
-				{ href: resolve('/surveillance'), label: 'Surveillance', copy: 'Preview field network channels' }
+				{
+					href: resolve('/waiting-clearance'),
+					label: 'Open waiting screen',
+					copy: 'Track review queue and live access'
+				},
+				{
+					href: resolve('/rankings'),
+					label: m.nav_rank(),
+					copy: 'Monitor operator standings while waiting'
+				},
+				{
+					href: resolve('/surveillance'),
+					label: 'Surveillance',
+					copy: 'Preview field network channels'
+				}
 			];
 		}
 
 		return [
-			{ href: resolve('/target-intel'), label: m.dossier_view_target_intel(), copy: 'Track active target package' },
+			{
+				href: resolve('/target-intel'),
+				label: m.dossier_view_target_intel(),
+				copy: 'Track active target package'
+			},
 			{ href: resolve('/rankings'), label: m.nav_rank(), copy: 'Review operator standings' },
 			{ href: resolve('/surveillance'), label: 'Surveillance', copy: 'Monitor field network' }
 		];
@@ -176,7 +210,8 @@
 			<section class="mb-12 border-b border-outline-variant/10 pb-8">
 				<div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
 					<div>
-						<span class="mb-2 block font-headline text-xs tracking-[0.3em] text-primary/60 uppercase"
+						<span
+							class="mb-2 block font-headline text-xs tracking-[0.3em] text-primary/60 uppercase"
 							>{m.dossier_subject_dossier()}</span
 						>
 						<h2 class="font-headline text-5xl font-bold tracking-tight sm:text-7xl">
@@ -190,7 +225,9 @@
 							<span class="font-headline text-xs font-bold tracking-[0.2em] text-outline"
 								>LOC: [REDACTED]</span
 							>
-							<span class="bg-surface-container px-3 py-1 font-headline text-xs font-bold tracking-[0.2em] text-secondary uppercase">
+							<span
+								class="bg-surface-container px-3 py-1 font-headline text-xs font-bold tracking-[0.2em] text-secondary uppercase"
+							>
 								{stateLabel}
 							</span>
 						</div>
@@ -213,8 +250,10 @@
 			<section class="grid gap-4 md:grid-cols-3">
 				{#each statusCards as [label, value] (label)}
 					<div class="border-l-4 border-primary bg-surface-container p-6">
-						<div class="mb-3 font-headline text-[10px] tracking-[0.2em] text-primary uppercase">{label}</div>
-						<p class="font-headline text-2xl font-bold uppercase text-on-surface">{value}</p>
+						<div class="mb-3 font-headline text-[10px] tracking-[0.2em] text-primary uppercase">
+							{label}
+						</div>
+						<p class="font-headline text-2xl font-bold text-on-surface uppercase">{value}</p>
 					</div>
 				{/each}
 			</section>
@@ -225,24 +264,30 @@
 						class="relative flex min-h-80 flex-col justify-between overflow-hidden bg-surface-container-low p-8 md:col-span-8"
 					>
 						<div class="absolute top-0 right-0 p-4 opacity-10">
-							<span class="material-symbols-outlined text-9xl" style="font-variation-settings:'FILL' 1"
-								>shield</span
+							<span
+								class="material-symbols-outlined text-9xl"
+								style="font-variation-settings:'FILL' 1">shield</span
 							>
 						</div>
 						<div class="relative z-10">
-							<span class="mb-6 block font-headline text-[10px] tracking-[0.2em] text-outline uppercase"
+							<span
+								class="mb-6 block font-headline text-[10px] tracking-[0.2em] text-outline uppercase"
 								>{m.dossier_combat_performance()}</span
 							>
 							<div class="mb-8 flex items-center gap-8">
 								<div>
-									<div class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase">
+									<div
+										class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase"
+									>
 										{m.dossier_current_tier()}
 									</div>
 									<div class="font-headline text-4xl font-bold">{m.dossier_silver_iv()}</div>
 								</div>
 								<div class="h-12 w-px bg-outline-variant/30"></div>
 								<div>
-									<div class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase">
+									<div
+										class="mb-1 font-headline text-xs tracking-[0.2em] text-on-surface/60 uppercase"
+									>
 										{m.dossier_elo_rating()}
 									</div>
 									<div class="font-headline text-4xl font-bold text-primary">1450</div>
@@ -259,9 +304,8 @@
 								>
 							</div>
 							<div class="segment-bar grid-cols-6">
-								<span class="active"></span><span class="active"></span><span class="active"></span><span
-									class="active"
-								></span><span></span><span></span>
+								<span class="active"></span><span class="active"></span><span class="active"
+								></span><span class="active"></span><span></span><span></span>
 							</div>
 						</div>
 					</div>
@@ -286,13 +330,17 @@
 										>
 											{m.dossier_hunting()}
 										</div>
-										<div class="text-sm text-on-secondary-container/90">{m.dossier_target_broker()}</div>
+										<div class="text-sm text-on-secondary-container/90">
+											{m.dossier_target_broker()}
+										</div>
 									</div>
 								</div>
 								<div class="flex gap-4">
 									<span class="material-symbols-outlined text-2xl text-error">warning</span>
 									<div>
-										<div class="font-headline text-xs font-bold tracking-[0.2em] text-error uppercase">
+										<div
+											class="font-headline text-xs font-bold tracking-[0.2em] text-error uppercase"
+										>
 											{m.dossier_under_pursuit()}
 										</div>
 										<div class="text-sm text-error/90">{m.dossier_threat_unknown_agent()}</div>
@@ -312,10 +360,19 @@
 
 			<section class={`grid gap-4 ${quickLinks.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
 				{#each quickLinks as link (link.href)}
-					<a href={link.href} class="group border border-outline-variant/20 bg-surface-container p-6 transition-colors hover:border-primary/40 hover:bg-surface-container-high">
-						<div class="font-headline text-sm font-bold tracking-[0.2em] text-primary uppercase">{link.label}</div>
+					<a
+						href={link.href}
+						class="group border border-outline-variant/20 bg-surface-container p-6 transition-colors hover:border-primary/40 hover:bg-surface-container-high"
+					>
+						<div class="font-headline text-sm font-bold tracking-[0.2em] text-primary uppercase">
+							{link.label}
+						</div>
 						<p class="mt-3 text-sm text-on-surface-variant">{link.copy}</p>
-						<div class="mt-6 font-label text-[10px] tracking-[0.24em] text-outline uppercase group-hover:text-primary">Access route</div>
+						<div
+							class="mt-6 font-label text-[10px] tracking-[0.24em] text-outline uppercase group-hover:text-primary"
+						>
+							Access route
+						</div>
 					</a>
 				{/each}
 			</section>
@@ -348,7 +405,9 @@
 					>
 						<div class="relative z-10">
 							<span class="material-symbols-outlined mb-2 text-3xl text-outline">add_circle</span>
-							<div class="font-headline text-[10px] font-bold tracking-[0.2em] text-outline uppercase">
+							<div
+								class="font-headline text-[10px] font-bold tracking-[0.2em] text-outline uppercase"
+							>
 								{m.dossier_new_mission_available()}
 							</div>
 						</div>

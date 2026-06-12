@@ -85,7 +85,12 @@ const createTempImage = () => {
 const createDriver = () => {
 	const options = new chrome.Options()
 		.setChromeBinaryPath(chromium.executablePath())
-		.addArguments('--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--window-size=1440,1200');
+		.addArguments(
+			'--headless=new',
+			'--no-sandbox',
+			'--disable-dev-shm-usage',
+			'--window-size=1440,1200'
+		);
 
 	return new Builder().forBrowser('chrome').setChromeOptions(options).build();
 };
@@ -120,7 +125,11 @@ const waitForUrl = async (driver, fragment, timeout = 15000) => {
 };
 
 const waitForText = async (driver, text, timeout = 15000) => {
-	await waitVisible(driver, By.xpath(`//*[contains(normalize-space(.), ${JSON.stringify(text)})]`), timeout);
+	await waitVisible(
+		driver,
+		By.xpath(`//*[contains(normalize-space(.), ${JSON.stringify(text)})]`),
+		timeout
+	);
 };
 
 const logStep = (message) => {
@@ -142,7 +151,9 @@ const registerClient = async (driver, client, imagePath) => {
 
 	await waitForUrl(driver, '/operational-boundaries');
 
-	const token = await driver.executeScript('return window.localStorage.getItem("backend-access-token")');
+	const token = await driver.executeScript(
+		'return window.localStorage.getItem("backend-access-token")'
+	);
 	if (!token) throw new Error(`Missing localStorage token for ${client.codename}`);
 
 	await driver.manage().addCookie({
@@ -156,7 +167,10 @@ const registerClient = async (driver, client, imagePath) => {
 	await driver.executeScript('arguments[0].click()', actionButtons.at(-1));
 	await waitForUrl(driver, '/dossier-verification');
 	await click(driver, By.css('button[type="button"]'));
-	await driver.wait(async () => !(await driver.getCurrentUrl()).includes('/dossier-verification'), 15000);
+	await driver.wait(
+		async () => !(await driver.getCurrentUrl()).includes('/dossier-verification'),
+		15000
+	);
 
 	await driver.get(`${BASE_URL}/`);
 	await waitForUrl(driver, '/waiting-clearance');
@@ -171,7 +185,9 @@ const approveClient = async (driver, codename) => {
 	await click(driver, By.css('button[name="decision"][value="confirmed"]'));
 	await waitVisible(
 		driver,
-		By.xpath(`//button[contains(., ${JSON.stringify(codename)})]//*[contains(normalize-space(.), "confirmed")]`),
+		By.xpath(
+			`//button[contains(., ${JSON.stringify(codename)})]//*[contains(normalize-space(.), "confirmed")]`
+		),
 		15000
 	);
 	logStep(`approve done ${codename}`);
@@ -192,12 +208,20 @@ const run = async () => {
 	try {
 		await waitForPort(3001);
 		await runCommand('npm', ['run', 'build'], { BACKEND_URL });
-		preview = startProcess('npm', ['run', 'preview', '--', '--host', '127.0.0.1', '--port', '4173'], {
-			BACKEND_URL
-		});
+		preview = startProcess(
+			'npm',
+			['run', 'preview', '--', '--host', '127.0.0.1', '--port', '4173'],
+			{
+				BACKEND_URL
+			}
+		);
 		await waitForPort(4173);
 
-		const [clientA, clientB, admin] = await Promise.all([createDriver(), createDriver(), createDriver()]);
+		const [clientA, clientB, admin] = await Promise.all([
+			createDriver(),
+			createDriver(),
+			createDriver()
+		]);
 		drivers.push(clientA, clientB, admin);
 
 		const clients = [

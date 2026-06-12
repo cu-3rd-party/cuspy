@@ -318,12 +318,12 @@ const server = http.createServer((request, response) => {
 			killReports = killReports.map((entry) =>
 				entry.kill_report_id === reportId
 					? {
-						...entry,
-						status: payload.status ?? entry.status,
-						reviewer_note: payload.reviewer_note ?? entry.reviewer_note,
-						reviewed_at: '1710000500',
-						updated_at: '1710000500'
-					}
+							...entry,
+							status: payload.status ?? entry.status,
+							reviewer_note: payload.reviewer_note ?? entry.reviewer_note,
+							reviewed_at: '1710000500',
+							updated_at: '1710000500'
+						}
 					: entry
 			);
 
@@ -357,12 +357,12 @@ const server = http.createServer((request, response) => {
 			adminRequests = adminRequests.map((entry) =>
 				entry.profile_request_id === requestId
 					? {
-						...entry,
-						status: payload.status ?? entry.status,
-						reviewer_note: payload.reviewer_note ?? entry.reviewer_note,
-						reviewed_at: '1710000300',
-						updated_at: '1710000300'
-					}
+							...entry,
+							status: payload.status ?? entry.status,
+							reviewer_note: payload.reviewer_note ?? entry.reviewer_note,
+							reviewed_at: '1710000300',
+							updated_at: '1710000300'
+						}
 					: entry
 			);
 
@@ -386,7 +386,9 @@ const server = http.createServer((request, response) => {
 				).length,
 				approved_deaths: 0
 			}))
-			.sort((left, right) => right.approved_kills - left.approved_kills || right.rating - left.rating)
+			.sort(
+				(left, right) => right.approved_kills - left.approved_kills || right.rating - left.rating
+			)
 			.map((entry, index) => ({ rank: index + 1, ...entry }));
 
 		return json(response, 200, rankingUsers);

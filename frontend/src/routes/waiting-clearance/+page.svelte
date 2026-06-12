@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import ProfileStatePanel from '$lib/components/ProfileStatePanel.svelte';
-	import TerminalShell from '$lib/components/TerminalShell.svelte';
-	import { agentAvatar, gameplayNav } from '$lib/prototype/data';
-	import type { SessionFlow } from '$lib/stores/session';
+	import { ProfileStatePanel } from '$lib/shared/ui';
+	import { TerminalShell } from '$lib/shared/ui';
+	import { agentAvatar, gameplayNav } from '$lib/shared/config';
+	import type { SessionFlow } from '$lib/shared/model';
 
 	let { data } = $props<{
 		data: {
@@ -47,14 +47,21 @@
 		<section class="border-b border-outline-variant/10 pb-8">
 			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
 				<div>
-					<div class="font-headline text-xs tracking-[0.3em] text-primary/60 uppercase">Review queue live</div>
-					<h1 class="mt-2 font-headline text-5xl font-bold tracking-tight sm:text-7xl">{codename}</h1>
+					<div class="font-headline text-xs tracking-[0.3em] text-primary/60 uppercase">
+						Review queue live
+					</div>
+					<h1 class="mt-2 font-headline text-5xl font-bold tracking-tight sm:text-7xl">
+						{codename}
+					</h1>
 					<p class="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-						Profile sent. Moderator confirmation still pending. Field access stays live, so user can keep playing while queue advances.
+						Profile sent. Moderator confirmation still pending. Field access stays live, so user can
+						keep playing while queue advances.
 					</p>
 				</div>
 				<div class="bg-surface-container px-4 py-3 text-right">
-					<div class="font-label text-[10px] tracking-[0.24em] text-outline uppercase">Submitted</div>
+					<div class="font-label text-[10px] tracking-[0.24em] text-outline uppercase">
+						Submitted
+					</div>
 					<div class="mt-2 font-headline text-sm font-bold text-secondary">{submittedAt}</div>
 				</div>
 			</div>
@@ -72,22 +79,31 @@
 
 		<section class="grid gap-4 md:grid-cols-3">
 			<div class="border-l-4 border-primary bg-surface-container p-6">
-				<div class="font-headline text-[10px] tracking-[0.2em] text-primary uppercase">Queue state</div>
+				<div class="font-headline text-[10px] tracking-[0.2em] text-primary uppercase">
+					Queue state
+				</div>
 				<p class="mt-3 font-headline text-2xl font-bold uppercase">under review</p>
 			</div>
 			<div class="border-l-4 border-secondary bg-surface-container p-6">
-				<div class="font-headline text-[10px] tracking-[0.2em] text-secondary uppercase">Gameplay access</div>
+				<div class="font-headline text-[10px] tracking-[0.2em] text-secondary uppercase">
+					Gameplay access
+				</div>
 				<p class="mt-3 font-headline text-2xl font-bold uppercase">enabled</p>
 			</div>
 			<div class="border-l-4 border-outline bg-surface-container p-6">
-				<div class="font-headline text-[10px] tracking-[0.2em] text-outline uppercase">Delivery channel</div>
+				<div class="font-headline text-[10px] tracking-[0.2em] text-outline uppercase">
+					Delivery channel
+				</div>
 				<p class="mt-3 font-headline text-2xl font-bold uppercase">telegram</p>
 			</div>
 		</section>
 
 		<section class="grid gap-4 md:grid-cols-3">
 			{#each quickLinks as item (item.href)}
-				<a href={item.href} class="bg-surface-container-low p-6 transition-colors hover:bg-surface-container">
+				<a
+					href={item.href}
+					class="bg-surface-container-low p-6 transition-colors hover:bg-surface-container"
+				>
 					<div class="font-headline text-sm font-bold uppercase">{item.label}</div>
 					<p class="mt-3 text-sm leading-relaxed text-on-surface-variant">{item.copy}</p>
 				</a>
