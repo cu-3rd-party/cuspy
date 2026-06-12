@@ -1,4 +1,4 @@
-#[derive(clap::Parser)]
+#[derive(clap::Parser, Clone, Debug)]
 pub struct Config {
     #[clap(long, env)]
     pub database_url: String,
@@ -12,19 +12,22 @@ pub struct Config {
     #[clap(long, env)]
     pub jwt_secret: String,
 
-    #[arg(env = "S3_ACCESS_KEY", default_value = "")]
+    #[clap(long, env, default_value = "http://localhost:5173")]
+    pub cors_origin: String,
+
+    #[clap(env = "S3_ACCESS_KEY", default_value = "")]
     pub access_key: String,
 
-    #[arg(env = "S3_SECRET_KEY", default_value = "")]
+    #[clap(env = "S3_SECRET_KEY", default_value = "")]
     pub secret_key: String,
 
-    #[arg(env = "S3_ENDPOINT", default_value = "")]
+    #[clap(env = "S3_ENDPOINT", default_value = "")]
     pub endpoint: String,
 
-    #[arg(env = "S3_REGION", default_value = "us-east-1")]
+    #[clap(env = "S3_REGION", default_value = "us-east-1")]
     pub region: String,
 
-    #[arg(env = "S3_BUCKET_NAME", default_value = "cukiller")]
+    #[clap(env = "S3_BUCKET_NAME", default_value = "cukiller")]
     pub bucket_name: String,
 
     #[clap(long, env)]

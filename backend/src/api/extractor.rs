@@ -4,7 +4,6 @@ use crate::api::models::auth::AuthClaims;
 use http::request::Parts;
 use http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, Validation, decode};
-use log::info;
 use uuid::Uuid;
 
 #[cfg(feature = "telegram-auth")]

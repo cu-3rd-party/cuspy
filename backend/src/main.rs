@@ -110,6 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state = ApiContext {
         db,
         bucket,
+        config: config.clone(), // просто на всякий случай
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,
         #[cfg(feature = "telegram-auth")]

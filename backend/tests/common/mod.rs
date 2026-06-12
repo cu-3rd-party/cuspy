@@ -7,8 +7,9 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header},
 };
+use clap::Parser;
 use cukiller_backend::api::helpers;
-use cukiller_backend::{ApiContext, build_app};
+use cukiller_backend::{ApiContext, build_app, config::Config};
 #[cfg(feature = "telegram-auth")]
 use hmac::{Hmac, Mac};
 use http_body_util::BodyExt;
@@ -201,6 +202,7 @@ impl TestContext {
             bucket: test_bucket(),
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
+            config: Config::parse(),
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
             #[cfg(feature = "telegram-auth")]

@@ -24,11 +24,13 @@ use serde_json::{Value, json};
 use sqlx::AnyPool;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
+use crate::config::Config;
 
 #[derive(Clone)]
 pub struct ApiContext {
     pub db: AnyPool,
     pub bucket: Box<Bucket>,
+    pub config: Config,
     pub admin_secret: String,
     pub jwt_secret: String,
     #[cfg(feature = "telegram-auth")]
@@ -43,7 +45,7 @@ pub fn build_app(state: ApiContext) -> Router {
         .route("/", axum::routing::get(api::root))
         .layer(
             CorsLayer::new()
-                .allow_origin(HeaderValue::from_str("http://localhost:5173").expect("cors origin"))
+                .allow_origin(HeaderValue::from_str(&state.config.cors_origin).expect("cors origin"))
                 .allow_methods([
                     Method::GET,
                     Method::POST,

@@ -207,6 +207,7 @@ pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord,
 
 #[cfg(test)]
 mod tests {
+    use clap::Parser;
     use super::*;
     #[cfg(feature = "telegram-auth")]
     use hmac::{Hmac, Mac};
@@ -273,6 +274,7 @@ mod tests {
                 .expect("lazy pool"),
             bucket: test_bucket(),
             admin_secret: "admin-secret".into(),
+            config: crate::config::Config::parse(),
             jwt_secret: "jwt-secret".into(),
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: "bot-token".into(),
