@@ -1,9 +1,9 @@
 use crate::api::extractor::AuthUser;
+use crate::api::helpers;
 use crate::api::models::profile::{
     CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::helpers;
 use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::State;
@@ -36,16 +36,16 @@ pub async fn create_profile_request(
             requested_profile_data_id,
             status
         )
-        values ($1, $2, $3, 'sent')
+        values (cast($1 as uuid), cast($2 as uuid), cast($3 as uuid), 'sent')
         returning
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
     )
     .bind(db_uuid(Uuid::now_v7()))

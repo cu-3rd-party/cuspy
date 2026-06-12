@@ -1,10 +1,16 @@
-use crate::api::extractor::AuthUser;
-use crate::api::models::auth::{AuthResponse, AuthUserRecord, LoginRequest};
-use crate::api::models::{db_uuid, ApiError};
-use crate::api::helpers;
 use crate::ApiContext;
-use axum::extract::State;
+use crate::api::helpers;
+use crate::api::models::ApiError;
+use crate::api::models::auth::{AuthResponse, AuthUserRecord, LoginRequest};
+#[cfg(feature = "telegram-auth")]
+use crate::api::models::db_uuid;
+#[cfg(feature = "telegram-auth")]
+use crate::telegram;
 use axum::Json;
+use axum::extract::State;
+#[cfg(feature = "telegram-auth")]
+use http::HeaderMap;
+#[cfg(feature = "telegram-auth")]
 use sqlx::Row;
 
 #[utoipa::path(
@@ -23,13 +29,23 @@ use sqlx::Row;
 )]
 pub async fn login(
     State(state): State<ApiContext>,
-    AuthUser(user): AuthUser,
+    #[cfg(feature = "telegram-auth")] headers: HeaderMap,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, ApiError> {
+    #[cfg(feature = "telegram-auth")]
+    let _ = &payload;
+
     let login_identifier: String;
     #[cfg(feature = "telegram-auth")]
     {
-        login_identifier = user.tg.user.id.to_string();
+        let init_data = headers
+            .get("x-telegram-init-data")
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| {
+                telegram::TelegramInitData::from_header(&state.telegram_bot_token, value)
+            })
+            .ok_or(ApiError::Unauthorized)?;
+        login_identifier = init_data.user.id.to_string();
     }
     #[cfg(not(feature = "telegram-auth"))]
     {

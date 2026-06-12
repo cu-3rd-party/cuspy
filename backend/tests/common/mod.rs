@@ -7,12 +7,16 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header},
 };
-#[cfg(not(feature = "telegram-auth"))]
 use cukiller_backend::api::helpers;
 use cukiller_backend::{ApiContext, build_app};
+#[cfg(feature = "telegram-auth")]
+use hmac::{Hmac, Mac};
 use http_body_util::BodyExt;
+use s3::creds::Credentials;
+use s3::{Bucket, Region};
 use serde_json::{Value, json};
-#[cfg(not(feature = "telegram-auth"))]
+#[cfg(feature = "telegram-auth")]
+use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::any::AnyPoolOptions;
 use sqlx::postgres::PgPoolOptions;
@@ -24,6 +28,36 @@ pub const JWT_SECRET: &str = "test-jwt-secret";
 #[cfg(feature = "telegram-auth")]
 pub const TELEGRAM_BOT_TOKEN: &str = "test-bot-token";
 
+#[cfg(feature = "telegram-auth")]
+pub fn telegram_init_data(user_id: i64) -> String {
+    type HmacSha256 = Hmac<Sha256>;
+
+    let user = json!({
+        "id": user_id,
+        "first_name": "Test",
+        "username": format!("user_{user_id}")
+    })
+    .to_string();
+
+    let mut pairs = [
+        "auth_date=1700000000".to_string(),
+        format!("query_id=test-query-{user_id}"),
+        format!("user={user}"),
+    ];
+    pairs.sort();
+    let data_check_string = pairs.join("\n");
+
+    let secret = Sha256::digest(TELEGRAM_BOT_TOKEN.as_bytes());
+    let mut mac = HmacSha256::new_from_slice(secret.as_slice()).expect("hmac key");
+    mac.update(data_check_string.as_bytes());
+    let hash = hex::encode(mac.finalize().into_bytes());
+
+    format!(
+        "query_id=test-query-{user_id}&user={}&auth_date=1700000000&hash={hash}",
+        url::form_urlencoded::byte_serialize(user.as_bytes()).collect::<String>()
+    )
+}
+
 pub struct TestContext {
     pub app: Router,
     #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
@@ -33,6 +67,25 @@ pub struct TestContext {
     db_name: String,
     docker_container_name: Option<String>,
     admin_database_url: String,
+}
+
+fn test_bucket() -> Box<Bucket> {
+    Bucket::new(
+        "test-bucket",
+        Region::Custom {
+            region: "us-east-1".into(),
+            endpoint: "http://127.0.0.1:9000".into(),
+        },
+        Credentials {
+            access_key: Some("test".into()),
+            secret_key: Some("test".into()),
+            security_token: None,
+            session_token: None,
+            expiration: None,
+        },
+    )
+    .expect("test bucket")
+    .with_path_style()
 }
 
 impl TestContext {
@@ -145,6 +198,7 @@ impl TestContext {
 
         let state = ApiContext {
             db: any_test_pool,
+            bucket: test_bucket(),
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
             #[cfg(feature = "telegram-auth")]
@@ -194,6 +248,43 @@ impl TestContext {
             })
             .expect("build request");
 
+        self.send(request).await
+    }
+
+    pub async fn multipart(
+        &self,
+        path: &str,
+        boundary: &str,
+        body: String,
+        bearer: Option<&str>,
+        admin_secret: Option<&str>,
+        telegram_init_data: Option<&str>,
+    ) -> (StatusCode, Value) {
+        let mut builder = Request::builder().method("POST").uri(path).header(
+            header::CONTENT_TYPE,
+            format!("multipart/form-data; boundary={boundary}"),
+        );
+
+        if let Some(token) = bearer {
+            builder = builder.header(header::AUTHORIZATION, format!("Bearer {token}"));
+        }
+
+        if let Some(secret) = admin_secret {
+            builder = builder.header("x-admin-secret", secret);
+        }
+
+        if let Some(init_data) = telegram_init_data {
+            builder = builder.header("x-telegram-init-data", init_data);
+        }
+
+        let request = builder
+            .body(Body::from(body))
+            .expect("build multipart request");
+
+        self.send(request).await
+    }
+
+    pub async fn send(&self, request: Request<Body>) -> (StatusCode, Value) {
         let response = self
             .app
             .clone()
@@ -297,13 +388,40 @@ pub async fn register_user(
     (token, body["user"].clone())
 }
 
-#[cfg(not(feature = "telegram-auth"))]
+pub async fn create_agent_data(ctx: &TestContext, codename: &str) -> Value {
+    let boundary = format!("boundary-{}", uuid::Uuid::now_v7());
+    let data = json!({
+        "codename": codename,
+        "academic_group": "CS-1",
+        "academic_level": "Bachelor",
+        "course_number": 2,
+        "bachelor_track": "SWE",
+        "identification_name": format!("{codename} Name"),
+        "physical_contact_allowed": true,
+        "hugs_close_proximity_allowed": false
+    })
+    .to_string();
+    let body = format!(
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{data}\r\n--{boundary}--\r\n"
+    );
+    let (status, body) = ctx
+        .multipart("/agent-data", &boundary, body, None, None, None)
+        .await;
+
+    assert_eq!(status, StatusCode::OK, "create_agent_data body: {body}");
+    body
+}
+
+#[allow(dead_code)]
 pub async fn seed_admin_user(
     ctx: &TestContext,
     email: &str,
     telegram_id: i64,
     agent_name: &str,
 ) -> String {
+    #[cfg(feature = "telegram-auth")]
+    let _ = email;
+
     let user_id = uuid::Uuid::now_v7();
     sqlx::query(
         r#"
@@ -333,6 +451,25 @@ pub async fn seed_admin_user(
     .await
     .expect("insert admin rating history");
 
+    #[cfg(not(feature = "telegram-auth"))]
+    let (login_identifier, password_hash, login_payload, telegram_init_data) = (
+        email.to_string(),
+        Some(helpers::hash_password("password123").expect("hash password")),
+        json!({ "email": email, "password": "password123" }),
+        None::<String>,
+    );
+
+    #[cfg(feature = "telegram-auth")]
+    let (login_identifier, password_hash, login_payload, telegram_init_data) = {
+        let telegram_init_data = telegram_init_data(telegram_id);
+        (
+            telegram_id.to_string(),
+            None::<String>,
+            json!({}),
+            Some(telegram_init_data),
+        )
+    };
+
     sqlx::query(
         r#"
         insert into auth_user (auth_user_id, user_id, login_identifier, password_hash)
@@ -341,10 +478,8 @@ pub async fn seed_admin_user(
     )
     .bind(uuid::Uuid::now_v7())
     .bind(user_id)
-    .bind(email)
-    .bind(Some(
-        helpers::hash_password("password123").expect("hash password"),
-    ))
+    .bind(login_identifier)
+    .bind(password_hash)
     .execute(&ctx.db)
     .await
     .expect("insert admin auth user");
@@ -353,10 +488,10 @@ pub async fn seed_admin_user(
         .json(
             "POST",
             "/auth/login",
-            Some(json!({ "email": email, "password": "password123" })),
+            Some(login_payload),
             None,
             None,
-            None,
+            telegram_init_data.as_deref(),
         )
         .await;
     assert_eq!(status, StatusCode::OK);
@@ -366,17 +501,51 @@ pub async fn seed_admin_user(
         .to_string()
 }
 
-#[cfg(not(feature = "telegram-auth"))]
+#[allow(dead_code)]
 pub async fn fetch_user_agent_data(ctx: &TestContext, user_id: &str) -> Value {
-    sqlx::query(r#"select * from "agent_data" where agent_data_id = (select agent_data_id from "user" where user_id = $1)"#)
-        .bind(uuid::Uuid::parse_str(user_id).expect("uuid"))
-        .fetch_one(&ctx.db)
-        .await
-        .expect("fetch user agent data")
-        .get::<Value, _>(0)
+    sqlx::query(
+        r#"
+        select jsonb_build_object(
+            'codename', codename,
+            'academic_group', academic_group,
+            'academic_level', academic_level,
+            'course_number', course_number,
+            'bachelor_track', bachelor_track,
+            'identification_name', identification_name,
+            'physical_contact_allowed', physical_contact_allowed,
+            'hugs_close_proximity_allowed', hugs_close_proximity_allowed
+        ) as agent_data
+        from "agent_data"
+        where agent_data_id = (select agent_data_id from "user" where user_id = $1)
+        "#,
+    )
+    .bind(uuid::Uuid::parse_str(user_id).expect("uuid"))
+    .fetch_one(&ctx.db)
+    .await
+    .expect("fetch user agent data")
+    .get::<Value, _>("agent_data")
 }
 
-#[cfg(not(feature = "telegram-auth"))]
+#[allow(dead_code)]
+pub async fn seed_resource(ctx: &TestContext) -> String {
+    sqlx::query_scalar::<_, uuid::Uuid>(
+        r#"
+        insert into "resource" (file_path, file_size, mime_type, checksum)
+        values ($1, $2, $3, $4)
+        returning resource_id
+        "#,
+    )
+    .bind("test/resource.txt")
+    .bind(12_i64)
+    .bind("text/plain")
+    .bind(format!("checksum-{}", uuid::Uuid::now_v7()))
+    .fetch_one(&ctx.db)
+    .await
+    .expect("seed resource")
+    .to_string()
+}
+
+#[allow(dead_code)]
 pub async fn fetch_latest_audit_actor(ctx: &TestContext, matched_path: &str) -> Option<String> {
     sqlx::query(
         r#"

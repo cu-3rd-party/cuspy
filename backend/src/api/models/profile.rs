@@ -1,7 +1,7 @@
 use crate::api::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{any::AnyRow, FromRow, Row};
+use sqlx::{FromRow, Row, any::AnyRow};
 use utoipa::ToSchema;
 use uuid::Uuid;
 

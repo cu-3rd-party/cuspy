@@ -15,12 +15,11 @@ pub mod update;
 
 pub fn router() -> Router<ApiContext> {
     Router::new()
+        .route("/", get(list_profile_requests).post(create_profile_request))
         .route(
-            "/",
-            get(list_profile_requests)
-                .post(create_profile_request)
+            "/{request_id}",
+            get(get_profile_request)
                 .put(update_profile_request)
                 .delete(delete_profile_request),
         )
-        .route("/{request_id}", get(get_profile_request))
 }

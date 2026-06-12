@@ -1,7 +1,5 @@
 use hmac::digest::Digest;
 use hmac::{Hmac, Mac};
-use http::HeaderValue;
-use serde::Deserialize;
 use sha2::Sha256;
 use url::form_urlencoded;
 

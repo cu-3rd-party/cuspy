@@ -1,5 +1,6 @@
 use crate::ApiContext;
 use crate::api::models::db_uuid;
+#[cfg(not(feature = "telegram-auth"))]
 use log::info;
 #[cfg(feature = "telegram-auth")]
 use log::warn;
@@ -33,7 +34,11 @@ pub async fn notify_user(state: &ApiContext, user_id: Uuid, message: impl Into<S
 
     #[cfg(feature = "telegram-auth")]
     if let Some(telegram_id) = telegram_id {
-        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.into());
+        notify_telegram(
+            telegram_id,
+            state.telegram_bot_token.clone(),
+            message.into(),
+        );
     }
 
     #[cfg(not(feature = "telegram-auth"))]
@@ -61,7 +66,11 @@ pub async fn notify_admins(state: &ApiContext, message: impl Into<String>) {
 
     #[cfg(feature = "telegram-auth")]
     for telegram_id in recipients {
-        notify_telegram(telegram_id, state.telegram_bot_token.clone(), message.clone());
+        notify_telegram(
+            telegram_id,
+            state.telegram_bot_token.clone(),
+            message.clone(),
+        );
     }
 
     #[cfg(not(feature = "telegram-auth"))]

@@ -55,9 +55,9 @@ pub mod agent_data;
 pub mod auth;
 pub mod kill;
 pub mod profile;
+pub mod resource;
 pub mod similarity;
 pub mod user;
-pub mod resource;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
@@ -113,8 +113,7 @@ impl From<S3Error> for ApiError {
     }
 }
 
-#[derive(Serialize)]
-#[derive(ToSchema)]
+#[derive(Serialize, ToSchema)]
 pub struct HealthResponse {
     pub status: &'static str,
 }

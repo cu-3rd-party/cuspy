@@ -1,9 +1,9 @@
-use axum::extract::{Path, State};
-use axum::Json;
-use uuid::Uuid;
-use crate::api::models::{db_uuid, ApiError};
-use crate::api::models::resource::Resource;
 use crate::ApiContext;
+use crate::api::models::resource::Resource;
+use crate::api::models::{ApiError, db_uuid};
+use axum::Json;
+use axum::extract::{Path, State};
+use uuid::Uuid;
 
 // используется по сути только для получения метаданных
 #[utoipa::path(
@@ -19,13 +19,24 @@ use crate::ApiContext;
 )]
 pub async fn get_resource(
     State(state): State<ApiContext>,
-    Path(resource_id): Path<Uuid>
-) -> Result<Json<Resource>, ApiError>{
-    let resource = sqlx::query_as(r#"
-            select * from "resource" where resource_id = $1
-        "#)
-        .bind(db_uuid(resource_id))
-        .fetch_one(&state.db)
-        .await?;
+    Path(resource_id): Path<Uuid>,
+) -> Result<Json<Resource>, ApiError> {
+    let resource = sqlx::query_as(
+        r#"
+            select
+                cast(resource_id as text) as resource_id,
+                file_path,
+                file_size,
+                mime_type,
+                checksum,
+                cast(created_at as text) as created_at,
+                cast(updated_at as text) as updated_at
+            from "resource"
+            where resource_id = cast($1 as uuid)
+        "#,
+    )
+    .bind(db_uuid(resource_id))
+    .fetch_one(&state.db)
+    .await?;
     Ok(Json(resource))
 }

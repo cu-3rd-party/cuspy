@@ -1,8 +1,8 @@
 use crate::ApiContext;
 use crate::api::extractor::AuthUser;
+use crate::api::helpers;
 use crate::api::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::helpers;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -28,14 +28,14 @@ pub async fn get_profile_request(
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_request
         where profile_request_id = cast($1 as uuid)
         "#,

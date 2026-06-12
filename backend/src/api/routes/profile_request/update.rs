@@ -34,14 +34,14 @@ pub async fn update_profile_request(
     let existing = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_request
         where profile_request_id = cast($1 as uuid)
         "#,
@@ -71,20 +71,22 @@ pub async fn update_profile_request(
         set updated_at = now()
         where profile_request_id = cast($1 as uuid)
         returning
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
     )
     .bind(db_uuid(request_id))
     .fetch_optional(&mut *tx)
     .await?
     .ok_or(ApiError::NotFound)?;
+
+    tx.commit().await?;
 
     Ok(Json(helpers::to_profile_request_response(request)))
 }

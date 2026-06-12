@@ -1,8 +1,8 @@
 use crate::ApiContext;
 use crate::api::extractor::AuthUser;
+use crate::api::helpers;
 use crate::api::models::kill::{RankingEntry, UserStatsResponse};
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::helpers;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;

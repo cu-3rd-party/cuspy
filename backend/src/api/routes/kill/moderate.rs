@@ -53,7 +53,7 @@ pub async fn moderate_kill(
         select
             {KILL_EVENT_COLUMNS}
         from kill_event
-        where kill_event_id = $1
+        where kill_event_id = cast($1 as uuid)
         "#
     );
 
@@ -81,10 +81,10 @@ pub async fn moderate_kill(
                 set
                     status = 'ADMIN_APPROVED',
                     moderated_at = now(),
-                    moderator_id = $2,
+                    moderator_id = cast($2 as uuid),
                     moderation_reason = $3,
                     rating_applied_at = coalesce(rating_applied_at, now())
-                where kill_event_id = $1
+                where kill_event_id = cast($1 as uuid)
                 returning
                     {KILL_EVENT_COLUMNS}
                 "#
@@ -103,9 +103,9 @@ pub async fn moderate_kill(
                 set
                     status = 'REJECTED',
                     moderated_at = now(),
-                    moderator_id = $2,
+                    moderator_id = cast($2 as uuid),
                     moderation_reason = $3
-                where kill_event_id = $1
+                where kill_event_id = cast($1 as uuid)
                 returning
                     {KILL_EVENT_COLUMNS}
                 "#
@@ -126,12 +126,13 @@ pub async fn moderate_kill(
         sqlx::query(
             r#"
             insert into rating_history (rating_history_id, user_id, rating, change, reason)
-            values ($1, $2, $3, $4, $5)
+            select cast($1 as uuid), user_id, rating + $3, $3, $4
+            from "user"
+            where user_id = cast($2 as uuid)
             "#,
         )
         .bind(db_uuid(Uuid::now_v7()))
         .bind(db_uuid(record.killer_id))
-        .bind(25_i64)
         .bind(25_i64)
         .bind(format!("kill_approved:{}", record.kill_event_id))
         .execute(&mut *tx)

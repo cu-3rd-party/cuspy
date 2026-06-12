@@ -1,9 +1,10 @@
+use crate::api::db;
 use crate::api::extractor::AdminUser;
+use crate::api::helpers;
 use crate::api::models::profile::{
     AdminUpdateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
 use crate::api::models::{ApiError, db_optional_timestamp, db_uuid};
-use crate::api::helpers;
 use crate::{ApiContext, notifier};
 use axum::extract::{Path, State};
 use axum::routing::get;
@@ -40,14 +41,14 @@ pub async fn admin_list_profile_requests(
     let requests = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_request
         order by created_at desc
         "#,
@@ -83,14 +84,14 @@ pub async fn admin_get_profile_request(
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         select
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         from profile_request
         where profile_request_id = cast($1 as uuid)
         "#,
@@ -135,26 +136,46 @@ pub async fn admin_update_profile_request(
         .filter(|status| matches!(*status, "confirmed" | "rejected"))
         .map(|_| sqlx::types::time::OffsetDateTime::now_utc());
 
+    if let Some(profile_data) = payload.requested_profile_data.as_ref() {
+        let requested_profile_data_id = sqlx::query_scalar::<_, String>(
+            r#"
+            select cast(requested_profile_data_id as text)
+            from profile_request
+            where profile_request_id = cast($1 as uuid)
+            "#,
+        )
+        .bind(db_uuid(request_id))
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+        let requested_profile_data_id =
+            Uuid::parse_str(&requested_profile_data_id).map_err(|error| {
+                ApiError::Internal(format!("invalid requested profile data id: {error}"))
+            })?;
+
+        db::update_agent_data_from_profile(&state.db, requested_profile_data_id, profile_data)
+            .await?;
+    }
+
     let mut tx = state.db.begin().await?;
 
     let request = sqlx::query_as::<_, ProfileRequestRecord>(
         r#"
         update profile_request
         set
-            requested_profile_data_id = coalesce($1, requested_profile_data_id),
             status = coalesce($2, status),
             reviewer_note = coalesce($3, reviewer_note),
-            reviewed_at = coalesce($4, reviewed_at)
+            reviewed_at = coalesce(cast($4 as timestamptz), reviewed_at)
         where profile_request_id = cast($1 as uuid)
         returning
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
+            cast(profile_request_id as text) as profile_request_id,
+            cast(user_id as text) as user_id,
+            cast(requested_profile_data_id as text) as requested_profile_data_id,
             status,
             reviewer_note,
-            reviewed_at,
-            created_at,
-            updated_at
+            cast(reviewed_at as text) as reviewed_at,
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
     )
     .bind(db_uuid(request_id))
@@ -169,8 +190,8 @@ pub async fn admin_update_profile_request(
         sqlx::query(
             r#"
             update "user"
-            set agent_data_id = $2
-            where user_id = $1
+            set agent_data_id = cast($2 as uuid)
+            where user_id = cast($1 as uuid)
             "#,
         )
         .bind(db_uuid(request.user_id))
@@ -225,7 +246,7 @@ pub async fn admin_delete_profile_request(
         r#"
             delete from
                 profile_request
-            where profile_request_id = $1
+            where profile_request_id = cast($1 as uuid)
             "#,
     )
     .bind(db_uuid(request_id))

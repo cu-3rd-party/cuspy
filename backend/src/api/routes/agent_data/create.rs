@@ -1,10 +1,10 @@
 use crate::ApiContext;
-use crate::api::models::{db_uuid, ApiError};
 use crate::api::models::agent_data::{AgentData, AgentDataMetadata};
+use crate::api::models::resource::Resource;
+use crate::api::models::{ApiError, db_uuid};
 use axum::Json;
 use axum::extract::{Multipart, State};
-use http::{header, HeaderMap};
-use crate::api::models::resource::Resource;
+use http::{HeaderMap, header};
 use utoipa::ToSchema;
 
 #[derive(ToSchema)]
@@ -59,14 +59,14 @@ pub async fn create_agent_data(
                     insert into "agent_data" (codename, academic_group, academic_level, course_number, bachelor_track, identification_name, physical_contact_allowed, hugs_close_proximity_allowed)
                     values ($1, $2, $3, $4, $5, $6, $7, $8)
                     returning
-                        agent_data_id,
+                        cast(agent_data_id as text) as agent_data_id,
                         codename,
                         academic_group,
                         academic_level,
                         course_number,
                         bachelor_track,
                         identification_name,
-                        identification_image_id,
+                        cast(identification_image_id as text) as identification_image_id,
                         physical_contact_allowed,
                         hugs_close_proximity_allowed
                 "#)
@@ -82,19 +82,15 @@ pub async fn create_agent_data(
                     .await?);
             }
             "image" => {
-                let content_type =
-                    field.headers()
-                        .get(header::CONTENT_TYPE)
-                        .and_then(|value| value.to_str().ok())
-                        .map(String::from);
+                let content_type = field
+                    .headers()
+                    .get(header::CONTENT_TYPE)
+                    .and_then(|value| value.to_str().ok())
+                    .map(String::from);
                 let content = field.bytes().await.map_err(|e| {
-                        ApiError::BadRequest(format!("failed to parse field body: {e}"))
-                    })?;
-                resource = Some(Resource::new(
-                    &state,
-                    content,
-                    content_type,
-                ).await?);
+                    ApiError::BadRequest(format!("failed to parse field body: {e}"))
+                })?;
+                resource = Some(Resource::new(&state, content, content_type).await?);
             }
             _ => {
                 return Err(ApiError::BadRequest(format!(
@@ -104,18 +100,32 @@ pub async fn create_agent_data(
         };
     }
 
-
-    let mut agent_data = agent_data
-        .ok_or_else(|| ApiError::BadRequest("no data supplied".to_string()))?;
+    let mut agent_data =
+        agent_data.ok_or_else(|| ApiError::BadRequest("no data supplied".to_string()))?;
 
     if let Some(resource) = resource {
-        agent_data = sqlx::query_as(r#"
-            update "agent_data" set identification_image_id = $2 where agent_data_id = $1
-        "#)
-            .bind(db_uuid(agent_data.agent_data_id))
-            .bind(db_uuid(resource.id))
-            .fetch_one(&state.db)
-            .await?;
+        agent_data = sqlx::query_as(
+            r#"
+            update "agent_data"
+            set identification_image_id = cast($2 as uuid)
+            where agent_data_id = cast($1 as uuid)
+            returning
+                cast(agent_data_id as text) as agent_data_id,
+                codename,
+                academic_group,
+                academic_level,
+                course_number,
+                bachelor_track,
+                identification_name,
+                cast(identification_image_id as text) as identification_image_id,
+                physical_contact_allowed,
+                hugs_close_proximity_allowed
+        "#,
+        )
+        .bind(db_uuid(agent_data.agent_data_id))
+        .bind(db_uuid(resource.id))
+        .fetch_one(&state.db)
+        .await?;
     }
 
     Ok(Json(agent_data))

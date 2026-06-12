@@ -119,16 +119,24 @@ impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
             killer_id: parse_uuid(row, "killer_id")?,
             victim_id: parse_uuid(row, "victim_id")?,
             status: row.get("status"),
-            evidence_resource_id: parse_optional_uuid(row, "evidence_resource_id").ok().flatten(),
+            evidence_resource_id: parse_optional_uuid(row, "evidence_resource_id")
+                .ok()
+                .flatten(),
             details: parse_json(row, "details")?,
-            killer_confirmed_at: parse_optional_timestamp(row, "killer_confirmed_at").ok().flatten(),
-            victim_confirmed_at: parse_optional_timestamp(row, "victim_confirmed_at").ok().flatten(),
+            killer_confirmed_at: parse_optional_timestamp(row, "killer_confirmed_at")
+                .ok()
+                .flatten(),
+            victim_confirmed_at: parse_optional_timestamp(row, "victim_confirmed_at")
+                .ok()
+                .flatten(),
             reported_at: parse_timestamp(row, "reported_at")?,
             confirmed_at: parse_optional_timestamp(row, "confirmed_at").ok().flatten(),
             moderated_at: parse_optional_timestamp(row, "moderated_at").ok().flatten(),
             moderator_id: parse_optional_uuid(row, "moderator_id").ok().flatten(),
             moderation_reason: row.try_get("moderation_reason").ok(),
-            rating_applied_at: parse_optional_timestamp(row, "rating_applied_at").ok().flatten(),
+            rating_applied_at: parse_optional_timestamp(row, "rating_applied_at")
+                .ok()
+                .flatten(),
             created_at: parse_timestamp(row, "created_at")?,
             updated_at: parse_optional_timestamp(row, "updated_at").ok().flatten(),
         })

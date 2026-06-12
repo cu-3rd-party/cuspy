@@ -1,12 +1,13 @@
-#![cfg(not(feature = "telegram-auth"))]
-
 mod common;
 
 use axum::http::StatusCode;
 use serde_json::{Value, json};
 
+#[cfg(feature = "telegram-auth")]
+use common::telegram_init_data;
 use common::{
-    TestContext, fetch_latest_audit_actor, fetch_user_agent_data, register_user, seed_admin_user,
+    TestContext, create_agent_data, fetch_latest_audit_actor, fetch_user_agent_data, register_user,
+    seed_admin_user, seed_resource,
 };
 
 #[tokio::test]
@@ -21,7 +22,34 @@ async fn backend_endpoints_work_end_to_end() {
     assert_eq!(root_status, StatusCode::OK);
     assert_eq!(root_body, Value::String("backend up".into()));
 
-    let (token, user) = register_user(&ctx, "agent@example.com", 1001, "Alpha", None).await;
+    let agent_data = create_agent_data(&ctx, "Delta").await;
+    let agent_data_id = agent_data["agent_data_id"]
+        .as_str()
+        .expect("agent data id")
+        .to_string();
+
+    let resource_id = seed_resource(&ctx).await;
+    let (resource_status, resource_body) = ctx
+        .json(
+            "GET",
+            &format!("/resource/{resource_id}"),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await;
+    assert_eq!(resource_status, StatusCode::OK);
+    assert_eq!(resource_body["file_path"], "test/resource.txt");
+
+    #[cfg(feature = "telegram-auth")]
+    let user_init_data = telegram_init_data(1001);
+    #[cfg(feature = "telegram-auth")]
+    let user_auth = Some(user_init_data.as_str());
+    #[cfg(not(feature = "telegram-auth"))]
+    let user_auth: Option<&str> = None;
+
+    let (token, user) = register_user(&ctx, "agent@example.com", 1001, "Alpha", user_auth).await;
     let user_id = user["user_id"].as_str().expect("user id").to_string();
 
     let (login_status, login_body) = ctx
@@ -31,14 +59,14 @@ async fn backend_endpoints_work_end_to_end() {
             Some(json!({ "email": "agent@example.com", "password": "password123" })),
             None,
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(login_status, StatusCode::OK);
     assert!(login_body["access_token"].as_str().is_some());
 
     let (me_status, me_body) = ctx
-        .json("GET", "/auth/me", None, Some(&token), None, None)
+        .json("GET", "/auth/me", None, Some(&token), None, user_auth)
         .await;
     assert_eq!(me_status, StatusCode::OK);
     assert_eq!(me_body["user_id"], user["user_id"]);
@@ -50,11 +78,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (get_user_status, get_user_body) = ctx
         .json(
             "GET",
-            &format!("/users/{user_id}"),
+            &format!("/user/{user_id}"),
             None,
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(get_user_status, StatusCode::OK);
@@ -64,74 +92,27 @@ async fn backend_endpoints_work_end_to_end() {
     let (update_user_status, update_user_body) = ctx
         .json(
             "PATCH",
-            &format!("/users/{user_id}"),
+            &format!("/user/{user_id}"),
             Some(json!({
-                "agent_name": "Alpha Prime",
-                "agent_data": { "track": "backend", "city": "Lviv", "course": 3 }
+                "agent_name": "Alpha Prime"
             })),
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(update_user_status, StatusCode::OK);
     assert_eq!(update_user_body["rating"], 1000);
-
-    let (put_me_status, put_me_body) = ctx
-        .json(
-            "PUT",
-            "/user/me",
-            Some(json!({
-                "agent_name": "Alpha Operative",
-                "agent_data": { "track": "backend", "city": "Lviv", "course": 4 }
-            })),
-            Some(&token),
-            None,
-            None,
-        )
-        .await;
-    assert_eq!(put_me_status, StatusCode::OK);
-    assert_eq!(put_me_body["agent_name"], "Alpha Operative");
-
-    let (compare_status, compare_body) = ctx
-        .json(
-            "GET",
-            &format!("/users/{user_id}/compare/{user_id}"),
-            None,
-            Some(&token),
-            None,
-            None,
-        )
-        .await;
-    assert_eq!(compare_status, StatusCode::OK);
-    assert_eq!(compare_body["similarity_score"], 1.0);
-
-    let (system_compare_status, system_compare_body) = ctx
-        .json(
-            "POST",
-            "/system/profile-similarity",
-            Some(json!({
-                "left": { "a": 1, "b": 2 },
-                "right": { "a": 1, "c": 3 }
-            })),
-            Some(&token),
-            None,
-            None,
-        )
-        .await;
-    assert_eq!(system_compare_status, StatusCode::OK);
-    assert_eq!(system_compare_body["matching_keys"], json!(["a"]));
+    assert_eq!(update_user_body["agent_name"], "Alpha Prime");
 
     let (create_request_status, create_request_body) = ctx
         .json(
             "POST",
-            "/profile-creation-requests",
-            Some(json!({
-                "requested_profile_data": { "track": "backend", "city": "Dnipro", "course": 4 }
-            })),
+            "/profile-requests",
+            Some(json!({ "agent_data_id": agent_data_id })),
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(create_request_status, StatusCode::CREATED);
@@ -143,11 +124,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (list_requests_status, list_requests_body) = ctx
         .json(
             "GET",
-            "/profile-creation-requests",
+            "/profile-requests",
             None,
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(list_requests_status, StatusCode::OK);
@@ -156,11 +137,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (get_request_status, get_request_body) = ctx
         .json(
             "GET",
-            &format!("/profile-creation-requests/{request_id}"),
+            &format!("/profile-requests/{request_id}"),
             None,
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(get_request_status, StatusCode::OK);
@@ -168,26 +149,26 @@ async fn backend_endpoints_work_end_to_end() {
 
     let (update_request_status, update_request_body) = ctx
         .json(
-            "PATCH",
-            &format!("/profile-creation-requests/{request_id}"),
+            "PUT",
+            &format!("/profile-requests/{request_id}"),
             Some(json!({
-                "requested_profile_data": { "track": "backend", "city": "Kharkiv", "course": 5 }
+                "requested_profile_data": { "codename": "Kharkiv", "course_number": 5 }
             })),
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(update_request_status, StatusCode::OK);
     assert_eq!(
-        update_request_body["requested_profile_data"]["city"],
-        "Kharkiv"
+        update_request_body["requested_profile_data_id"],
+        create_request_body["requested_profile_data_id"]
     );
 
     let (admin_list_users_status, admin_list_users_body) = ctx
         .json(
             "GET",
-            "/admin/users",
+            "/admin/user",
             None,
             None,
             Some(&ctx.admin_secret),
@@ -200,7 +181,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_create_user_status, admin_create_user_body) = ctx
         .json(
             "POST",
-            "/admin/users",
+            "/admin/user",
             Some(json!({
                 "telegram_id": 2002,
                 "agent_name": "Bravo",
@@ -221,7 +202,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_get_user_status, _) = ctx
         .json(
             "GET",
-            &format!("/admin/users/{admin_created_user_id}"),
+            &format!("/admin/user/{admin_created_user_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -233,7 +214,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_update_user_status, admin_update_user_body) = ctx
         .json(
             "PATCH",
-            &format!("/admin/users/{admin_created_user_id}"),
+            &format!("/admin/user/{admin_created_user_id}"),
             Some(json!({ "agent_name": "Bravo Lead", "is_admin": false })),
             None,
             Some(&ctx.admin_secret),
@@ -247,7 +228,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_list_requests_status, admin_list_requests_body) = ctx
         .json(
             "GET",
-            "/admin/profile-creation-requests",
+            "/admin/profile-requests",
             None,
             None,
             Some(&ctx.admin_secret),
@@ -260,7 +241,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_get_request_status, _) = ctx
         .json(
             "GET",
-            &format!("/admin/profile-creation-requests/{request_id}"),
+            &format!("/admin/profile-requests/{request_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -272,7 +253,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_update_request_status, admin_update_request_body) = ctx
         .json(
             "PATCH",
-            &format!("/admin/profile-creation-requests/{request_id}"),
+            &format!("/admin/profile-requests/{request_id}"),
             Some(json!({
                 "status": "confirmed",
                 "reviewer_note": "ok"
@@ -286,22 +267,29 @@ async fn backend_endpoints_work_end_to_end() {
     assert_eq!(admin_update_request_body["status"], "confirmed");
 
     let updated_agent_data = fetch_user_agent_data(&ctx, &user_id).await;
-    assert_eq!(updated_agent_data["city"], "Kharkiv");
+    assert_eq!(updated_agent_data["codename"], "Kharkiv");
+
+    #[cfg(feature = "telegram-auth")]
+    let other_init_data = telegram_init_data(3003);
+    #[cfg(feature = "telegram-auth")]
+    let other_auth = Some(other_init_data.as_str());
+    #[cfg(not(feature = "telegram-auth"))]
+    let other_auth: Option<&str> = None;
 
     let (other_token, other_user) =
-        register_user(&ctx, "other@example.com", 3003, "Other", None).await;
+        register_user(&ctx, "other@example.com", 3003, "Other", other_auth).await;
     let other_user_id = other_user["user_id"].as_str().expect("other user id");
     let admin_token = seed_admin_user(&ctx, "admin@example.com", 4004, "Control").await;
 
+    #[cfg(feature = "telegram-auth")]
+    let admin_init_data = telegram_init_data(4004);
+    #[cfg(feature = "telegram-auth")]
+    let admin_auth = Some(admin_init_data.as_str());
+    #[cfg(not(feature = "telegram-auth"))]
+    let admin_auth: Option<&str> = None;
+
     let (pending_kills_status, pending_kills_body) = ctx
-        .json(
-            "GET",
-            "/kills/my-pending",
-            None,
-            Some(&other_token),
-            None,
-            None,
-        )
+        .json("GET", "/kill", None, Some(&other_token), None, other_auth)
         .await;
     assert_eq!(pending_kills_status, StatusCode::OK);
     assert_eq!(pending_kills_body.as_array().expect("array").len(), 0);
@@ -309,7 +297,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (report_kill_status, report_kill_body) = ctx
         .json(
             "POST",
-            "/kills",
+            "/kill",
             Some(json!({
                 "victim_id": other_user_id,
                 "evidence_url": "https://example.com/evidence",
@@ -317,7 +305,7 @@ async fn backend_endpoints_work_end_to_end() {
             })),
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(report_kill_status, StatusCode::CREATED);
@@ -330,11 +318,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (victim_pending_status, victim_pending_body) = ctx
         .json(
             "GET",
-            "/kills/my-pending",
+            &format!("/kill?victim_user_id={other_user_id}"),
             None,
             Some(&other_token),
             None,
-            None,
+            other_auth,
         )
         .await;
     assert_eq!(victim_pending_status, StatusCode::OK);
@@ -343,30 +331,30 @@ async fn backend_endpoints_work_end_to_end() {
     let (confirm_kill_status, confirm_kill_body) = ctx
         .json(
             "POST",
-            &format!("/kills/{kill_id}/confirm"),
+            &format!("/kill/{kill_id}/confirm"),
             Some(json!({ "confirmed": true })),
             Some(&other_token),
             None,
-            None,
+            other_auth,
         )
         .await;
     assert_eq!(confirm_kill_status, StatusCode::OK);
-    assert_eq!(confirm_kill_body["status"], "VICTIM_CONFIRMED");
+    assert_eq!(confirm_kill_body["status"], "CONFIRMED");
 
     let (moderate_kill_status, moderate_kill_body) = ctx
         .json(
             "POST",
-            &format!("/kills/{kill_id}/moderate"),
+            &format!("/kill/{kill_id}/moderate"),
             Some(json!({ "action": "APPROVE", "reason": "verified" })),
             Some(&admin_token),
             None,
-            None,
+            admin_auth,
         )
         .await;
     assert_eq!(moderate_kill_status, StatusCode::OK);
     assert_eq!(moderate_kill_body["status"], "ADMIN_APPROVED");
     assert_eq!(
-        fetch_latest_audit_actor(&ctx, "/kills/{kill_id}/moderate").await,
+        fetch_latest_audit_actor(&ctx, "/kill/{kill_id}/moderate").await,
         Some(
             moderate_kill_body["moderator_id"]
                 .as_str()
@@ -376,18 +364,29 @@ async fn backend_endpoints_work_end_to_end() {
     );
 
     let (approved_kills_status, approved_kills_body) = ctx
-        .json("GET", "/kills", None, Some(&token), None, None)
+        .json("GET", "/kill", None, Some(&token), None, user_auth)
         .await;
     assert_eq!(approved_kills_status, StatusCode::OK);
     assert_eq!(approved_kills_body.as_array().expect("array").len(), 1);
 
     let (rankings_status, rankings_body) = ctx
-        .json("GET", "/rankings", None, Some(&token), None, None)
+        .json(
+            "GET",
+            "/stats/rankings",
+            None,
+            Some(&token),
+            None,
+            user_auth,
+        )
         .await;
     assert_eq!(rankings_status, StatusCode::OK);
     let rankings = rankings_body.as_array().expect("rankings array");
-    assert_eq!(rankings[0]["user_id"], user_id);
-    assert_eq!(rankings[0]["rating"], 1025);
+    let user_ranking = rankings
+        .iter()
+        .find(|entry| entry["user_id"] == user_id)
+        .expect("user ranking");
+    assert_eq!(user_ranking["rating"], 1025);
+    assert_eq!(user_ranking["approved_kills"], 1);
 
     let (stats_status, stats_body) = ctx
         .json(
@@ -396,7 +395,7 @@ async fn backend_endpoints_work_end_to_end() {
             None,
             Some(&token),
             None,
-            None,
+            user_auth,
         )
         .await;
     assert_eq!(stats_status, StatusCode::OK);
@@ -406,11 +405,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (forbidden_user_status, _) = ctx
         .json(
             "GET",
-            &format!("/users/{user_id}"),
+            &format!("/user/{user_id}"),
             None,
             Some(&other_token),
             None,
-            None,
+            other_auth,
         )
         .await;
     assert_eq!(forbidden_user_status, StatusCode::FORBIDDEN);
@@ -418,11 +417,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (forbidden_request_status, _) = ctx
         .json(
             "GET",
-            &format!("/profile-creation-requests/{request_id}"),
+            &format!("/profile-requests/{request_id}"),
             None,
             Some(&other_token),
             None,
-            None,
+            other_auth,
         )
         .await;
     assert_eq!(forbidden_request_status, StatusCode::FORBIDDEN);
@@ -430,7 +429,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_delete_request_status, _) = ctx
         .json(
             "DELETE",
-            &format!("/admin/profile-creation-requests/{request_id}"),
+            &format!("/admin/profile-requests/{request_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -442,7 +441,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_delete_other_status, _) = ctx
         .json(
             "DELETE",
-            &format!("/admin/users/{admin_created_user_id}"),
+            &format!("/admin/user/{admin_created_user_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -454,11 +453,11 @@ async fn backend_endpoints_work_end_to_end() {
     let (delete_user_status, _) = ctx
         .json(
             "DELETE",
-            &format!("/users/{other_user_id}"),
+            &format!("/user/{other_user_id}"),
             None,
             Some(&other_token),
             None,
-            None,
+            other_auth,
         )
         .await;
     assert_eq!(delete_user_status, StatusCode::NO_CONTENT);

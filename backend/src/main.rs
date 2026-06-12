@@ -1,11 +1,11 @@
 use clap::Parser;
 use cukiller_backend::{ApiContext, build_app, config};
 use log::info;
+use s3::creds::Credentials;
+use s3::error::S3Error;
+use s3::{Bucket, BucketConfiguration, Region};
 use sqlx::{AnyPool, any::AnyPoolOptions, migrate::Migrator};
 use std::path::Path;
-use s3::creds::Credentials;
-use s3::{Bucket, BucketConfiguration, Region};
-use s3::error::S3Error;
 use teloxide::{
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo},
@@ -90,12 +90,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         endpoint: config.endpoint.clone(),
     };
 
-    let bucket = Bucket::new(
-        &config.bucket_name,
-        region.clone(),
-        credentials.clone(),
-    )?
-        .with_path_style();
+    let bucket =
+        Bucket::new(&config.bucket_name, region.clone(), credentials.clone())?.with_path_style();
     match bucket.head_object("").await {
         Ok(_) => Ok::<(), anyhow::Error>(()),
         Err(S3Error::HttpFailWithBody(404, _)) => {
@@ -105,7 +101,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 credentials.clone(),
                 BucketConfiguration::default(),
             )
-                .await?;
+            .await?;
             Ok(())
         }
         Err(e) => Err(e.into()),

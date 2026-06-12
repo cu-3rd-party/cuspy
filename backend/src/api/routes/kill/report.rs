@@ -75,9 +75,9 @@ pub async fn report_kill(
             victim_confirmed_at
         )
         values (
-            $1,
-            $2,
-            $3,
+            cast($1 as uuid),
+            cast($2 as uuid),
+            cast($3 as uuid),
             'REPORTED',
             null,
             cast($4 as jsonb),

@@ -99,9 +99,7 @@ impl User {
         #[cfg(feature = "telegram-auth")]
         let telegram_init_data = header_map
             .get("x-telegram-init-data")
-            .ok_or(ApiError::BadRequest(
-                "no authorization header supplied".to_string(),
-            ))?
+            .ok_or(ApiError::Unauthorized)?
             .to_str()
             .map_err(|_| ApiError::Unauthorized)?;
 

@@ -1,8 +1,8 @@
 use crate::ApiContext;
 use crate::api::extractor::AuthUser;
+use crate::api::helpers;
 use crate::api::models::user::{UpdateUserRequest, UserRecord, UserResponse};
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::helpers;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -37,12 +37,14 @@ pub async fn update_user(
             agent_name = coalesce($3, agent_name)
         where user_id = cast($1 as uuid)
         returning
-            user_id,
+            cast(user_id as text) as user_id,
             telegram_id,
             agent_name,
+            cast(agent_data_id as text) as agent_data_id,
+            rating,
             is_admin,
-            created_at,
-            updated_at
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
     )
     .bind(db_uuid(user_id))

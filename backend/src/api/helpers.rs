@@ -13,7 +13,7 @@ use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use jsonwebtoken::{EncodingKey, Header, encode};
-use serde_json::{Value};
+use serde_json::Value;
 use uuid::Uuid;
 
 pub const DEFAULT_RATING: i64 = 1000;
@@ -186,9 +186,17 @@ pub fn create_refresh_token(
 pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord, ApiError> {
     Ok(sqlx::query_as(
         r#"
-            select *
+            select
+                cast(user_id as text) as user_id,
+                telegram_id,
+                agent_name,
+                cast(agent_data_id as text) as agent_data_id,
+                rating,
+                is_admin,
+                cast(created_at as text) as created_at,
+                cast(updated_at as text) as updated_at
             from "user"
-            where user_id = $1
+            where user_id = cast($1 as uuid)
             limit 1
             "#,
     )
@@ -200,15 +208,70 @@ pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use http::{header, HeaderMap, HeaderValue};
+    #[cfg(feature = "telegram-auth")]
+    use hmac::{Hmac, Mac};
+    use http::{HeaderMap, HeaderValue, header};
+    use s3::creds::Credentials;
+    use s3::{Bucket, Region};
     use serde_json::json;
+    #[cfg(feature = "telegram-auth")]
+    use sha2::{Digest, Sha256};
     use sqlx::any::AnyPoolOptions;
+
+    #[cfg(feature = "telegram-auth")]
+    fn telegram_init_data(user_id: i64) -> String {
+        type HmacSha256 = Hmac<Sha256>;
+
+        let user = json!({
+            "id": user_id,
+            "first_name": "Test",
+            "username": format!("user_{user_id}")
+        })
+        .to_string();
+
+        let mut pairs = [
+            "auth_date=1700000000".to_string(),
+            format!("query_id=test-query-{user_id}"),
+            format!("user={user}"),
+        ];
+        pairs.sort();
+
+        let secret = Sha256::digest("bot-token".as_bytes());
+        let mut mac = HmacSha256::new_from_slice(secret.as_slice()).expect("hmac key");
+        mac.update(pairs.join("\n").as_bytes());
+        let hash = hex::encode(mac.finalize().into_bytes());
+
+        format!(
+            "query_id=test-query-{user_id}&user={}&auth_date=1700000000&hash={hash}",
+            url::form_urlencoded::byte_serialize(user.as_bytes()).collect::<String>()
+        )
+    }
+
+    fn test_bucket() -> Box<Bucket> {
+        Bucket::new(
+            "test-bucket",
+            Region::Custom {
+                region: "us-east-1".into(),
+                endpoint: "http://127.0.0.1:9000".into(),
+            },
+            Credentials {
+                access_key: Some("test".into()),
+                secret_key: Some("test".into()),
+                security_token: None,
+                session_token: None,
+                expiration: None,
+            },
+        )
+        .expect("test bucket")
+        .with_path_style()
+    }
 
     fn test_state() -> ApiContext {
         ApiContext {
             db: AnyPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),
+            bucket: test_bucket(),
             admin_secret: "admin-secret".into(),
             jwt_secret: "jwt-secret".into(),
             #[cfg(feature = "telegram-auth")]
@@ -256,6 +319,11 @@ mod tests {
         headers.insert(
             header::AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {token}")).expect("header"),
+        );
+        #[cfg(feature = "telegram-auth")]
+        headers.insert(
+            header::HeaderName::from_static("x-telegram-init-data"),
+            HeaderValue::from_str(&telegram_init_data(12345)).expect("telegram header"),
         );
 
         let auth = User::from_headers(&state, &headers);

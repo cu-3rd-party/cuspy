@@ -1,5 +1,3 @@
-
-
 #[derive(clap::Parser)]
 pub struct Config {
     #[clap(long, env)]

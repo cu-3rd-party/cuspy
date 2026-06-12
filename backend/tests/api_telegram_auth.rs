@@ -3,40 +3,9 @@
 mod common;
 
 use axum::http::StatusCode;
-use hmac::{Hmac, Mac};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 
-use common::{TELEGRAM_BOT_TOKEN, TestContext, register_user};
-
-fn telegram_init_data(user_id: i64) -> String {
-    type HmacSha256 = Hmac<Sha256>;
-
-    let user = json!({
-        "id": user_id,
-        "first_name": "Test",
-        "username": format!("user_{user_id}")
-    })
-    .to_string();
-
-    let mut pairs = [
-        "auth_date=1700000000".to_string(),
-        format!("query_id=test-query-{user_id}"),
-        format!("user={user}"),
-    ];
-    pairs.sort();
-    let data_check_string = pairs.join("\n");
-
-    let secret = Sha256::digest(TELEGRAM_BOT_TOKEN.as_bytes());
-    let mut mac = HmacSha256::new_from_slice(secret.as_slice()).expect("hmac key");
-    mac.update(data_check_string.as_bytes());
-    let hash = hex::encode(mac.finalize().into_bytes());
-
-    format!(
-        "query_id=test-query-{user_id}&user={}&auth_date=1700000000&hash={hash}",
-        url::form_urlencoded::byte_serialize(user.as_bytes()).collect::<String>()
-    )
-}
+use common::{TestContext, create_agent_data, register_user, telegram_init_data};
 
 #[tokio::test]
 async fn telegram_auth_requires_valid_init_data() {
@@ -118,6 +87,8 @@ async fn telegram_auth_requires_valid_init_data() {
     assert_eq!(login_status, StatusCode::OK);
     assert!(login_body["access_token"].as_str().is_some());
 
+    let agent_data = create_agent_data(&ctx, "Telegram Profile").await;
+
     let (unauthorized_login_status, _) = ctx
         .json(
             "POST",
@@ -136,8 +107,8 @@ async fn telegram_auth_requires_valid_init_data() {
     let (request_status, request_body) = ctx
         .json(
             "POST",
-            "/profile-creation-requests",
-            Some(json!({ "requested_profile_data": { "city": "Odesa" } })),
+            "/profile-requests",
+            Some(json!({ "agent_data_id": agent_data["agent_data_id"] })),
             Some(&token),
             None,
             Some(&valid_init_data),
@@ -160,7 +131,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (forbidden_user_status, _) = ctx
         .json(
             "GET",
-            &format!("/users/{user_id}"),
+            &format!("/user/{user_id}"),
             None,
             Some(&forbidden_other_register_token),
             None,
@@ -172,7 +143,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (forbidden_request_status, forbidden_request_body) = ctx
         .json(
             "GET",
-            &format!("/profile-creation-requests/{request_id}"),
+            &format!("/profile-requests/{request_id}"),
             None,
             Some(&token),
             None,

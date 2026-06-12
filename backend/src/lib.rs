@@ -88,7 +88,10 @@ async fn audit_request(
         "origin": origin
     });
 
-    info!("{:<6} | {:<40} | {:>3} | {:>2}ms", method, uri, status, elapsed_ms);
+    info!(
+        "{:<6} | {:<40} | {:>3} | {:>2}ms",
+        method, uri, status, elapsed_ms
+    );
 
     if let Err(error) = persist_audit_log(
         &state.db,

@@ -41,6 +41,7 @@ pub async fn admin_list_users(
             cast(user_id as text) as user_id,
             telegram_id,
             agent_name,
+            cast(agent_data_id as text) as agent_data_id,
             rating,
             is_admin,
             cast(created_at as text) as created_at,
@@ -72,6 +73,9 @@ pub async fn admin_create_user(
     AdminUser(_user): AdminUser,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<(StatusCode, Json<UserResponse>), ApiError> {
+    let mut tx = state.db.begin().await?;
+    let user_id = Uuid::now_v7();
+
     let user = sqlx::query_as::<_, UserRecord>(
         r#"
         insert into "user" (user_id, telegram_id, agent_name, is_admin)
@@ -80,17 +84,36 @@ pub async fn admin_create_user(
             cast(user_id as text) as user_id,
             telegram_id,
             agent_name,
+            cast(agent_data_id as text) as agent_data_id,
+            rating,
             is_admin,
             cast(created_at as text) as created_at,
             cast(updated_at as text) as updated_at
         "#,
     )
-    .bind(db_uuid(Uuid::now_v7()))
+    .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
     .bind(payload.agent_name)
     .bind(payload.is_admin.unwrap_or(false))
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
+
+    sqlx::query(
+        r#"
+        insert into rating_history (rating_history_id, user_id, rating, change, reason)
+        values (cast($1 as uuid), cast($2 as uuid), $3, $4, $5)
+        "#,
+    )
+    .bind(db_uuid(Uuid::now_v7()))
+    .bind(db_uuid(user.user_id))
+    .bind(helpers::DEFAULT_RATING)
+    .bind(helpers::DEFAULT_RATING)
+    .bind("initial_rating")
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+    let user = helpers::fetch_user(&state.db, user.user_id).await?;
 
     Ok((StatusCode::CREATED, Json(helpers::to_user_response(user))))
 }
@@ -147,6 +170,8 @@ pub async fn admin_update_user(
             cast(user_id as text) as user_id,
             telegram_id,
             agent_name,
+            cast(agent_data_id as text) as agent_data_id,
+            rating,
             is_admin,
             cast(created_at as text) as created_at,
             cast(updated_at as text) as updated_at

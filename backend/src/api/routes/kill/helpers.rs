@@ -28,7 +28,7 @@ pub async fn fetch_kill(state: &ApiContext, kill_id: Uuid) -> Result<KillEventRe
         select
             {KILL_EVENT_COLUMNS}
         from kill_event
-        where kill_event_id = $1
+        where kill_event_id = cast($1 as uuid)
         "#
     );
 

@@ -1,11 +1,14 @@
 use crate::ApiContext;
-use crate::api::extractor::AuthUser;
+use crate::api::helpers;
 use crate::api::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
 use crate::api::models::user::UserRecord;
 use crate::api::models::{ApiError, db_uuid};
-use crate::api::helpers;
+#[cfg(feature = "telegram-auth")]
+use crate::telegram;
 use axum::Json;
 use axum::extract::State;
+#[cfg(feature = "telegram-auth")]
+use http::HeaderMap;
 use http::StatusCode;
 use log::error;
 use uuid::Uuid;
@@ -50,12 +53,19 @@ fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> Ap
 )]
 pub async fn register(
     State(state): State<ApiContext>,
-    AuthUser(user): AuthUser,
+    #[cfg(feature = "telegram-auth")] headers: HeaderMap,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), ApiError> {
     #[cfg(feature = "telegram-auth")]
     let (login_identifier, password_hash, telegram_id) = {
-        let telegram_user_id = user.tg.user.id;
+        let init_data = headers
+            .get("x-telegram-init-data")
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| {
+                telegram::TelegramInitData::from_header(&state.telegram_bot_token, value)
+            })
+            .ok_or(ApiError::Unauthorized)?;
+        let telegram_user_id = init_data.user.id;
         (
             telegram_user_id.to_string(),
             None::<String>,
@@ -84,26 +94,33 @@ pub async fn register(
         (email, Some(helpers::hash_password(password)?), telegram_id)
     };
 
+    #[cfg(feature = "telegram-auth")]
+    let is_admin = false;
+    #[cfg(not(feature = "telegram-auth"))]
+    let is_admin = false;
+
     let mut tx = state.db.begin().await?;
 
     let user_id = Uuid::now_v7();
     let user = match sqlx::query_as::<_, UserRecord>(
         r#"
         insert into "user" (user_id, telegram_id, agent_name, is_admin)
-        values ($1, $2, $3, $4)
+        values (cast($1 as uuid), $2, $3, $4)
         returning
-            user_id,
+            cast(user_id as text) as user_id,
             telegram_id,
             agent_name,
+            cast(agent_data_id as text) as agent_data_id,
+            rating,
             is_admin,
-            created_at,
-            updated_at
+            cast(created_at as text) as created_at,
+            cast(updated_at as text) as updated_at
         "#,
     )
     .bind(db_uuid(user_id))
     .bind(telegram_id)
     .bind(payload.agent_name)
-    .bind(user.is_admin)
+    .bind(is_admin)
     .fetch_one(&mut *tx)
     .await
     {
