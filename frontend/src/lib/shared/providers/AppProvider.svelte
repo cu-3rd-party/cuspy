@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import {
@@ -22,12 +23,7 @@
 		SessionFlow,
 		SessionUser
 	} from '$lib/shared/model';
-	import {
-		appViewFromPath,
-		setAppContext,
-		type AppContext,
-		type AppView
-	} from './app-context';
+	import { appViewFromPath, setAppContext, type AppContext, type AppView } from './app-context';
 
 	type Props = {
 		initialSessionFlow?: SessionFlow | null;
@@ -126,7 +122,7 @@
 
 		if (browser) {
 			window.scrollTo(0, 0);
-			window.history.replaceState(window.history.state, '', '/');
+			replaceState('/', '');
 		}
 	};
 
@@ -196,6 +192,9 @@
 	const app: AppContext = {
 		get view() {
 			return view;
+		},
+		set view(v: AppView) {
+			view = v;
 		},
 		get sessionFlow() {
 			return sessionFlow;

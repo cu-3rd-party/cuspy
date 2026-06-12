@@ -16,6 +16,8 @@
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 	const app = getAppContext();
 
+	app.view = 'dossier-verification';
+
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let profileImage = $derived(draft.agentId.identificationImage || verificationImage);
 	let submitError = $state('');

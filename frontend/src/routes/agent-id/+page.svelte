@@ -34,6 +34,8 @@
 	}>();
 	const app = getAppContext();
 
+	app.view = 'agent-id';
+
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let uploadError = $state(false);
 	let invalidUploadMessage = $state('');

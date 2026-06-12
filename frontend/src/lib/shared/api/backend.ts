@@ -213,7 +213,7 @@ export const createProfileRequest = async (agentDataId: string, token = readAcce
 	);
 
 export const listProfileRequests = async (token = readAccessToken()) => {
-	const requests = await backendJson<BackendProfileRequest[]>('/profile-requests/', {
+	const requests = await backendJson<BackendProfileRequest[]>('/profile-requests', {
 		headers: authHeaders(token)
 	});
 

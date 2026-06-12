@@ -13,6 +13,7 @@
 		};
 	}>();
 	const app = getAppContext();
+	app.view = 'admin-events';
 	let loadedFromApp = $state(false);
 	let reports = $derived((loadedFromApp ? app.killReports : data.reports) as KillReport[]);
 	let activeId = $state('');

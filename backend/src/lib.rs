@@ -17,6 +17,7 @@ use axum::{
     middleware::{self, Next},
     response::Response,
 };
+use http::{HeaderValue, Method};
 use log::{error, info, warn};
 use s3::Bucket;
 use serde_json::{Value, json};
@@ -42,9 +43,26 @@ pub fn build_app(state: ApiContext) -> Router {
         .route("/", axum::routing::get(api::root))
         .layer(
             CorsLayer::new()
-                .allow_origin(tower_http::cors::Any)
-                .allow_methods(tower_http::cors::Any)
-                .allow_headers(tower_http::cors::Any),
+                .allow_origin(HeaderValue::from_str("http://localhost:5173").expect("cors origin"))
+                .allow_methods([
+                    Method::GET,
+                    Method::POST,
+                    Method::PUT,
+                    Method::PATCH,
+                    Method::DELETE,
+                    Method::OPTIONS,
+                    Method::CONNECT,
+                ])
+                .allow_headers([
+                    header::AUTHORIZATION,
+                    header::ACCEPT,
+                    header::CONTENT_TYPE,
+                    header::USER_AGENT,
+                    header::ACCEPT_LANGUAGE,
+                    header::ACCEPT_ENCODING,
+                    header::CONNECTION,
+                ])
+                .allow_credentials(true)
         )
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))

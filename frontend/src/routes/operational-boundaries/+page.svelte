@@ -15,6 +15,8 @@
 	let { data: _data = undefined } = $props<{ data?: unknown }>();
 	const app = getAppContext();
 
+	app.view = 'operational-boundaries';
+
 	let draft = $state<DossierDraft>(loadDossierDraft());
 	let toggles = $state([
 		{

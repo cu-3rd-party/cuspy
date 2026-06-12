@@ -20,6 +20,7 @@
 		};
 	}>();
 	const app = getAppContext();
+	app.view = 'admin-moderation';
 	let loadedFromApp = $state(false);
 	let requests = $derived(
 		(loadedFromApp ? app.adminProfileRequests : data.requests) as QueueRequest[]

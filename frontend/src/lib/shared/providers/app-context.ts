@@ -33,7 +33,7 @@ export type LandingVerification = Promise<{
 }>;
 
 export type AppContext = {
-	readonly view: AppView;
+	view: AppView;
 	readonly sessionFlow: SessionFlow | null;
 	readonly sessionUser: SessionUser | null;
 	readonly rankings: RankingEntry[];

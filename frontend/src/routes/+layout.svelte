@@ -9,6 +9,7 @@
 </script>
 
 <svelte:head>
+	<title>cukiller</title>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 <AppProvider initialSessionFlow={data.sessionFlow} initialSessionUser={data.sessionUser}>
