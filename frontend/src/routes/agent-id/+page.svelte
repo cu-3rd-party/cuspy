@@ -239,7 +239,7 @@
 	};
 </script>
 
-<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav}>
+<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav} flow={flow}>
 	<div class="mx-auto max-w-xl">
 		{#if invalidUploadMessage}
 			<div

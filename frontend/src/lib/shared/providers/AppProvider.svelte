@@ -11,7 +11,7 @@
 		listKillTargets,
 		listRankings
 	} from '$lib/shared/api';
-	import {buildSessionFlow, profileFlowTarget} from '$lib/pages/profile-flow';
+	import { buildSessionFlow, profileFlowTarget } from '$lib/pages/profile-flow';
 	import type {KillReport, ProfileRequest, RankingEntry, SessionFlow, SessionUser} from '$lib/shared/model';
 	import {sessionUser as sessionUserStore} from '$lib/shared/model';
 	import {type AppContext, type AppView, appViewFromPath, setAppContext} from './app-context';
@@ -27,7 +27,7 @@
 	const getInitialSessionUser = () => initialSessionUser ?? initialSessionFlow?.user ?? null;
 
 	let view = $state<AppView>(browser ? appViewFromPath(window.location.pathname) : 'home');
-	let sessionFlow = $state<SessionFlow | null>(getInitialSessionFlow());
+	let sessionFlow = $state<SessionFlow>(getInitialSessionFlow() ?? buildSessionFlow(null, null));
 	let sessionUser = $state<SessionUser | null>(getInitialSessionUser());
 	let rankings = $state<RankingEntry[]>([]);
 	let killTargets = $state<KillTarget[]>([]);
@@ -105,13 +105,17 @@
 	};
 
 	const refreshSession = async () => {
-		const nextFlow = await getSessionFlow();
-		sessionFlow = nextFlow;
-		sessionUser = nextFlow.user;
-		sessionUserStore.set(nextFlow.user);
+		try {
+			const nextFlow = await getSessionFlow();
+			sessionFlow = nextFlow;
+			sessionUser = nextFlow.user;
+			sessionUserStore.set(nextFlow.user);
 
-		if (guardedView(view) !== view) {
-			navigate(profileFlowTarget(nextFlow));
+			if (guardedView(view) !== view) {
+				navigate(profileFlowTarget(nextFlow));
+			}
+		} catch {
+			// Network error — backend unreachable, keep current session
 		}
 	};
 

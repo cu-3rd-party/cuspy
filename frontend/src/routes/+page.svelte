@@ -196,7 +196,7 @@
 {:else if app.view === 'profile-request-moderation'}
 	<ProfileRequestModerationPage data={childData} />
 {:else}
-	<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}>
+	<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} flow={flow}>
 	<section class="mb-12">
 		<div
 			class="scan-sweep-soft relative flex h-72 items-end overflow-hidden bg-surface-container p-6 sm:p-8"

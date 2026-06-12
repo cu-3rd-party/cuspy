@@ -6,10 +6,10 @@
 	import { getAppContext } from '$lib/shared/providers';
 	import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime.js';
 
-	let { config, flow = undefined }: { config: TopBarConfig; flow?: SessionFlow } = $props();
+	let { config, flow }: { config: TopBarConfig; flow?: SessionFlow } = $props();
 	let app = getAppContext();
 	let codename = $derived(
-		(flow?.user?.agent_data?.codename as string | undefined) ?? flow?.user?.agent_name ?? 'guest'
+		(flow?.user?.agent_data?.codename as string | undefined) ?? flow?.user?.agent_name ?? flow?.status ?? 'undef'
 	);
 	let status = $derived(
 		flow?.status === 'approved'

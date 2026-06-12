@@ -167,7 +167,12 @@ export const getSessionFlow = async (
 		const user = await getCurrentUser(token, customFetch);
 		const requests = await listProfileRequests(token, customFetch);
 		return buildSessionFlow(user, requests[0] ?? null, requests);
-	} catch {
+	} catch (error) {
+		// Network error — backend unreachable, don't touch the token
+		if (error instanceof TypeError) {
+			throw error;
+		}
+
 		// Token expired or invalid — try to re-login with stored telegram_id
 		const authPayload = readAuthPayload();
 
