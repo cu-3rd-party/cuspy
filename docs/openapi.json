@@ -3,6 +3,9 @@
   "info": {
     "title": "cukiller-backend",
     "description": "",
+    "license": {
+      "name": ""
+    },
     "version": "0.1.0"
   },
   "paths": {
@@ -2390,7 +2393,7 @@
         "type": "object",
         "required": [
           "id",
-          "file_path",
+          "file_location",
           "file_size",
           "created_at",
           "updated_at"
@@ -2400,7 +2403,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "file_path": {
+          "file_location": {
             "type": "string"
           },
           "file_size": {
