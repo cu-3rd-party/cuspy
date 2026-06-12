@@ -21,11 +21,11 @@ pub async fn get_resource(
     State(state): State<ApiContext>,
     Path(resource_id): Path<Uuid>,
 ) -> Result<Json<Resource>, ApiError> {
-    let resource = sqlx::query_as(
+    let mut resource: Resource = sqlx::query_as(
         r#"
             select
                 cast(resource_id as text) as resource_id,
-                file_path,
+                file_location,
                 file_size,
                 mime_type,
                 checksum,
@@ -38,5 +38,6 @@ pub async fn get_resource(
     .bind(db_uuid(resource_id))
     .fetch_one(&state.db)
     .await?;
+    resource.file_location = state.bucket.presign_get(&resource.file_location, 1*60, None).await?;
     Ok(Json(resource))
 }

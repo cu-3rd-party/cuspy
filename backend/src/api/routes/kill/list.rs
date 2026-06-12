@@ -57,7 +57,7 @@ impl ListParams {
 
 #[utoipa::path(
     get,
-    path = "/kill/",
+    path = "/kill",
     tag = "kill",
     params(ListParams),
     responses(

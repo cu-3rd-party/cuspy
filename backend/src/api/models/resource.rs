@@ -11,7 +11,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct Resource {
     pub id: Uuid,
-    pub file_path: String,
+    pub file_location: String,
     pub file_size: i64,
     pub mime_type: Option<String>,
     pub checksum: Option<String>,
@@ -35,7 +35,7 @@ impl Resource {
             r#"
                     select
                         cast(resource_id as text) as resource_id,
-                        file_path,
+                        file_location,
                         file_size,
                         mime_type,
                         checksum,
@@ -74,11 +74,11 @@ impl Resource {
 
         let resource: Resource = sqlx::query_as(
             r#"
-                    insert into "resource" (file_path, file_size, mime_type, checksum)
+                    insert into "resource" (file_location, file_size, mime_type, checksum)
                     values ($1, $2, $3, $4)
                     returning
                         cast(resource_id as text) as resource_id,
-                        file_path,
+                        file_location,
                         file_size,
                         mime_type,
                         checksum,
@@ -101,7 +101,7 @@ impl<'r> FromRow<'r, AnyRow> for Resource {
     fn from_row(row: &'r AnyRow) -> Result<Self, Error> {
         Ok(Self {
             id: parse_uuid(row, "resource_id")?,
-            file_path: row.get("file_path"),
+            file_location: row.get("file_location"),
             file_size: row.get("file_size"),
             mime_type: row.try_get("mime_type").ok(),
             checksum: row.try_get("checksum").ok(),

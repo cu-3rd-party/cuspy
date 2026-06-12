@@ -21,6 +21,7 @@ use log::{error, info};
 use s3::Bucket;
 use serde_json::{Value, json};
 use sqlx::AnyPool;
+use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -39,6 +40,12 @@ pub fn build_app(state: ApiContext) -> Router {
     api::router()
         .merge(docs::docs_router())
         .route("/", axum::routing::get(api::root))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(tower_http::cors::Any)
+                .allow_methods(tower_http::cors::Any)
+                .allow_headers(tower_http::cors::Any),
+        )
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
         .with_state(state)

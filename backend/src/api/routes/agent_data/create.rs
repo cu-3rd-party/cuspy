@@ -17,7 +17,7 @@ pub struct CreateAgentDataMultipartRequest {
 
 #[utoipa::path(
     post,
-    path = "/agent-data/",
+    path = "/agent-data",
     tag = "agent-data",
     request_body(
         content = CreateAgentDataMultipartRequest,

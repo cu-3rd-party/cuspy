@@ -530,7 +530,7 @@ pub async fn fetch_user_agent_data(ctx: &TestContext, user_id: &str) -> Value {
 pub async fn seed_resource(ctx: &TestContext) -> String {
     sqlx::query_scalar::<_, uuid::Uuid>(
         r#"
-        insert into "resource" (file_path, file_size, mime_type, checksum)
+        insert into "resource" (file_location, file_size, mime_type, checksum)
         values ($1, $2, $3, $4)
         returning resource_id
         "#,

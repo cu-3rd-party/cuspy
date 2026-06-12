@@ -40,7 +40,7 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(resource_status, StatusCode::OK);
-    assert_eq!(resource_body["file_path"], "test/resource.txt");
+    assert_eq!(resource_body["file_location"], "test/resource.txt");
 
     #[cfg(feature = "telegram-auth")]
     let user_init_data = telegram_init_data(1001);
