@@ -2,14 +2,12 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
 	use: {
-		baseURL: 'http://127.0.0.1:4173'
+		baseURL: 'http://localhost:5173'
 	},
 	webServer: [
-		{ command: 'node tests/mock-backend.mjs', port: 3001, reuseExistingServer: !process.env.CI },
 		{
-			command:
-				'BACKEND_URL=http://127.0.0.1:3001 npm run build && BACKEND_URL=http://127.0.0.1:3001 npm run preview',
-			port: 4173,
+			command: 'PUBLIC_BACKEND_URL=http://127.0.0.1:3000 npm run dev',
+			port: 5173,
 			reuseExistingServer: !process.env.CI
 		}
 	],

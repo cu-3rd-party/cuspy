@@ -67,7 +67,7 @@ export const profileFlowTarget = (flow: SessionFlow): string => {
 		return '/waiting-clearance';
 	}
 
-	return '/target-intel';
+	return '/dossier';
 };
 
 export const canAccessGameplay = (flow: SessionFlow) => flow.canPlay;

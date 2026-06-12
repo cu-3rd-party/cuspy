@@ -15,6 +15,7 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
+		"test:e2e:headed": "playwright test tests/registration-flow.e2e.ts --reporter=line --headed",
 		"test:e2e:selenium": "node tests/selenium-dossier-approval.e2e.mjs"
 	},
 	"devDependencies": {

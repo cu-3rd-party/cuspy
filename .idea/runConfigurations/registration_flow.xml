@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="registration flow" type="JavaScriptTestRunnerPlaywright">
+    <config value="$PROJECT_DIR$/frontend/playwright.config.ts" />
+    <node-interpreter value="$USER_HOME$/.bun/bin/bun" />
+    <playwright-package value="$PROJECT_DIR$/frontend/node_modules/@playwright/test" />
+    <working-dir value="$PROJECT_DIR$/frontend" />
+    <cli-options value="--headed" />
+    <envs />
+    <scope-kind value="TEST_FILE" />
+    <test-file value="$PROJECT_DIR$/frontend/tests/registration-flow.e2e.ts" />
+    <method v="2" />
+  </configuration>
+</component>
