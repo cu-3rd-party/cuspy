@@ -70,7 +70,7 @@
 			<a
 				href={resolve(link.href as Pathname)}
 				class="group flex items-center gap-4 p-3 font-headline font-medium uppercase transition-all {activePath ===
-					link.href
+				link.href
 					? 'bg-surface-container pl-6 text-secondary'
 					: 'text-on-surface opacity-70 hover:bg-surface-container-high hover:pl-6'}"
 			>

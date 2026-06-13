@@ -68,8 +68,7 @@ pub fn build_rest(state: ApiContext) -> Router {
         .merge(docs::docs_router())
         .nest(
             "/api",
-            rest::router()
-                .route("/", axum::routing::get(rest::root)),
+            rest::router().route("/", axum::routing::get(rest::root)),
         )
         .layer(build_cors_layer(&state))
         .layer(tower_http::trace::TraceLayer::new_for_http())

@@ -108,9 +108,7 @@
 	];
 </script>
 
-<TerminalShell
-	topBar={{ title: 'CLEARANCE QUEUE', icon: 'hourglass_top', avatar: agentAvatar }}
->
+<TerminalShell topBar={{ title: 'CLEARANCE QUEUE', icon: 'hourglass_top', avatar: agentAvatar }}>
 	<div class="mx-auto max-w-5xl space-y-8">
 		<section class="border-b border-outline-variant/10 pb-8">
 			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">

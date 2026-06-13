@@ -10,7 +10,10 @@
 	let { config, flow }: { config: TopBarConfig; flow?: SessionFlow } = $props();
 	let app = getAppContext();
 	let codename = $derived(
-		(flow?.user?.agent_data?.codename as string | undefined) ?? flow?.user?.agent_name ?? flow?.status ?? 'undef'
+		(flow?.user?.agent_data?.codename as string | undefined) ??
+			flow?.user?.agent_name ??
+			flow?.status ??
+			'undef'
 	);
 	let status = $derived(
 		flow?.status === 'approved'
@@ -92,7 +95,7 @@
 				</button>
 				{#if dropdownOpen}
 					<div
-						class="absolute right-0 top-full z-50 mt-2 w-72 bg-surface-container-low shadow-xl"
+						class="absolute top-full right-0 z-50 mt-2 w-72 bg-surface-container-low shadow-xl"
 						role="menu"
 						tabindex="-1"
 						onclick={() => (dropdownOpen = false)}

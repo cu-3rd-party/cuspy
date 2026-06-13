@@ -6,11 +6,11 @@ use crate::models::{ApiError, db_optional_timestamp, db_uuid};
 use crate::rest::extractor::AdminUser;
 use crate::rest::helpers;
 use crate::{ApiContext, notifier};
-use time::format_description::well_known::Rfc3339;
 use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router};
 use http::StatusCode;
+use time::format_description::well_known::Rfc3339;
 use uuid::Uuid;
 
 pub fn profile_request_router() -> Router<ApiContext> {

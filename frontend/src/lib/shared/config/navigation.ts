@@ -56,7 +56,7 @@ export const gameplayNav: BottomNavItem[] = [
 	{ href: '/missions', label: 'MISSIONS', icon: 'assignment', group: 'gameplay' },
 	{ href: '/loot', label: 'GEAR', icon: 'inventory_2', group: 'gameplay' },
 	{ href: '/perks', label: 'PERKS', icon: 'bolt', group: 'gameplay' },
-	{ href: '/', label: m.nav_rules(), icon: 'gavel', group: 'dossier' }, // TODO: add rulebook link here
+	{ href: '/', label: m.nav_rules(), icon: 'gavel', group: 'dossier' } // TODO: add rulebook link here
 ];
 
 export const agentAvatar =

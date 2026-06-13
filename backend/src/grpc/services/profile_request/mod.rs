@@ -30,7 +30,9 @@ impl ProfileRequest for ProfileRequestService {
         &self,
         request: Request<SubscribeRequest>,
     ) -> Result<Response<Self::SubscribeStream>, Status> {
-        let user = request.auth_user_cloned().ok_or_else(|| Status::unauthenticated(""))?;
+        let user = request
+            .auth_user_cloned()
+            .ok_or_else(|| Status::unauthenticated(""))?;
         let req = request.into_inner();
 
         let user_id = Uuid::parse_str(&req.user_id)
@@ -89,7 +91,10 @@ mod tests {
     use tonic::Code;
 
     fn make_user(id: Uuid, is_admin: bool) -> User {
-        User { user_id: id, is_admin }
+        User {
+            user_id: id,
+            is_admin,
+        }
     }
 
     fn make_event(user_id: Uuid, status: &str) -> ProfileRequestEvent {

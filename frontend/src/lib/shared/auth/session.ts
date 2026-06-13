@@ -43,10 +43,7 @@ export const readAuthPayload = (): AuthPayload | null => {
 	return raw ? JSON.parse(raw) : null;
 };
 
-export const writeAuthPayload = (
-	payload: AuthPayload
-) => {
+export const writeAuthPayload = (payload: AuthPayload) => {
 	if (!browser) return;
 	window.localStorage.setItem(AUTH_PAYLOAD_KEY, JSON.stringify(payload));
 };
-

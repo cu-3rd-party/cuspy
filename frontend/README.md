@@ -26,15 +26,15 @@ bun run test:e2e:selenium   # selenium (требуется Docker-бэкенд)
 
 ## Tech Stack
 
-| Слой | Технология |
-|------|-----------|
-| Фреймворк | Svelte 5 (runes mode) + SvelteKit 2 |
-| Язык | TypeScript 6 |
-| Сборка | Vite 8 |
-| CSS | Tailwind CSS v4 (CSS-based config) |
-| i18n | Inlang Paraglide-JS (EN/RU) |
-| Адаптер | `@sveltejs/adapter-node` (Docker) |
-| Тесты | Vitest + Playwright + Selenium |
+| Слой      | Технология                                          |
+| --------- | --------------------------------------------------- |
+| Фреймворк | Svelte 5 (runes mode) + SvelteKit 2                 |
+| Язык      | TypeScript 6                                        |
+| Сборка    | Vite 8                                              |
+| CSS       | Tailwind CSS v4 (CSS-based config)                  |
+| i18n      | Inlang Paraglide-JS (EN/RU)                         |
+| Адаптер   | `@sveltejs/adapter-node` (Docker)                   |
+| Тесты     | Vitest + Playwright + Selenium                      |
 | Форматтер | Prettier (tabs, single quotes, trailing comma none) |
 
 ---
@@ -86,18 +86,21 @@ src/
 
 ```typescript
 type AppContext = {
-  view: AppView;                             // текущая SPA-страница
-  sessionFlow: SessionFlow | null;           // состояние сессии
-  sessionUser: SessionUser | null;           // текущий пользователь
-  rankings: RankingEntry[];                  // таблица лидеров
-  killTargets: KillTarget[];                 // цели для отчёта
-  adminProfileRequests: ProfileRequest[];    // заявки (админка)
-  killReports: KillReport[];                 // отчёты о ликвидациях (админка)
-  verification: LandingVerification;         // промис для лендинга
-  navigate: (target: AppView) => void;
-  refreshSession: () => Promise<void>;
-  setSessionUser: (user: SessionUser | null) => void;
-  loadRankings, loadKillTargets, loadAdminProfileRequests, loadKillReports: () => Promise<void>;
+	view: AppView; // текущая SPA-страница
+	sessionFlow: SessionFlow | null; // состояние сессии
+	sessionUser: SessionUser | null; // текущий пользователь
+	rankings: RankingEntry[]; // таблица лидеров
+	killTargets: KillTarget[]; // цели для отчёта
+	adminProfileRequests: ProfileRequest[]; // заявки (админка)
+	killReports: KillReport[]; // отчёты о ликвидациях (админка)
+	verification: LandingVerification; // промис для лендинга
+	navigate: (target: AppView) => void;
+	refreshSession: () => Promise<void>;
+	setSessionUser: (user: SessionUser | null) => void;
+	loadRankings;
+	loadKillTargets;
+	loadAdminProfileRequests;
+	loadKillReports: () => Promise<void>;
 };
 ```
 
@@ -150,22 +153,22 @@ guest → no_profile → pending → approved
 
 ### Эндпоинты
 
-| Функция | Метод | Path |
-|---------|-------|------|
-| `registerUser()` | POST | `/auth/register` |
-| `loginUser()` | POST | `/auth/login` |
-| `getCurrentUser()` | GET | `/auth/me` |
-| `createAgentData()` | POST | `/agent-data` |
-| `createProfileRequest()` | POST | `/profile-requests` |
-| `listProfileRequests()` | GET | `/profile-requests` |
-| `deleteProfileRequest()` | DELETE | `/profile-requests/:id` |
-| `listAdminProfileRequests()` | GET | `/admin/profile-requests/` |
-| `moderateProfileRequest()` | PATCH | `/admin/profile-requests/:id` |
-| `listRankings()` | GET | `/stats/rankings` |
-| `listKillTargets()` | GET | (из rankings) |
-| `reportKill()` | POST | `/kill/` |
-| `listKillReports()` | GET | `/kill/` |
-| `moderateKillReport()` | POST | `/kill/:id/moderate` |
+| Функция                      | Метод  | Path                          |
+| ---------------------------- | ------ | ----------------------------- |
+| `registerUser()`             | POST   | `/auth/register`              |
+| `loginUser()`                | POST   | `/auth/login`                 |
+| `getCurrentUser()`           | GET    | `/auth/me`                    |
+| `createAgentData()`          | POST   | `/agent-data`                 |
+| `createProfileRequest()`     | POST   | `/profile-requests`           |
+| `listProfileRequests()`      | GET    | `/profile-requests`           |
+| `deleteProfileRequest()`     | DELETE | `/profile-requests/:id`       |
+| `listAdminProfileRequests()` | GET    | `/admin/profile-requests/`    |
+| `moderateProfileRequest()`   | PATCH  | `/admin/profile-requests/:id` |
+| `listRankings()`             | GET    | `/stats/rankings`             |
+| `listKillTargets()`          | GET    | (из rankings)                 |
+| `reportKill()`               | POST   | `/kill/`                      |
+| `listKillReports()`          | GET    | `/kill/`                      |
+| `moderateKillReport()`       | POST   | `/kill/:id/moderate`          |
 
 ### Нормализация данных
 
@@ -204,18 +207,18 @@ Backend-типы (`BackendUser`, `BackendAgentData`, `BackendProfileRequest`) м
 
 ## UI-компоненты (`src/lib/shared/ui/`)
 
-| Компонент | Назначение |
-|-----------|-----------|
-| `TerminalShell.svelte` | Основной лэйаут (TopBar + контент + BottomNav) |
-| `TopBar.svelte` | Верхняя панель: логотип, статус, выбор языка |
-| `BottomNav.svelte` | Нижняя навигация (мобильная) |
-| `Sidebar.svelte` | Боковая навигация (десктоп) |
-| `Icon.svelte` | Обёртка Material Symbols Outlined |
-| `AgentPersonalInfo.svelte` | Ввод позывного + загрузка фото |
+| Компонент                  | Назначение                                     |
+| -------------------------- | ---------------------------------------------- |
+| `TerminalShell.svelte`     | Основной лэйаут (TopBar + контент + BottomNav) |
+| `TopBar.svelte`            | Верхняя панель: логотип, статус, выбор языка   |
+| `BottomNav.svelte`         | Нижняя навигация (мобильная)                   |
+| `Sidebar.svelte`           | Боковая навигация (десктоп)                    |
+| `Icon.svelte`              | Обёртка Material Symbols Outlined              |
+| `AgentPersonalInfo.svelte` | Ввод позывного + загрузка фото                 |
 | `ProfileStatePanel.svelte` | Информационная панель с заголовком, телом, CTA |
-| `ProgressBar.svelte` | Сегментированный прогресс-бар |
-| `Countdown.svelte` | Таймер MM:SS |
-| `NodeConnectivity.svelte` | Индикатор статуса |
+| `ProgressBar.svelte`       | Сегментированный прогресс-бар                  |
+| `Countdown.svelte`         | Таймер MM:SS                                   |
+| `NodeConnectivity.svelte`  | Индикатор статуса                              |
 
 ---
 

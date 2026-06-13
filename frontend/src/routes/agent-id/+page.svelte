@@ -238,7 +238,7 @@
 	};
 </script>
 
-<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav} flow={flow}>
+<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav} {flow}>
 	<div class="mx-auto max-w-xl">
 		{#if invalidUploadMessage}
 			<div
@@ -280,7 +280,11 @@
 			</div>
 
 			<form class="space-y-10 p-8" onsubmit={handleSubmit}>
-				<AgentPersonalInfo {handleIdentificationChange} {uploadError} bind:agentId={draft.agentId} />
+				<AgentPersonalInfo
+					{handleIdentificationChange}
+					{uploadError}
+					bind:agentId={draft.agentId}
+				/>
 
 				<div class="space-y-4">
 					<div class="flex items-center justify-between">

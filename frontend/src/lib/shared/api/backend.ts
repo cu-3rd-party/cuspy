@@ -1,5 +1,11 @@
 import { env } from '$env/dynamic/public';
-import {clearAccessToken, readAccessToken, writeAccessToken, readAuthPayload, type AuthPayload} from '$lib/shared/auth';
+import {
+	clearAccessToken,
+	readAccessToken,
+	writeAccessToken,
+	readAuthPayload,
+	type AuthPayload
+} from '$lib/shared/auth';
 import { buildSessionFlow } from '$lib/pages/profile-flow';
 import type {
 	AgentProfileData,
@@ -135,7 +141,11 @@ export const registerUser = async (
 };
 
 export const getCurrentUser = async (token = readAccessToken(), customFetch?: typeof fetch) => {
-	const user = await backendJson<BackendUser>('/auth/me', { headers: authHeaders(token) }, customFetch);
+	const user = await backendJson<BackendUser>(
+		'/auth/me',
+		{ headers: authHeaders(token) },
+		customFetch
+	);
 	return normalizeUser(user, customFetch);
 };
 
@@ -193,7 +203,10 @@ export const getSessionFlow = async (
 	}
 };
 
-export const createAgentData = async (profileData: AgentProfileData, customFetch?: typeof fetch) => {
+export const createAgentData = async (
+	profileData: AgentProfileData,
+	customFetch?: typeof fetch
+) => {
 	const formData = new FormData();
 	formData.set('data', JSON.stringify(toAgentDataMetadata(profileData)));
 
@@ -205,10 +218,14 @@ export const createAgentData = async (profileData: AgentProfileData, customFetch
 		formData.set('image', imageFile);
 	}
 
-	const created = await backendJson<BackendAgentData>('/agent-data', {
-		method: 'POST',
-		body: formData
-	}, customFetch);
+	const created = await backendJson<BackendAgentData>(
+		'/agent-data',
+		{
+			method: 'POST',
+			body: formData
+		},
+		customFetch
+	);
 
 	return normalizeAgentData(created, profileData.identificationImage, customFetch);
 };
@@ -229,22 +246,40 @@ export const getResourceMetadata = (resourceId: string, customFetch?: typeof fet
 	backendJson<BackendResource>(`/resource/${encodeURIComponent(resourceId)}`, {}, customFetch);
 
 export const deleteProfileRequest = async (requestId: string, token = readAccessToken()) =>
-	backendJson<undefined>(`/profile-requests/${encodeURIComponent(requestId)}`, { method: 'DELETE', headers: authHeaders(token) });
+	backendJson<undefined>(`/profile-requests/${encodeURIComponent(requestId)}`, {
+		method: 'DELETE',
+		headers: authHeaders(token)
+	});
 
-export const createProfileRequest = async (agentDataId: string, token = readAccessToken(), customFetch?: typeof fetch) =>
+export const createProfileRequest = async (
+	agentDataId: string,
+	token = readAccessToken(),
+	customFetch?: typeof fetch
+) =>
 	normalizeProfileRequest(
-		await backendJson<BackendProfileRequest>('/profile-requests', {
-			method: 'POST',
-			headers: authHeaders(token),
-			body: JSON.stringify({ agent_data_id: agentDataId })
-		}, customFetch),
+		await backendJson<BackendProfileRequest>(
+			'/profile-requests',
+			{
+				method: 'POST',
+				headers: authHeaders(token),
+				body: JSON.stringify({ agent_data_id: agentDataId })
+			},
+			customFetch
+		),
 		customFetch
 	);
 
-export const listProfileRequests = async (token = readAccessToken(), customFetch?: typeof fetch) => {
-	const requests = await backendJson<BackendProfileRequest[]>('/profile-requests', {
-		headers: authHeaders(token)
-	}, customFetch);
+export const listProfileRequests = async (
+	token = readAccessToken(),
+	customFetch?: typeof fetch
+) => {
+	const requests = await backendJson<BackendProfileRequest[]>(
+		'/profile-requests',
+		{
+			headers: authHeaders(token)
+		},
+		customFetch
+	);
 
 	return hydrateProfileRequests(requests, customFetch);
 };
@@ -340,10 +375,15 @@ export const moderateKillReport = ({
 		})
 	});
 
-const hydrateProfileRequests = async (requests: BackendProfileRequest[], customFetch?: typeof fetch) =>
-	Promise.all(requests.map((request) => normalizeProfileRequest(request, customFetch)));
+const hydrateProfileRequests = async (
+	requests: BackendProfileRequest[],
+	customFetch?: typeof fetch
+) => Promise.all(requests.map((request) => normalizeProfileRequest(request, customFetch)));
 
-const normalizeUser = async (user: BackendUser, customFetch?: typeof fetch): Promise<SessionUser> => ({
+const normalizeUser = async (
+	user: BackendUser,
+	customFetch?: typeof fetch
+): Promise<SessionUser> => ({
 	...user,
 	agent_data: user.agent_data_id
 		? await getAgentData(user.agent_data_id, customFetch)
@@ -357,7 +397,8 @@ const normalizeProfileRequest = async (
 	...request,
 	status: normalizeProfileStatus(request.status),
 	requested_profile_data:
-		request.requested_profile_data ?? (await getAgentData(request.requested_profile_data_id, customFetch))
+		request.requested_profile_data ??
+		(await getAgentData(request.requested_profile_data_id, customFetch))
 });
 
 const normalizeProfileStatus = (status: string): ProfileRequestStatus => {
@@ -430,7 +471,11 @@ const resolveResourceFileLocation = async (resourceId?: string, customFetch?: ty
 		return undefined;
 	}
 
-	if (resourceId.startsWith('http://') || resourceId.startsWith('https://') || resourceId.startsWith('data:')) {
+	if (
+		resourceId.startsWith('http://') ||
+		resourceId.startsWith('https://') ||
+		resourceId.startsWith('data:')
+	) {
 		return resourceId;
 	}
 

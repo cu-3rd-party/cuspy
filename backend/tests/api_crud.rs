@@ -14,15 +14,11 @@ use common::{
 async fn backend_endpoints_work_end_to_end() {
     let ctx = TestContext::new().await;
 
-    let (health_status, health_body) = ctx
-        .json("GET", "/api/health", None, None, None, None)
-        .await;
+    let (health_status, health_body) = ctx.json("GET", "/api/health", None, None, None, None).await;
     assert_eq!(health_status, StatusCode::OK);
     assert_eq!(health_body["status"], "ok");
 
-    let (root_status, root_body) = ctx
-        .json("GET", "/api", None, None, None, None)
-        .await;
+    let (root_status, root_body) = ctx.json("GET", "/api", None, None, None, None).await;
     assert_eq!(root_status, StatusCode::OK);
     assert_eq!(root_body, Value::String("backend up".into()));
 
@@ -44,9 +40,7 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(resource_status, StatusCode::OK);
-    let location =
-        resource_body["file_location"]
-            .to_string();
+    let location = resource_body["file_location"].to_string();
     assert!(location.contains("http://127.0.0.1:9000"));
     assert!(location.contains("test-bucket/"));
     assert!(location.contains("test/resource.txt"));
@@ -298,7 +292,14 @@ async fn backend_endpoints_work_end_to_end() {
     let admin_auth: Option<&str> = None;
 
     let (pending_kills_status, pending_kills_body) = ctx
-        .json("GET", "/api/kill", None, Some(&other_token), None, other_auth)
+        .json(
+            "GET",
+            "/api/kill",
+            None,
+            Some(&other_token),
+            None,
+            other_auth,
+        )
         .await;
     assert_eq!(pending_kills_status, StatusCode::OK);
     assert_eq!(pending_kills_body.as_array().expect("array").len(), 0);

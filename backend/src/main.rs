@@ -1,7 +1,6 @@
 use clap::Parser;
-use cukiller_backend::{ApiContext, build_service, config};
 use cukiller_backend::models::profile::ProfileRequestEvent;
-use tokio::sync::broadcast;
+use cukiller_backend::{ApiContext, build_service, config};
 use log::info;
 use s3::creds::Credentials;
 use s3::error::S3Error;
@@ -12,6 +11,7 @@ use teloxide::{
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo},
 };
+use tokio::sync::broadcast;
 use url::Url;
 
 #[allow(dead_code)]

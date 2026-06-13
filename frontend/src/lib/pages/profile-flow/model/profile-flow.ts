@@ -12,9 +12,10 @@ export const buildSessionFlow = (
 	allRequests: ProfileRequest[] = []
 ): SessionFlow => {
 	const status = deriveSessionFlowStatus(user, latestProfileRequest);
-	const anyApproved = allRequests.length > 0
-		? allRequests.some((r) => r.status === 'approved')
-		: status === 'approved';
+	const anyApproved =
+		allRequests.length > 0
+			? allRequests.some((r) => r.status === 'approved')
+			: status === 'approved';
 
 	return {
 		status,

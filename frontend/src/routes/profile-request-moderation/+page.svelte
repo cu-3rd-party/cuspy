@@ -13,8 +13,12 @@
 
 	const app = getAppContext();
 	const flow = $derived(data.sessionFlow);
-	const rejected = $derived(flow?.allRequests.filter((r: { status: string; }) => r.status === 'rejected') ?? []);
-	const approved = $derived(flow?.allRequests.filter((r: { status: string; }) => r.status === 'approved') ?? []);
+	const rejected = $derived(
+		flow?.allRequests.filter((r: { status: string }) => r.status === 'rejected') ?? []
+	);
+	const approved = $derived(
+		flow?.allRequests.filter((r: { status: string }) => r.status === 'approved') ?? []
+	);
 
 	let newlyRejected = $state<string[]>([]);
 
@@ -79,14 +83,18 @@
 		{#each rejected as req (req.profile_request_id)}
 			{@const profile = req.requested_profile_data}
 			{@const isNew = newlyRejected.includes(req.profile_request_id)}
-			{@const sectionClass = isNew ? 'border-l-4 border-warning bg-warning/10 p-6 transition-all' : 'border-l-4 border-error bg-error/5 p-6 transition-all'}
+			{@const sectionClass = isNew
+				? 'border-l-4 border-warning bg-warning/10 p-6 transition-all'
+				: 'border-l-4 border-error bg-error/5 p-6 transition-all'}
 			<section class={sectionClass}>
 				<div class="flex items-start justify-between gap-4">
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-3">
-						<div
-							class="font-headline text-[10px] tracking-[0.25em] uppercase {isNew ? 'text-warning' : 'text-error'}"
-						>
+							<div
+								class="font-headline text-[10px] tracking-[0.25em] uppercase {isNew
+									? 'text-warning'
+									: 'text-error'}"
+							>
 								{isNew ? 'NEW MODERATION RESULT' : 'Rejected'}
 							</div>
 							<ProfileAvatar {profile} name={profile?.codename ?? 'N/A'} size={40} />
@@ -101,12 +109,10 @@
 						</div>
 						{#if req.reviewer_note}
 							<div class="mt-4 rounded bg-surface-container-low p-4">
-								<div
-									class="font-label text-[10px] tracking-[0.2em] text-outline uppercase"
-								>
+								<div class="font-label text-[10px] tracking-[0.2em] text-outline uppercase">
 									Moderator note
 								</div>
-								<p class="mt-1 text-sm italic text-on-surface-variant">
+								<p class="mt-1 text-sm text-on-surface-variant italic">
 									"{req.reviewer_note}"
 								</p>
 							</div>
@@ -130,12 +136,14 @@
 			{@const currentProfile = current.requested_profile_data}
 			<section class="border-l-4 border-secondary bg-secondary/5 p-6">
 				<div class="flex items-center gap-3">
-					<div
-						class="font-headline text-[10px] tracking-[0.25em] text-secondary uppercase"
-					>
+					<div class="font-headline text-[10px] tracking-[0.25em] text-secondary uppercase">
 						Active operative profile
 					</div>
-					<ProfileAvatar profile={currentProfile} name={currentProfile?.codename ?? 'N/A'} size={40} />
+					<ProfileAvatar
+						profile={currentProfile}
+						name={currentProfile?.codename ?? 'N/A'}
+						size={40}
+					/>
 				</div>
 				<div class="mt-2">
 					<span class="font-headline font-bold text-on-surface uppercase"
@@ -148,8 +156,8 @@
 		<section class="bg-surface-container-low p-6">
 			<h2 class="font-headline text-sm font-bold uppercase">Submit a new request</h2>
 			<p class="mt-2 text-sm text-on-surface-variant">
-				Create a corrected agent profile and submit it for review again. Your active gameplay
-				access remains until the new request is processed.
+				Create a corrected agent profile and submit it for review again. Your active gameplay access
+				remains until the new request is processed.
 			</p>
 			<button
 				onclick={createNewRequest}

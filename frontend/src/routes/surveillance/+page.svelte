@@ -61,7 +61,7 @@
 							</div>
 							<div class="mt-8 flex justify-end">
 								<a
-						href={resolve('/target-intel')}
+									href={resolve('/target-intel')}
 									class="press-scale bg-primary-container px-8 py-3 font-label text-sm font-bold tracking-widest text-on-primary-container uppercase hover:brightness-110"
 									>OPEN_DOSSIER</a
 								>

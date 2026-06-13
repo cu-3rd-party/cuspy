@@ -76,7 +76,11 @@
 	};
 </script>
 
-<TerminalShell topBar={{ title: m.home_topbar_title(), icon: 'terminal' }} nav={enlistNav} flow={app.sessionFlow}>
+<TerminalShell
+	topBar={{ title: m.home_topbar_title(), icon: 'terminal' }}
+	nav={enlistNav}
+	flow={app.sessionFlow}
+>
 	<div class="mx-auto max-w-4xl">
 		<ProgressBar
 			current={2}
