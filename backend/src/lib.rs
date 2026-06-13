@@ -61,17 +61,19 @@ fn build_cors_layer(state: &ApiContext) -> CorsLayer {
 }
 
 pub fn build_rest(state: ApiContext) -> Router {
-    Router::new()
+    let router1 = Router::new()
+        .merge(docs::docs_router())
         .nest(
             "/api",
             rest::router()
-                .merge(docs::docs_router())
                 .route("/", axum::routing::get(rest::root)),
         )
         .layer(build_cors_layer(&state))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
-        .with_state(state)
+        .with_state(state);
+    info!("{:?}", router1);
+    router1
 }
 
 pub fn build_grpc(state: ApiContext) -> Router {
