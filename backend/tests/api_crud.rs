@@ -14,11 +14,15 @@ use common::{
 async fn backend_endpoints_work_end_to_end() {
     let ctx = TestContext::new().await;
 
-    let (health_status, health_body) = ctx.json("GET", "/health", None, None, None, None).await;
+    let (health_status, health_body) = ctx
+        .json("GET", "/api/health", None, None, None, None)
+        .await;
     assert_eq!(health_status, StatusCode::OK);
     assert_eq!(health_body["status"], "ok");
 
-    let (root_status, root_body) = ctx.json("GET", "/", None, None, None, None).await;
+    let (root_status, root_body) = ctx
+        .json("GET", "/api/", None, None, None, None)
+        .await;
     assert_eq!(root_status, StatusCode::OK);
     assert_eq!(root_body, Value::String("backend up".into()));
 
@@ -32,7 +36,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (resource_status, resource_body) = ctx
         .json(
             "GET",
-            &format!("/resource/{resource_id}"),
+            &format!("/api/resource/{resource_id}"),
             None,
             None,
             None,
@@ -55,7 +59,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (login_status, login_body) = ctx
         .json(
             "POST",
-            "/auth/login",
+            "/api/auth/login",
             Some(json!({ "email": "agent@example.com", "password": "password123" })),
             None,
             None,
@@ -66,19 +70,19 @@ async fn backend_endpoints_work_end_to_end() {
     assert!(login_body["access_token"].as_str().is_some());
 
     let (me_status, me_body) = ctx
-        .json("GET", "/auth/me", None, Some(&token), None, user_auth)
+        .json("GET", "/api/auth/me", None, Some(&token), None, user_auth)
         .await;
     assert_eq!(me_status, StatusCode::OK);
     assert_eq!(me_body["user_id"], user["user_id"]);
     assert_eq!(
-        fetch_latest_audit_actor(&ctx, "/auth/me").await,
+        fetch_latest_audit_actor(&ctx, "/api/auth/me").await,
         Some(user_id.clone())
     );
 
     let (get_user_status, get_user_body) = ctx
         .json(
             "GET",
-            &format!("/user/{user_id}"),
+            &format!("/api/user/{user_id}"),
             None,
             Some(&token),
             None,
@@ -92,7 +96,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (update_user_status, update_user_body) = ctx
         .json(
             "PATCH",
-            &format!("/user/{user_id}"),
+            &format!("/api/user/{user_id}"),
             Some(json!({
                 "agent_name": "Alpha Prime"
             })),
@@ -108,7 +112,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (create_request_status, create_request_body) = ctx
         .json(
             "POST",
-            "/profile-requests",
+            "/api/profile-requests",
             Some(json!({ "agent_data_id": agent_data_id })),
             Some(&token),
             None,
@@ -124,7 +128,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (list_requests_status, list_requests_body) = ctx
         .json(
             "GET",
-            "/profile-requests",
+            "/api/profile-requests",
             None,
             Some(&token),
             None,
@@ -137,7 +141,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (get_request_status, get_request_body) = ctx
         .json(
             "GET",
-            &format!("/profile-requests/{request_id}"),
+            &format!("/api/profile-requests/{request_id}"),
             None,
             Some(&token),
             None,
@@ -150,7 +154,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (update_request_status, update_request_body) = ctx
         .json(
             "PUT",
-            &format!("/profile-requests/{request_id}"),
+            &format!("/api/profile-requests/{request_id}"),
             Some(json!({
                 "requested_profile_data": { "codename": "Kharkiv", "course_number": 5 }
             })),
@@ -168,7 +172,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_list_users_status, admin_list_users_body) = ctx
         .json(
             "GET",
-            "/admin/user",
+            "/api/admin/user",
             None,
             None,
             Some(&ctx.admin_secret),
@@ -181,7 +185,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_create_user_status, admin_create_user_body) = ctx
         .json(
             "POST",
-            "/admin/user",
+            "/api/admin/user",
             Some(json!({
                 "telegram_id": 2002,
                 "agent_name": "Bravo",
@@ -202,7 +206,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_get_user_status, _) = ctx
         .json(
             "GET",
-            &format!("/admin/user/{admin_created_user_id}"),
+            &format!("/api/admin/user/{admin_created_user_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -214,7 +218,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_update_user_status, admin_update_user_body) = ctx
         .json(
             "PATCH",
-            &format!("/admin/user/{admin_created_user_id}"),
+            &format!("/api/admin/user/{admin_created_user_id}"),
             Some(json!({ "agent_name": "Bravo Lead", "is_admin": false })),
             None,
             Some(&ctx.admin_secret),
@@ -228,7 +232,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_list_requests_status, admin_list_requests_body) = ctx
         .json(
             "GET",
-            "/admin/profile-requests",
+            "/api/admin/profile-requests",
             None,
             None,
             Some(&ctx.admin_secret),
@@ -241,7 +245,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_get_request_status, _) = ctx
         .json(
             "GET",
-            &format!("/admin/profile-requests/{request_id}"),
+            &format!("/api/admin/profile-requests/{request_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -253,7 +257,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_update_request_status, admin_update_request_body) = ctx
         .json(
             "PATCH",
-            &format!("/admin/profile-requests/{request_id}"),
+            &format!("/api/admin/profile-requests/{request_id}"),
             Some(json!({
                 "status": "confirmed",
                 "reviewer_note": "ok"
@@ -289,7 +293,7 @@ async fn backend_endpoints_work_end_to_end() {
     let admin_auth: Option<&str> = None;
 
     let (pending_kills_status, pending_kills_body) = ctx
-        .json("GET", "/kill", None, Some(&other_token), None, other_auth)
+        .json("GET", "/api/kill", None, Some(&other_token), None, other_auth)
         .await;
     assert_eq!(pending_kills_status, StatusCode::OK);
     assert_eq!(pending_kills_body.as_array().expect("array").len(), 0);
@@ -297,7 +301,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (report_kill_status, report_kill_body) = ctx
         .json(
             "POST",
-            "/kill",
+            "/api/kill",
             Some(json!({
                 "victim_id": other_user_id,
                 "evidence_url": "https://example.com/evidence",
@@ -318,7 +322,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (victim_pending_status, victim_pending_body) = ctx
         .json(
             "GET",
-            &format!("/kill?victim_user_id={other_user_id}"),
+            &format!("/api/kill?victim_user_id={other_user_id}"),
             None,
             Some(&other_token),
             None,
@@ -331,7 +335,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (confirm_kill_status, confirm_kill_body) = ctx
         .json(
             "POST",
-            &format!("/kill/{kill_id}/confirm"),
+            &format!("/api/kill/{kill_id}/confirm"),
             Some(json!({ "confirmed": true })),
             Some(&other_token),
             None,
@@ -344,7 +348,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (moderate_kill_status, moderate_kill_body) = ctx
         .json(
             "POST",
-            &format!("/kill/{kill_id}/moderate"),
+            &format!("/api/kill/{kill_id}/moderate"),
             Some(json!({ "action": "APPROVE", "reason": "verified" })),
             Some(&admin_token),
             None,
@@ -354,7 +358,7 @@ async fn backend_endpoints_work_end_to_end() {
     assert_eq!(moderate_kill_status, StatusCode::OK);
     assert_eq!(moderate_kill_body["status"], "ADMIN_APPROVED");
     assert_eq!(
-        fetch_latest_audit_actor(&ctx, "/kill/{kill_id}/moderate").await,
+        fetch_latest_audit_actor(&ctx, "/api/kill/{kill_id}/moderate").await,
         Some(
             moderate_kill_body["moderator_id"]
                 .as_str()
@@ -364,7 +368,7 @@ async fn backend_endpoints_work_end_to_end() {
     );
 
     let (approved_kills_status, approved_kills_body) = ctx
-        .json("GET", "/kill", None, Some(&token), None, user_auth)
+        .json("GET", "/api/kill", None, Some(&token), None, user_auth)
         .await;
     assert_eq!(approved_kills_status, StatusCode::OK);
     assert_eq!(approved_kills_body.as_array().expect("array").len(), 1);
@@ -372,7 +376,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (rankings_status, rankings_body) = ctx
         .json(
             "GET",
-            "/stats/rankings",
+            "/api/stats/rankings",
             None,
             Some(&token),
             None,
@@ -391,7 +395,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (stats_status, stats_body) = ctx
         .json(
             "GET",
-            &format!("/stats/user/{user_id}"),
+            &format!("/api/stats/user/{user_id}"),
             None,
             Some(&token),
             None,
@@ -405,7 +409,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (forbidden_user_status, _) = ctx
         .json(
             "GET",
-            &format!("/user/{user_id}"),
+            &format!("/api/user/{user_id}"),
             None,
             Some(&other_token),
             None,
@@ -417,7 +421,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (forbidden_request_status, _) = ctx
         .json(
             "GET",
-            &format!("/profile-requests/{request_id}"),
+            &format!("/api/profile-requests/{request_id}"),
             None,
             Some(&other_token),
             None,
@@ -429,7 +433,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_delete_request_status, _) = ctx
         .json(
             "DELETE",
-            &format!("/admin/profile-requests/{request_id}"),
+            &format!("/api/admin/profile-requests/{request_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -441,7 +445,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (admin_delete_other_status, _) = ctx
         .json(
             "DELETE",
-            &format!("/admin/user/{admin_created_user_id}"),
+            &format!("/api/admin/user/{admin_created_user_id}"),
             None,
             None,
             Some(&ctx.admin_secret),
@@ -453,7 +457,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (delete_user_status, _) = ctx
         .json(
             "DELETE",
-            &format!("/user/{other_user_id}"),
+            &format!("/api/user/{other_user_id}"),
             None,
             Some(&other_token),
             None,

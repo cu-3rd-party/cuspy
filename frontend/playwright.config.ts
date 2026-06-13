@@ -6,7 +6,7 @@ export default defineConfig({
 	},
 	webServer: [
 		{
-			command: 'PUBLIC_BACKEND_URL=http://127.0.0.1:3000 npm run dev',
+			command: 'PUBLIC_BACKEND_URL=http://127.0.0.1:3000/api npm run dev',
 			port: 5173,
 			reuseExistingServer: !process.env.CI
 		}

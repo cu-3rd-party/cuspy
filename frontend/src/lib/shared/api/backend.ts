@@ -11,7 +11,7 @@ import type {
 	SessionUser
 } from '$lib/shared/model';
 
-const DEFAULT_BACKEND_URL = 'http://127.0.0.1:3000';
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:3000/api';
 
 type BackendUser = Omit<SessionUser, 'agent_data'> & {
 	agent_data?: AgentProfileData | null;

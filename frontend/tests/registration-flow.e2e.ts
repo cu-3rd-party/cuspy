@@ -76,7 +76,7 @@ test('full registration flow: fill dossier, submit, admin approves, game unlocks
 
 	// 10. Approve the request via admin API
 	const approveRes = await page.request.fetch(
-		`http://127.0.0.1:3000/admin/profile-requests/${requestId}`,
+		`http://127.0.0.1:3000/api/admin/profile-requests/${requestId}`,
 		{
 			method: 'PATCH',
 			headers: {

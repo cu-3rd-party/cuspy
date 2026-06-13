@@ -371,7 +371,7 @@ pub async fn register_user(
     let (status, body) = ctx
         .json(
             "POST",
-            "/auth/register",
+            "/api/auth/register",
             Some(json!({
                 "email": email,
                 "password": "password123",
@@ -407,7 +407,7 @@ pub async fn create_agent_data(ctx: &TestContext, codename: &str) -> Value {
         "--{boundary}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{data}\r\n--{boundary}--\r\n"
     );
     let (status, body) = ctx
-        .multipart("/agent-data", &boundary, body, None, None, None)
+        .multipart("/api/agent-data", &boundary, body, None, None, None)
         .await;
 
     assert_eq!(status, StatusCode::OK, "create_agent_data body: {body}");
@@ -489,7 +489,7 @@ pub async fn seed_admin_user(
     let (status, body) = ctx
         .json(
             "POST",
-            "/auth/login",
+            "/api/auth/login",
             Some(login_payload),
             None,
             None,

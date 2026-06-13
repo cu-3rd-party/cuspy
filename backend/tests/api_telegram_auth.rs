@@ -16,7 +16,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (register_status, register_body) = ctx
         .json(
             "POST",
-            "/auth/register",
+            "/api/auth/register",
             Some(json!({
                 "email": "tg@example.com",
                 "password": "password123",
@@ -41,14 +41,14 @@ async fn telegram_auth_requires_valid_init_data() {
         .to_string();
 
     let (missing_header_status, _) = ctx
-        .json("GET", "/auth/me", None, Some(&token), None, None)
+        .json("GET", "/api/auth/me", None, Some(&token), None, None)
         .await;
     assert_eq!(missing_header_status, StatusCode::UNAUTHORIZED);
 
     let (bad_header_status, bad_header_body) = ctx
         .json(
             "GET",
-            "/auth/me",
+            "/api/auth/me",
             None,
             Some(&token),
             None,
@@ -61,7 +61,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (me_status, me_body) = ctx
         .json(
             "GET",
-            "/auth/me",
+            "/api/auth/me",
             None,
             Some(&token),
             None,
@@ -74,7 +74,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (login_status, login_body) = ctx
         .json(
             "POST",
-            "/auth/login",
+            "/api/auth/login",
             Some(json!({
                 "email": "tg@example.com",
                 "password": "password123"
@@ -92,7 +92,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (unauthorized_login_status, _) = ctx
         .json(
             "POST",
-            "/auth/login",
+            "/api/auth/login",
             Some(json!({
                 "email": "tg@example.com",
                 "password": "password123"
@@ -107,7 +107,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (request_status, request_body) = ctx
         .json(
             "POST",
-            "/profile-requests",
+            "/api/profile-requests",
             Some(json!({ "agent_data_id": agent_data["agent_data_id"] })),
             Some(&token),
             None,
@@ -131,7 +131,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (forbidden_user_status, _) = ctx
         .json(
             "GET",
-            &format!("/user/{user_id}"),
+            &format!("/api/user/{user_id}"),
             None,
             Some(&forbidden_other_register_token),
             None,
@@ -143,7 +143,7 @@ async fn telegram_auth_requires_valid_init_data() {
     let (forbidden_request_status, forbidden_request_body) = ctx
         .json(
             "GET",
-            &format!("/profile-requests/{request_id}"),
+            &format!("/api/profile-requests/{request_id}"),
             None,
             Some(&token),
             None,

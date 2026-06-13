@@ -9,8 +9,8 @@
       <env name="JWT_SECRET" value="dev-jwt-secret" />
       <env name="RUST_LOG" value="info" />
       <env name="S3_ACCESS_KEY" value="admin" />
-      <env name="S3_SECRET_KEY" value="admin" />
       <env name="S3_ENDPOINT" value="http://localhost:9000" />
+      <env name="S3_SECRET_KEY" value="admin" />
     </envs>
     <option name="emulateTerminal" value="true" />
     <option name="channel" value="DEFAULT" />
