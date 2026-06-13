@@ -88,11 +88,8 @@ mod tests {
     use std::time::Duration;
     use tonic::Code;
 
-    fn make_user(id: &str, is_admin: bool) -> User {
-        User {
-            user_id: Uuid::parse_str(id).unwrap(),
-            is_admin,
-        }
+    fn make_user(id: Uuid, is_admin: bool) -> User {
+        User { user_id: id, is_admin }
     }
 
     fn make_event(user_id: Uuid, status: &str) -> ProfileRequestEvent {
@@ -106,16 +103,18 @@ mod tests {
         }
     }
 
-    /// Helper: subscribe with optional auth user, return the mpsc receiver from the stream.
+    const UID_A: Uuid = Uuid::nil();
+    const UID_B: Uuid = Uuid::from_u128(1);
+
     async fn subscribe(
         svc: &ProfileRequestService,
-        user_id: Uuid,
-        auth_user: Option<User>,
+        subscribe_to: Uuid,
+        as_user: User,
     ) -> tokio::sync::mpsc::Receiver<Result<ProtoEvent, Status>> {
         let mut req = Request::new(SubscribeRequest {
-            user_id: user_id.to_string(),
+            user_id: subscribe_to.to_string(),
         });
-        req.extensions_mut().insert(auth_user);
+        req.extensions_mut().insert(Some(as_user));
         svc.subscribe(req)
             .await
             .expect("subscribe should succeed")
@@ -123,7 +122,6 @@ mod tests {
             .into_inner()
     }
 
-    /// Drain all events from the stream (runs until broadcast closes).
     async fn collect_events(
         rx: &mut tokio::sync::mpsc::Receiver<Result<ProtoEvent, Status>>,
     ) -> Vec<ProtoEvent> {
@@ -137,52 +135,62 @@ mod tests {
     // ─── Happy path ───────────────────────────────────────────────
 
     #[tokio::test]
-    async fn all_events_delivered_without_filter() {
+    async fn user_receives_only_own_events() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
 
-        let mut rx = subscribe(&svc, "", None).await;
+        let user = make_user(UID_A, false);
+        let mut rx = subscribe(&svc, UID_A, user).await;
         drop(svc);
 
-        tx.send(make_event(Uuid::new_v4(), "confirmed")).unwrap();
-        tx.send(make_event(Uuid::new_v4(), "rejected")).unwrap();
-        tx.send(make_event(Uuid::new_v4(), "sent")).unwrap();
-        drop(tx);
-
-        let events = collect_events(&mut rx).await;
-        assert_eq!(events.len(), 3);
-    }
-
-    #[tokio::test]
-    async fn filter_by_user_id() {
-        let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
-        let target = Uuid::new_v4();
-
-        let mut rx = subscribe(&svc, target, None).await;
-        drop(svc);
-
-        tx.send(make_event(target, "confirmed")).unwrap();
-        tx.send(make_event(Uuid::new_v4(), "rejected")).unwrap();
-        tx.send(make_event(target, "sent")).unwrap();
+        tx.send(make_event(UID_A, "confirmed")).unwrap();
+        tx.send(make_event(UID_B, "rejected")).unwrap();
+        tx.send(make_event(UID_A, "sent")).unwrap();
         drop(tx);
 
         let events = collect_events(&mut rx).await;
         assert_eq!(events.len(), 2);
-        assert!(events.iter().all(|e| e.user_id == target.to_string()));
+        assert!(events.iter().all(|e| e.user_id == UID_A.to_string()));
     }
 
     #[tokio::test]
-    async fn multiple_subscribers_all_receive_all_events() {
+    async fn two_users_independent_filters() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
 
-        let mut rx1 = subscribe(&svc, "", None).await;
-        let mut rx2 = subscribe(&svc, "", None).await;
+        let alice = make_user(UID_A, false);
+        let bob = make_user(UID_B, false);
+
+        let mut rx_a = subscribe(&svc, UID_A, alice).await;
+        let mut rx_b = subscribe(&svc, UID_B, bob).await;
         drop(svc);
 
-        tx.send(make_event("u1", "confirmed")).unwrap();
-        tx.send(make_event("u2", "rejected")).unwrap();
+        tx.send(make_event(UID_A, "a1")).unwrap();
+        tx.send(make_event(UID_B, "b1")).unwrap();
+        tx.send(make_event(UID_A, "a2")).unwrap();
+        drop(tx);
+
+        let a_events = collect_events(&mut rx_a).await;
+        let b_events = collect_events(&mut rx_b).await;
+
+        assert_eq!(a_events.len(), 2);
+        assert!(a_events.iter().all(|e| e.user_id == UID_A.to_string()));
+        assert_eq!(b_events.len(), 1);
+        assert_eq!(b_events[0].user_id, UID_B.to_string());
+    }
+
+    #[tokio::test]
+    async fn same_user_two_subscribers_both_get_events() {
+        let (tx, _) = broadcast::channel(256);
+        let svc = ProfileRequestService::new(tx.clone());
+
+        let user = make_user(UID_A, false);
+        let mut rx1 = subscribe(&svc, UID_A, user.clone()).await;
+        let mut rx2 = subscribe(&svc, UID_A, user).await;
+        drop(svc);
+
+        tx.send(make_event(UID_A, "e1")).unwrap();
+        tx.send(make_event(UID_A, "e2")).unwrap();
         drop(tx);
 
         let e1 = collect_events(&mut rx1).await;
@@ -192,88 +200,49 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn multiple_subscribers_independent_filters() {
+    async fn admin_subscribes_to_arbitrary_user() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
-        let alice = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-        let bob = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
-        let mut rx_a = subscribe(&svc, alice, None).await;
-        let mut rx_b = subscribe(&svc, bob, None).await;
+        let admin = make_user(UID_A, true);
+        let target = Uuid::from_u128(42);
+
+        let mut rx = subscribe(&svc, target, admin).await;
         drop(svc);
 
-        tx.send(make_event(alice, "a1")).unwrap();
-        tx.send(make_event(bob, "b1")).unwrap();
-        tx.send(make_event(alice, "a2")).unwrap();
-        drop(tx);
-
-        let alice_events = collect_events(&mut rx_a).await;
-        let bob_events = collect_events(&mut rx_b).await;
-
-        assert_eq!(alice_events.len(), 2);
-        assert!(alice_events.iter().all(|e| e.user_id == alice));
-        assert_eq!(bob_events.len(), 1);
-        assert_eq!(bob_events[0].user_id, bob);
-    }
-
-    #[tokio::test]
-    async fn non_admin_subscribes_to_own_events_succeeds() {
-        let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
-        let uid = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-        let user = make_user(uid, false);
-
-        let mut rx = subscribe(&svc, uid, Some(user)).await;
-        drop(svc);
-
-        tx.send(make_event(uid, "ok")).unwrap();
+        tx.send(make_event(target, "ok")).unwrap();
+        tx.send(make_event(UID_A, "ignore-me")).unwrap();
         drop(tx);
 
         let events = collect_events(&mut rx).await;
         assert_eq!(events.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn admin_can_subscribe_to_any_user() {
-        let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
-        let admin = make_user("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", true);
-
-        let mut rx = subscribe(&svc, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", Some(admin)).await;
-        drop(svc);
-
-        tx.send(make_event("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "ok")).unwrap();
-        drop(tx);
-
-        let events = collect_events(&mut rx).await;
-        assert_eq!(events.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn unauthenticated_user_can_subscribe() {
-        let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
-
-        let mut rx = subscribe(&svc, "", None).await;
-        drop(svc);
-
-        tx.send(make_event("u1", "ok")).unwrap();
-        drop(tx);
-
-        let events = collect_events(&mut rx).await;
-        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].user_id, target.to_string());
     }
 
     // ─── Error cases ──────────────────────────────────────────────
 
     #[tokio::test]
-    async fn non_admin_cannot_subscribe_to_other_user() {
+    async fn unauthenticated_request_rejected() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
-        let user = make_user("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", false);
 
         let mut req = Request::new(SubscribeRequest {
-            user_id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb".to_string(),
+            user_id: UID_A.to_string(),
+        });
+        req.extensions_mut().insert(None::<User>);
+
+        let err = svc.subscribe(req).await.unwrap_err();
+        assert_eq!(err.code(), Code::Unauthenticated);
+    }
+
+    #[tokio::test]
+    async fn non_admin_cannot_spy_on_other_user() {
+        let (tx, _) = broadcast::channel(256);
+        let svc = ProfileRequestService::new(tx.clone());
+        let user = make_user(UID_A, false);
+
+        let mut req = Request::new(SubscribeRequest {
+            user_id: UID_B.to_string(),
         });
         req.extensions_mut().insert(Some(user));
 
@@ -282,60 +251,45 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn invalid_user_id_returns_invalid_argument() {
+    async fn invalid_user_id_rejected() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
+        let user = make_user(UID_A, false);
 
         let mut req = Request::new(SubscribeRequest {
             user_id: "not-a-uuid".to_string(),
         });
-        req.extensions_mut().insert(None::<User>);
+        req.extensions_mut().insert(Some(user));
 
         let err = svc.subscribe(req).await.unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
     }
 
-    // ─── Edge cases ───────────────────────────────────────────────
+    // ─── Stream lifecycle ──────────────────────────────────────────
 
     #[tokio::test]
-    async fn empty_filter_non_admin_works() {
-        let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
-        let user = make_user("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", false);
-
-        // Empty filter with non-admin user — allowed (gets own events implicitly)
-        let mut rx = subscribe(&svc, "", Some(user)).await;
-        drop(svc);
-
-        tx.send(make_event("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "ok")).unwrap();
-        drop(tx);
-
-        let events = collect_events(&mut rx).await;
-        assert_eq!(events.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn stream_ends_when_all_senders_dropped() {
+    async fn stream_delivers_then_ends_when_senders_gone() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
 
-        let mut rx = subscribe(&svc, "", None).await;
+        let user = make_user(UID_A, false);
+        let mut rx = subscribe(&svc, UID_A, user).await;
         drop(svc);
 
-        tx.send(make_event("u1", "ok")).unwrap();
+        tx.send(make_event(UID_A, "ok")).unwrap();
         drop(tx);
 
-        // Should get the one event then None
         assert!(rx.recv().await.is_some());
         assert!(rx.recv().await.is_none());
     }
 
     #[tokio::test]
-    async fn no_messages_yields_immediate_stream_end() {
+    async fn no_events_immediate_end() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
 
-        let mut rx = subscribe(&svc, "", None).await;
+        let user = make_user(UID_A, false);
+        let mut rx = subscribe(&svc, UID_A, user).await;
         drop(svc);
         drop(tx);
 
@@ -343,45 +297,40 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn lagged_subscriber_logs_and_continues() {
-        // Use a tiny buffer so we can force lagging
+    async fn lagged_receiver_logs_and_continues() {
         let (tx, _) = broadcast::channel(2);
         let svc = ProfileRequestService::new(tx.clone());
+        let user = make_user(UID_A, false);
 
-        let mut rx = subscribe(&svc, "", None).await;
+        let mut rx = subscribe(&svc, UID_A, user).await;
         drop(svc);
 
-        // Fill the 2-slot buffer + 1 more to force the receiver to lag
-        tx.send(make_event("u1", "a")).unwrap();
-        tx.send(make_event("u1", "b")).unwrap();
-        tx.send(make_event("u1", "c")).unwrap(); // receiver lags here
-
-        // Give the spawned task time to process the lag and catch up
+        tx.send(make_event(UID_A, "a")).unwrap();
+        tx.send(make_event(UID_A, "b")).unwrap();
+        tx.send(make_event(UID_A, "c")).unwrap(); // forces lag on broadcast_rx
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        tx.send(make_event("u1", "d")).unwrap();
+        tx.send(make_event(UID_A, "d")).unwrap();
         drop(tx);
 
         let events = collect_events(&mut rx).await;
-        // After lagging at "c", the receiver resets and should get "d"
-        assert!(!events.is_empty(), "should still receive post-lag events");
+        assert!(!events.is_empty(), "should receive post-lag events");
         assert_eq!(events.last().unwrap().status, "d");
     }
 
     #[tokio::test]
-    async fn subscriber_dropped_does_not_affect_others() {
+    async fn dropping_one_subscriber_does_not_affect_other() {
         let (tx, _) = broadcast::channel(256);
         let svc = ProfileRequestService::new(tx.clone());
+        let user = make_user(UID_A, false);
 
-        let mut rx1 = subscribe(&svc, "", None).await;
-        let mut rx2 = subscribe(&svc, "", None).await;
+        let mut rx1 = subscribe(&svc, UID_A, user.clone()).await;
+        let mut rx2 = subscribe(&svc, UID_A, user).await;
         drop(svc);
 
-        // Drop rx1 (the mpsc receiver) — the spawned task will get SendError and exit
-        // rx2 should still work
         rx1.close();
 
-        tx.send(make_event("u1", "ok")).unwrap();
+        tx.send(make_event(UID_A, "ok")).unwrap();
         drop(tx);
 
         let events = collect_events(&mut rx2).await;
