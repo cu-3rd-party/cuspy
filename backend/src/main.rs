@@ -1,5 +1,5 @@
 use clap::Parser;
-use cukiller_backend::{ApiContext, build_app, config};
+use cukiller_backend::{ApiContext, build_service, config};
 use log::info;
 use s3::creds::Credentials;
 use s3::error::S3Error;
@@ -118,13 +118,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(feature = "telegram-auth")]
         public_webapp_url: config.public_webapp_url.clone(),
     };
-    let app = build_app(state);
+    let service = build_service(state);
 
     let listener = tokio::net::TcpListener::bind(config.bind_address).await?;
     info!("backend listening on {}", config.bind_address);
     let server = axum::serve(
         listener,
-        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        service.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     );
 
     #[cfg(feature = "telegram-auth")]

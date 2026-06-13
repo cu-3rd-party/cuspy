@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::api::models::db_uuid;
+use crate::rest::models::db_uuid;
 #[cfg(not(feature = "telegram-auth"))]
 use log::info;
 #[cfg(feature = "telegram-auth")]

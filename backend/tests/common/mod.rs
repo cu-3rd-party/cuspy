@@ -8,7 +8,7 @@ use axum::{
     http::{Request, StatusCode, header},
 };
 use clap::Parser;
-use cukiller_backend::api::helpers;
+use cukiller_backend::rest::helpers;
 use cukiller_backend::{ApiContext, build_app, config::Config};
 #[cfg(feature = "telegram-auth")]
 use hmac::{Hmac, Mac};
