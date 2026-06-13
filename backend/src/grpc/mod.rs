@@ -9,6 +9,7 @@ use axum::Router;
 use axum_tonic::NestTonic;
 use tonic::Request;
 use tonic::service::InterceptorLayer;
+use tonic_reflection::server::Builder as ReflectionBuilder;
 use tower::Layer;
 
 use crate::models::user::User;
@@ -32,8 +33,18 @@ impl<T> RequestAuthExt for Request<T> {
 
 #[allow(unused)]
 pub fn router(state: ApiContext) -> Router {
+    let reflection_service = ReflectionBuilder::configure()
+        .register_encoded_file_descriptor_set(include_bytes!(concat!(
+            env!("OUT_DIR"),
+            "/helloworld_descriptor.bin"
+        )))
+        .build_v1()
+        .expect("grpc reflection service");
+
     let grpc_service = InterceptorLayer::new(AuthInterceptor::new(state))
         .layer(GreeterServer::new(GreeterService));
 
-    Router::new().nest_tonic(grpc_service)
+    Router::new()
+        .nest_tonic(reflection_service)
+        .nest_tonic(grpc_service)
 }
