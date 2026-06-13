@@ -5,7 +5,7 @@ use axum::extract::State;
 
 #[utoipa::path(
     get,
-    path = "/health",
+    path = "/api/health",
     tag = "system",
     responses(
         (status = 200, description = "Health check passed", body = HealthResponse),

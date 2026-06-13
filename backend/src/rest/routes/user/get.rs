@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     get,
-    path = "/user/{user_id}",
+    path = "/api/user/{user_id}",
     tag = "user",
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(

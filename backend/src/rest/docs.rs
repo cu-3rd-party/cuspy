@@ -5,7 +5,6 @@ use crate::rest::OpenApi;
 use crate::rest::health;
 use crate::rest::routes;
 use axum::Router;
-use log::info;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -109,9 +108,7 @@ impl utoipa::Modify for SecurityAddon {
 pub struct ApiDoc;
 
 pub fn docs_router() -> Router<ApiContext> {
-    let router = SwaggerUi::new("/api/docs")
+    SwaggerUi::new("/api/docs")
         .url("/api/docs/openapi.json", ApiDoc::openapi())
-        .into();
-    info!("{:?}", router);
-    router
+        .into()
 }

@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     post,
-    path = "/kill/{kill_id}/confirm",
+    path = "/api/kill/{kill_id}/confirm",
     tag = "kill",
     params(("kill_id" = Uuid, Path, description = "Kill event id")),
     request_body = ConfirmKillRequest,

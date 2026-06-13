@@ -275,6 +275,7 @@ mod tests {
             admin_secret: "admin-secret".into(),
             config: crate::config::Config::parse(),
             jwt_secret: "jwt-secret".into(),
+            profile_request_tx: tokio::sync::broadcast::channel(16).0,
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: "bot-token".into(),
             #[cfg(feature = "telegram-auth")]

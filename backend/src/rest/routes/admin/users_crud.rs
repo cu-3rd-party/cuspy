@@ -22,7 +22,7 @@ pub fn users_router() -> Router<ApiContext> {
 
 #[utoipa::path(
     get,
-    path = "/admin/user/",
+    path = "/api/admin/user/",
     tag = "admin",
     responses(
         (status = 200, description = "List users", body = [UserResponse]),
@@ -58,7 +58,7 @@ pub async fn admin_list_users(
 
 #[utoipa::path(
     post,
-    path = "/admin/user/",
+    path = "/api/admin/user/",
     tag = "admin",
     request_body = CreateUserRequest,
     responses(
@@ -120,7 +120,7 @@ pub async fn admin_create_user(
 
 #[utoipa::path(
     get,
-    path = "/admin/user/{user_id}",
+    path = "/api/admin/user/{user_id}",
     tag = "admin",
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(
@@ -141,7 +141,7 @@ pub async fn admin_get_user(
 
 #[utoipa::path(
     patch,
-    path = "/admin/user/{user_id}",
+    path = "/api/admin/user/{user_id}",
     tag = "admin",
     params(("user_id" = Uuid, Path, description = "User id")),
     request_body = UpdateUserRequest,
@@ -190,7 +190,7 @@ pub async fn admin_update_user(
 
 #[utoipa::path(
     delete,
-    path = "/admin/user/{user_id}",
+    path = "/api/admin/user/{user_id}",
     tag = "admin",
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(

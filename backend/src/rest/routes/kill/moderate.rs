@@ -25,7 +25,7 @@ pub struct ModerateKillRequest {
 
 #[utoipa::path(
     post,
-    path = "/kill/{kill_id}/moderate",
+    path = "/api/kill/{kill_id}/moderate",
     tag = "kill",
     params(("kill_id" = Uuid, Path, description = "Kill event id")),
     request_body = ModerateKillRequest,

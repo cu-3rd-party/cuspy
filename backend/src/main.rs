@@ -1,5 +1,7 @@
 use clap::Parser;
 use cukiller_backend::{ApiContext, build_service, config};
+use cukiller_backend::models::profile::ProfileRequestEvent;
+use tokio::sync::broadcast;
 use log::info;
 use s3::creds::Credentials;
 use s3::error::S3Error;
@@ -107,12 +109,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => Err(e.into()),
     }?;
 
+    let (profile_request_tx, _) = broadcast::channel::<ProfileRequestEvent>(256);
+
     let state = ApiContext {
         db,
         bucket,
         config: config.clone(), // просто на всякий случай
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,
+        profile_request_tx,
         #[cfg(feature = "telegram-auth")]
         telegram_bot_token: config.telegram_bot_token.clone(),
         #[cfg(feature = "telegram-auth")]

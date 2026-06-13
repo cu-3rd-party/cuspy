@@ -12,6 +12,7 @@ pub mod telegram;
 use std::time::{Duration, Instant};
 
 use crate::config::Config;
+use crate::models::profile::ProfileRequestEvent;
 use crate::models::user::User;
 use crate::models::{db_json, db_optional_uuid, db_uuid};
 use crate::rest::extractor::MaybeAuthUser;
@@ -29,6 +30,7 @@ use rest::docs;
 use s3::Bucket;
 use serde_json::{Value, json};
 use sqlx::AnyPool;
+use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
@@ -39,6 +41,7 @@ pub struct ApiContext {
     pub config: Config,
     pub admin_secret: String,
     pub jwt_secret: String,
+    pub profile_request_tx: broadcast::Sender<ProfileRequestEvent>,
     #[cfg(feature = "telegram-auth")]
     pub telegram_bot_token: String,
     #[cfg(feature = "telegram-auth")]
@@ -61,7 +64,7 @@ fn build_cors_layer(state: &ApiContext) -> CorsLayer {
 }
 
 pub fn build_rest(state: ApiContext) -> Router {
-    let router1 = Router::new()
+    Router::new()
         .merge(docs::docs_router())
         .nest(
             "/api",
@@ -71,9 +74,7 @@ pub fn build_rest(state: ApiContext) -> Router {
         .layer(build_cors_layer(&state))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
-        .with_state(state);
-    info!("{:?}", router1);
-    router1
+        .with_state(state)
 }
 
 pub fn build_grpc(state: ApiContext) -> Router {

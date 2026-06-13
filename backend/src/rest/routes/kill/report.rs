@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     post,
-    path = "/kill",
+    path = "/api/kill",
     tag = "kill",
     request_body = ReportKillRequest,
     responses(

@@ -1,11 +1,12 @@
 use crate::db;
 use crate::models::profile::{
-    AdminUpdateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
+    AdminUpdateProfileRequest, ProfileRequestEvent, ProfileRequestRecord, ProfileRequestResponse,
 };
 use crate::models::{ApiError, db_optional_timestamp, db_uuid};
 use crate::rest::extractor::AdminUser;
 use crate::rest::helpers;
 use crate::{ApiContext, notifier};
+use time::format_description::well_known::Rfc3339;
 use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router};
@@ -25,7 +26,7 @@ pub fn profile_request_router() -> Router<ApiContext> {
 
 #[utoipa::path(
     get,
-    path = "/admin/profile-requests/",
+    path = "/api/admin/profile-requests/",
     tag = "admin",
     responses(
         (status = 200, description = "List all profile requests", body = [ProfileRequestResponse]),
@@ -66,7 +67,7 @@ pub async fn admin_list_profile_requests(
 
 #[utoipa::path(
     get,
-    path = "/admin/profile-requests/{request_id}",
+    path = "/api/admin/profile-requests/{request_id}",
     tag = "admin",
     params(("request_id" = Uuid, Path, description = "Profile request id")),
     responses(
@@ -106,7 +107,7 @@ pub async fn admin_get_profile_request(
 
 #[utoipa::path(
     patch,
-    path = "/admin/profile-requests/{request_id}",
+    path = "/api/admin/profile-requests/{request_id}",
     tag = "admin",
     params(("request_id" = Uuid, Path, description = "Profile request id")),
     request_body = AdminUpdateProfileRequest,
@@ -202,6 +203,16 @@ pub async fn admin_update_profile_request(
 
     tx.commit().await?;
 
+    let event = ProfileRequestEvent {
+        profile_request_id: request.profile_request_id,
+        user_id: request.user_id,
+        status: request.status.clone(),
+        reviewer_note: request.reviewer_note.clone().unwrap_or_default(),
+        created_at: request.created_at.format(&Rfc3339).unwrap_or_default(),
+        updated_at: request.updated_at.format(&Rfc3339).unwrap_or_default(),
+    };
+    let _ = state.profile_request_tx.send(event);
+
     if request.status == "confirmed" {
         notifier::notify_user(
             &state,
@@ -227,7 +238,7 @@ pub async fn admin_update_profile_request(
 
 #[utoipa::path(
     delete,
-    path = "/admin/profile-requests/{request_id}",
+    path = "/api/admin/profile-requests/{request_id}",
     tag = "admin",
     params(("request_id" = Uuid, Path, description = "Profile request id")),
     responses(

@@ -203,6 +203,7 @@ impl TestContext {
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
             config: Config::parse(),
+            profile_request_tx: tokio::sync::broadcast::channel(16).0,
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
             #[cfg(feature = "telegram-auth")]

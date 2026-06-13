@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     get,
-    path = "/stats/rankings",
+    path = "/api/stats/rankings",
     tag = "stats",
     responses(
         (status = 200, description = "Current ranking leaderboard", body = [RankingEntry]),
@@ -73,7 +73,7 @@ pub async fn rankings(
 
 #[utoipa::path(
     get,
-    path = "/stats/user/{user_id}",
+    path = "/api/stats/user/{user_id}",
     tag = "stats",
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(

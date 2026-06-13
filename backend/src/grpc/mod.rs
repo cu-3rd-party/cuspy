@@ -5,6 +5,8 @@ use crate::ApiContext;
 use crate::grpc::middleware::auth_interceptor::AuthInterceptor;
 use crate::grpc::services::greeter::GreeterService;
 use crate::grpc::services::greeter::helloworld::greeter_server::GreeterServer;
+use crate::grpc::services::profile_request::ProfileRequestService;
+use crate::grpc::services::profile_request::profilerequest::profile_request_server::ProfileRequestServer;
 use axum::Router;
 use axum_tonic::NestTonic;
 use tonic::Request;
@@ -38,13 +40,22 @@ pub fn router(state: ApiContext) -> Router {
             env!("OUT_DIR"),
             "/helloworld_descriptor.bin"
         )))
+        .register_encoded_file_descriptor_set(include_bytes!(concat!(
+            env!("OUT_DIR"),
+            "/profilerequest_descriptor.bin"
+        )))
         .build_v1()
         .expect("grpc reflection service");
 
-    let grpc_service = InterceptorLayer::new(AuthInterceptor::new(state))
-        .layer(GreeterServer::new(GreeterService));
+    let profile_tx = state.profile_request_tx.clone();
+    let auth_layer = InterceptorLayer::new(AuthInterceptor::new(state));
+    let grpc_service = auth_layer.layer(GreeterServer::new(GreeterService));
+    let profile_request_service = auth_layer.layer(ProfileRequestServer::new(
+        ProfileRequestService::new(profile_tx),
+    ));
 
     Router::new()
         .nest_tonic(reflection_service)
         .nest_tonic(grpc_service)
+        .nest_tonic(profile_request_service)
 }

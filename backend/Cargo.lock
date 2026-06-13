@@ -625,6 +625,7 @@ dependencies = [
  "thiserror",
  "time",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tonic-build",
  "tonic-middleware",
@@ -3577,6 +3578,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]

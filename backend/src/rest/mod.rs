@@ -9,7 +9,7 @@ use utoipa::OpenApi;
 
 #[utoipa::path(
     get,
-    path = "/",
+    path = "/api/",
     tag = "system",
     responses(
         (status = 200, description = "Backend is running", body = String)

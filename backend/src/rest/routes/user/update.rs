@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     patch,
-    path = "/user/{user_id}",
+    path = "/api/user/{user_id}",
     tag = "user",
     params(("user_id" = Uuid, Path, description = "User id")),
     request_body = UpdateUserRequest,

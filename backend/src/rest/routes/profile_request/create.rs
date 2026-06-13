@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     post,
-    path = "/profile-requests",
+    path = "/api/profile-requests",
     tag = "profile-request",
     request_body = CreateProfileRequest,
     responses(

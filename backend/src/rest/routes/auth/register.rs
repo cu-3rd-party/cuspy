@@ -41,7 +41,7 @@ fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> Ap
 
 #[utoipa::path(
     post,
-    path = "/auth/register",
+    path = "/api/auth/register",
     tag = "auth",
     request_body = RegisterRequest,
     responses(

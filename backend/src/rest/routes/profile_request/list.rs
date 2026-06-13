@@ -8,7 +8,7 @@ use axum::extract::State;
 
 #[utoipa::path(
     get,
-    path = "/profile-requests",
+    path = "/api/profile-requests",
     tag = "profile-request",
     responses(
         (status = 200, description = "Current user's profile requests", body = [ProfileRequestResponse]),

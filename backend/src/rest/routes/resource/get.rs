@@ -8,7 +8,7 @@ use uuid::Uuid;
 // используется по сути только для получения метаданных
 #[utoipa::path(
     get,
-    path = "/resource/{resource_id}",
+    path = "/api/resource/{resource_id}",
     tag = "resource",
     params(("resource_id" = Uuid, Path, description = "Resource id")),
     responses(

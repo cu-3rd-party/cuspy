@@ -1,0 +1,19 @@
+syntax = "proto3";
+package profilerequest;
+
+service ProfileRequest {
+  rpc Subscribe (SubscribeRequest) returns (stream ProfileRequestEvent);
+}
+
+message SubscribeRequest {
+  string user_id = 1;
+}
+
+message ProfileRequestEvent {
+  string profile_request_id = 1;
+  string user_id = 2;
+  string status = 3;
+  string reviewer_note = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}

@@ -15,7 +15,7 @@ use sqlx::Row;
 
 #[utoipa::path(
     post,
-    path = "/auth/login",
+    path = "/api/auth/login",
     tag = "auth",
     request_body = LoginRequest,
     responses(

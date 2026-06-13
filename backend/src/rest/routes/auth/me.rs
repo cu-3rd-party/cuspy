@@ -8,7 +8,7 @@ use axum::extract::State;
 
 #[utoipa::path(
     get,
-    path = "/auth/me",
+    path = "/api/auth/me",
     tag = "auth",
     responses(
         (status = 200, description = "Current authenticated user", body = UserResponse),

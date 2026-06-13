@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 #[utoipa::path(
     get,
-    path = "/agent-data/{agent_data_id}",
+    path = "/api/agent-data/{agent_data_id}",
     tag = "agent-data",
     params(("agent_data_id" = Uuid, Path, description = "Profile request id")),
     responses(
