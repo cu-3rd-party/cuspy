@@ -9,7 +9,7 @@ use axum::{
 };
 use clap::Parser;
 use cukiller_backend::rest::helpers;
-use cukiller_backend::{ApiContext, build_app, config::Config};
+use cukiller_backend::{ApiContext, build_rest, config::Config};
 #[cfg(feature = "telegram-auth")]
 use hmac::{Hmac, Mac};
 use http_body_util::BodyExt;
@@ -210,7 +210,7 @@ impl TestContext {
         };
 
         Self {
-            app: build_app(state),
+            app: build_rest(state),
             db: test_pool,
             db_name,
             admin_secret: ADMIN_SECRET.to_string(),

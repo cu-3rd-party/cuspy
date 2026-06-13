@@ -1,9 +1,7 @@
+use crate::models::profile::{CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse};
+use crate::models::{ApiError, db_uuid};
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
-use crate::rest::models::profile::{
-    CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
-};
-use crate::rest::models::{ApiError, db_uuid};
 use crate::{ApiContext, notifier};
 use axum::Json;
 use axum::extract::State;
@@ -17,9 +15,9 @@ use uuid::Uuid;
     request_body = CreateProfileRequest,
     responses(
         (status = 201, description = "Profile request created", body = ProfileRequestResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 401, description = "Unauthorized", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

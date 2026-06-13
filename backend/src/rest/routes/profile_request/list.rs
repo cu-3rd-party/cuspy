@@ -1,8 +1,8 @@
 use crate::ApiContext;
+use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
+use crate::models::{ApiError, db_uuid};
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
-use crate::rest::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::rest::models::{ApiError, db_uuid};
 use axum::Json;
 use axum::extract::State;
 
@@ -12,8 +12,8 @@ use axum::extract::State;
     tag = "profile-request",
     responses(
         (status = 200, description = "Current user's profile requests", body = [ProfileRequestResponse]),
-        (status = 401, description = "Unauthorized", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

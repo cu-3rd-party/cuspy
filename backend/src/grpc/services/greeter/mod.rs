@@ -1,7 +1,7 @@
-use tonic::{Request, Response, Status};
+use crate::grpc::RequestAuthExt;
 use helloworld::greeter_server::Greeter;
 use helloworld::{HelloReply, HelloRequest};
-use crate::grpc::GreeterService;
+use tonic::{Request, Response, Status};
 
 pub mod helloworld {
     tonic::include_proto!("helloworld");
@@ -13,6 +13,7 @@ impl Greeter for GreeterService {
         &self,
         request: Request<HelloRequest>,
     ) -> Result<Response<HelloReply>, Status> {
+        let _user = request.auth_user_cloned();
         let name = request.into_inner().name;
         let message = if name.is_empty() {
             "Hello!".to_string()
@@ -23,3 +24,6 @@ impl Greeter for GreeterService {
         Ok(Response::new(HelloReply { message }))
     }
 }
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct GreeterService;

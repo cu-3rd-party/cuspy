@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::rest::models::{ApiError, HealthResponse};
+use crate::models::{ApiError, HealthResponse};
 use axum::Json;
 use axum::extract::State;
 
@@ -9,7 +9,7 @@ use axum::extract::State;
     tag = "system",
     responses(
         (status = 200, description = "Health check passed", body = HealthResponse),
-        (status = 500, description = "Health check failed", body = crate::rest::models::ErrorResponse),
+        (status = 500, description = "Health check failed", body = crate::models::ErrorResponse),
     )
 )]
 pub async fn health(State(state): State<ApiContext>) -> Result<Json<HealthResponse>, ApiError> {

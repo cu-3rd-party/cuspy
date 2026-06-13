@@ -1,7 +1,7 @@
 use crate::ApiContext;
-use crate::rest::models::agent_data::{AgentData, AgentDataMetadata};
-use crate::rest::models::resource::Resource;
-use crate::rest::models::{ApiError, db_uuid};
+use crate::models::agent_data::{AgentData, AgentDataMetadata};
+use crate::models::resource::Resource;
+use crate::models::{ApiError, db_uuid};
 use axum::Json;
 use axum::extract::{Multipart, State};
 use http::{HeaderMap, header};
@@ -26,8 +26,8 @@ pub struct CreateAgentDataMultipartRequest {
     ),
     responses(
         (status = 200, description = "Agent data created", body = AgentData),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     )
 )]
 pub async fn create_agent_data(

@@ -39,6 +39,7 @@ base64 = "0.22.1"
 axum_tonic = "0.4.1"
 tonic = "0.13.1"
 prost = "0.13.5"
+tonic-middleware = "0.3.0"
 
 [dev-dependencies]
 http-body-util = "0.1.3"

@@ -1,14 +1,13 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::ApiContext;
-use crate::rest::r#const::{AUTH_TOKEN_TTL, REFRESH_TOKEN_TTL};
-use crate::rest::extractor::User;
-use crate::rest::models::ApiError;
-use crate::rest::models::auth::{AuthClaims, AuthUserRecord, RefreshClaims};
-use crate::rest::models::db_uuid;
-use crate::rest::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::rest::models::similarity::SimilarityResponse;
-use crate::rest::models::user::{UserRecord, UserResponse};
+use crate::models::ApiError;
+use crate::models::auth::{AuthClaims, AuthUserRecord, RefreshClaims};
+use crate::models::db_uuid;
+use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
+use crate::models::similarity::SimilarityResponse;
+use crate::models::user::User;
+use crate::models::user::{UserRecord, UserResponse};
+use crate::{ApiContext, r#const};
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
@@ -135,7 +134,7 @@ pub fn create_access_token(
     is_admin: bool,
 ) -> Result<String, ApiError> {
     let exp = SystemTime::now()
-        .checked_add(AUTH_TOKEN_TTL)
+        .checked_add(r#const::AUTH_TOKEN_TTL)
         .ok_or(ApiError::Token)?
         .duration_since(UNIX_EPOCH)
         .map_err(|_| ApiError::Token)?
@@ -162,7 +161,7 @@ pub fn create_refresh_token(
     auth_user: &AuthUserRecord,
 ) -> Result<String, ApiError> {
     let exp = SystemTime::now()
-        .checked_add(REFRESH_TOKEN_TTL)
+        .checked_add(r#const::REFRESH_TOKEN_TTL)
         .ok_or(ApiError::Token)?
         .duration_since(UNIX_EPOCH)
         .map_err(|_| ApiError::Token)?

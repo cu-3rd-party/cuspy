@@ -59,7 +59,7 @@ pub struct UserStatsResponse {
 
 impl<'r> FromRow<'r, AnyRow> for RankingEntry {
     fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
-        use crate::rest::models::parse_uuid;
+        use crate::models::parse_uuid;
         use sqlx::Row;
 
         Ok(Self {
@@ -75,7 +75,7 @@ impl<'r> FromRow<'r, AnyRow> for RankingEntry {
 
 impl<'r> FromRow<'r, AnyRow> for UserStatsResponse {
     fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
-        use crate::rest::models::parse_uuid;
+        use crate::models::parse_uuid;
         use sqlx::Row;
 
         Ok(Self {
@@ -109,7 +109,7 @@ pub struct KillEventRecord {
 
 impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
     fn from_row(row: &'r sqlx::any::AnyRow) -> Result<Self, sqlx::Error> {
-        use crate::rest::models::{
+        use crate::models::{
             parse_json, parse_optional_timestamp, parse_optional_uuid, parse_timestamp, parse_uuid,
         };
         use sqlx::Row;

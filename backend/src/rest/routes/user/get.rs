@@ -1,8 +1,8 @@
 use crate::ApiContext;
+use crate::models::ApiError;
+use crate::models::user::UserResponse;
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
-use crate::rest::models::ApiError;
-use crate::rest::models::user::UserResponse;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -14,9 +14,9 @@ use uuid::Uuid;
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(
         (status = 200, description = "User details", body = UserResponse),
-        (status = 403, description = "Forbidden", body = crate::rest::models::ErrorResponse),
-        (status = 404, description = "User not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

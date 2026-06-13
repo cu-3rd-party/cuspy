@@ -1,11 +1,9 @@
 use crate::ApiContext;
-use crate::rest::db;
+use crate::db;
+use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse, UpdateProfileRequest};
+use crate::models::{ApiError, db_uuid};
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
-use crate::rest::models::profile::{
-    ProfileRequestRecord, ProfileRequestResponse, UpdateProfileRequest,
-};
-use crate::rest::models::{ApiError, db_uuid};
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -18,9 +16,9 @@ use uuid::Uuid;
     request_body = UpdateProfileRequest,
     responses(
         (status = 200, description = "Profile request updated", body = ProfileRequestResponse),
-        (status = 403, description = "Forbidden", body = crate::rest::models::ErrorResponse),
-        (status = 404, description = "Profile request not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

@@ -1,6 +1,6 @@
+use crate::models::kill::KillEventResponse;
+use crate::models::{ApiError, db_uuid, kill};
 use crate::rest::extractor::AdminUser;
-use crate::rest::models::kill::KillEventResponse;
-use crate::rest::models::{ApiError, db_uuid, kill};
 use crate::rest::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use crate::{ApiContext, notifier};
 use axum::Json;
@@ -31,9 +31,9 @@ pub struct ModerateKillRequest {
     request_body = ModerateKillRequest,
     responses(
         (status = 200, description = "Kill event moderated", body = KillEventResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 404, description = "Kill event not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 404, description = "Kill event not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -58,7 +58,7 @@ pub async fn moderate_kill(
     );
 
     let mut tx = state.db.begin().await?;
-    let record = sqlx::query_as::<_, crate::rest::models::kill::KillEventRecord>(&select_query)
+    let record = sqlx::query_as::<_, crate::models::kill::KillEventRecord>(&select_query)
         .bind(db_uuid(kill_id))
         .fetch_optional(&mut *tx)
         .await?
@@ -113,7 +113,7 @@ pub async fn moderate_kill(
         }
     };
 
-    let record = sqlx::query_as::<_, crate::rest::models::kill::KillEventRecord>(
+    let record = sqlx::query_as::<_, crate::models::kill::KillEventRecord>(
         update_query.as_deref().expect("query exists"),
     )
     .bind(db_uuid(kill_id))

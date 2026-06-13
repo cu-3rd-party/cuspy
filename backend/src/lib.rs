@@ -1,17 +1,20 @@
-pub mod rest;
 pub mod config;
+pub mod db;
 pub mod grpc;
+pub mod models;
 pub mod notifier;
+pub mod rest;
 
+mod r#const;
 #[cfg(feature = "telegram-auth")]
 pub mod telegram;
 
 use std::time::{Duration, Instant};
 
-use crate::rest::extractor::MaybeAuthUser;
-use crate::rest::models::{db_json, db_optional_uuid, db_uuid};
 use crate::config::Config;
-use rest::docs;
+use crate::models::user::User;
+use crate::models::{db_json, db_optional_uuid, db_uuid};
+use crate::rest::extractor::MaybeAuthUser;
 use axum::{
     Router,
     extract::{MatchedPath, Request, State},
@@ -22,6 +25,7 @@ use axum::{
 use axum_tonic::RestGrpcService;
 use http::{HeaderValue, Method};
 use log::{error, info, warn};
+use rest::docs;
 use s3::Bucket;
 use serde_json::{Value, json};
 use sqlx::AnyPool;
@@ -41,38 +45,66 @@ pub struct ApiContext {
     pub public_webapp_url: String,
 }
 
-pub fn build_app(state: ApiContext) -> Router {
+fn build_cors_layer(state: &ApiContext) -> CorsLayer {
+    CorsLayer::new()
+        .allow_origin(HeaderValue::from_str(&state.config.cors_origin).expect("cors origin"))
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+            Method::DELETE,
+        ])
+        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+        .allow_credentials(true)
+        .max_age(Duration::from_hours(24))
+}
+
+pub fn build_rest(state: ApiContext) -> Router {
     rest::router()
         .merge(docs::docs_router())
         .route("/", axum::routing::get(rest::root))
-        .layer(
-            CorsLayer::new()
-                .allow_origin(
-                    HeaderValue::from_str(&state.config.cors_origin).expect("cors origin"),
-                )
-                .allow_methods([
-                    Method::GET,
-                    Method::POST,
-                    Method::PUT,
-                    Method::PATCH,
-                    Method::DELETE,
-                ])
-                .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
-                .allow_credentials(true)
-                .max_age(Duration::from_hours(24)),
-        )
+        .layer(build_cors_layer(&state))
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(middleware::from_fn_with_state(state.clone(), audit_request))
         .with_state(state)
 }
 
+pub fn build_grpc(state: ApiContext) -> Router {
+    grpc::router(state.clone())
+        .layer(build_cors_layer(&state))
+        .layer(tower_http::trace::TraceLayer::new_for_grpc())
+        .layer(middleware::from_fn(move |request, next| {
+            audit_grpc_request(state.clone(), request, next)
+        }))
+}
+
 pub fn build_service(state: ApiContext) -> RestGrpcService {
-    RestGrpcService::new(build_app(state), grpc::router())
+    RestGrpcService::new(build_rest(state.clone()), build_grpc(state.clone()))
 }
 
 async fn audit_request(
     State(state): State<ApiContext>,
     MaybeAuthUser(user): MaybeAuthUser,
+    request: Request,
+    next: Next,
+) -> Response {
+    audit_request_inner(state, user, request, next).await
+}
+
+async fn audit_grpc_request(state: ApiContext, request: Request, next: Next) -> Response {
+    let user = request
+        .extensions()
+        .get::<Option<User>>()
+        .cloned()
+        .flatten();
+
+    audit_request_inner(state, user, request, next).await
+}
+
+async fn audit_request_inner(
+    state: ApiContext,
+    user: Option<User>,
     request: Request,
     next: Next,
 ) -> Response {

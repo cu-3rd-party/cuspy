@@ -1,6 +1,6 @@
 use crate::ApiContext;
-use crate::rest::models::kill::KillEventRecord;
-use crate::rest::models::{ApiError, db_json, db_optional_timestamp, db_optional_uuid, db_uuid};
+use crate::models::kill::KillEventRecord;
+use crate::models::{ApiError, db_json, db_optional_timestamp, db_optional_uuid, db_uuid};
 use uuid::Uuid;
 
 pub const KILL_EVENT_COLUMNS: &str = r#"

@@ -1,8 +1,8 @@
 use crate::ApiContext;
+use crate::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
+use crate::models::{ApiError, db_uuid};
 use crate::rest::extractor::AdminUser;
 use crate::rest::helpers;
-use crate::rest::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
-use crate::rest::models::{ApiError, db_uuid};
 use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router};
@@ -26,8 +26,8 @@ pub fn users_router() -> Router<ApiContext> {
     tag = "admin",
     responses(
         (status = 200, description = "List users", body = [UserResponse]),
-        (status = 401, description = "Unauthorized", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -63,8 +63,8 @@ pub async fn admin_list_users(
     request_body = CreateUserRequest,
     responses(
         (status = 201, description = "User created", body = UserResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -125,8 +125,8 @@ pub async fn admin_create_user(
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(
         (status = 200, description = "User details", body = UserResponse),
-        (status = 404, description = "User not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -147,8 +147,8 @@ pub async fn admin_get_user(
     request_body = UpdateUserRequest,
     responses(
         (status = 200, description = "Updated user", body = UserResponse),
-        (status = 404, description = "User not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -195,8 +195,8 @@ pub async fn admin_update_user(
     params(("user_id" = Uuid, Path, description = "User id")),
     responses(
         (status = 204, description = "User deleted"),
-        (status = 404, description = "User not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

@@ -1,6 +1,6 @@
 use crate::ApiContext;
-use crate::rest::models::resource::Resource;
-use crate::rest::models::{ApiError, db_uuid};
+use crate::models::resource::Resource;
+use crate::models::{ApiError, db_uuid};
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -13,8 +13,8 @@ use uuid::Uuid;
     params(("resource_id" = Uuid, Path, description = "Resource id")),
     responses(
         (status = 200, description = "Resource metadata", body = Resource),
-        (status = 404, description = "Resource not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 404, description = "Resource not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     )
 )]
 pub async fn get_resource(

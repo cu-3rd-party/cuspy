@@ -1,5 +1,5 @@
-use crate::rest::models::parse_uuid;
-use crate::rest::models::user::UserResponse;
+use crate::models::parse_uuid;
+use crate::models::user::UserResponse;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, any::AnyRow};
 use utoipa::ToSchema;

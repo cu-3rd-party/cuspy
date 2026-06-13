@@ -1,6 +1,6 @@
+use crate::models::kill::{ConfirmKillRequest, KillEventRecord, KillEventResponse};
+use crate::models::{ApiError, db_uuid, kill};
 use crate::rest::extractor::AuthUser;
-use crate::rest::models::kill::{ConfirmKillRequest, KillEventRecord, KillEventResponse};
-use crate::rest::models::{ApiError, db_uuid, kill};
 use crate::rest::routes;
 use crate::rest::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use crate::{ApiContext, notifier};
@@ -16,10 +16,10 @@ use uuid::Uuid;
     request_body = ConfirmKillRequest,
     responses(
         (status = 200, description = "Kill event confirmation updated", body = KillEventResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 403, description = "Forbidden", body = crate::rest::models::ErrorResponse),
-        (status = 404, description = "Kill event not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
+        (status = 404, description = "Kill event not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

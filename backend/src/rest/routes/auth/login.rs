@@ -1,9 +1,9 @@
 use crate::ApiContext;
-use crate::rest::helpers;
-use crate::rest::models::ApiError;
-use crate::rest::models::auth::{AuthResponse, AuthUserRecord, LoginRequest};
+use crate::models::ApiError;
+use crate::models::auth::{AuthResponse, AuthUserRecord, LoginRequest};
 #[cfg(feature = "telegram-auth")]
-use crate::rest::models::db_uuid;
+use crate::models::db_uuid;
+use crate::rest::helpers;
 #[cfg(feature = "telegram-auth")]
 use crate::telegram;
 use axum::Json;
@@ -20,10 +20,10 @@ use sqlx::Row;
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login succeeded", body = AuthResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 401, description = "Unauthorized", body = crate::rest::models::ErrorResponse),
-        (status = 403, description = "Forbidden", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

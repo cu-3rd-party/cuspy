@@ -1,10 +1,10 @@
-use crate::rest::db;
-use crate::rest::extractor::AdminUser;
-use crate::rest::helpers;
-use crate::rest::models::profile::{
+use crate::db;
+use crate::models::profile::{
     AdminUpdateProfileRequest, ProfileRequestRecord, ProfileRequestResponse,
 };
-use crate::rest::models::{ApiError, db_optional_timestamp, db_uuid};
+use crate::models::{ApiError, db_optional_timestamp, db_uuid};
+use crate::rest::extractor::AdminUser;
+use crate::rest::helpers;
 use crate::{ApiContext, notifier};
 use axum::extract::{Path, State};
 use axum::routing::get;
@@ -29,8 +29,8 @@ pub fn profile_request_router() -> Router<ApiContext> {
     tag = "admin",
     responses(
         (status = 200, description = "List all profile requests", body = [ProfileRequestResponse]),
-        (status = 401, description = "Unauthorized", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -71,8 +71,8 @@ pub async fn admin_list_profile_requests(
     params(("request_id" = Uuid, Path, description = "Profile request id")),
     responses(
         (status = 200, description = "Profile request details", body = ProfileRequestResponse),
-        (status = 404, description = "Profile request not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -112,9 +112,9 @@ pub async fn admin_get_profile_request(
     request_body = AdminUpdateProfileRequest,
     responses(
         (status = 200, description = "Profile request updated", body = ProfileRequestResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 404, description = "Profile request not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
@@ -232,8 +232,8 @@ pub async fn admin_update_profile_request(
     params(("request_id" = Uuid, Path, description = "Profile request id")),
     responses(
         (status = 204, description = "Profile request deleted"),
-        (status = 404, description = "Profile request not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 404, description = "Profile request not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

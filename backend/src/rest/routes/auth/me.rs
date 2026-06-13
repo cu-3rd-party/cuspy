@@ -1,8 +1,8 @@
 use crate::ApiContext;
+use crate::models::ApiError;
+use crate::models::user::UserResponse;
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
-use crate::rest::models::ApiError;
-use crate::rest::models::user::UserResponse;
 use axum::Json;
 use axum::extract::State;
 
@@ -12,9 +12,9 @@ use axum::extract::State;
     tag = "auth",
     responses(
         (status = 200, description = "Current authenticated user", body = UserResponse),
-        (status = 401, description = "Unauthorized", body = crate::rest::models::ErrorResponse),
-        (status = 404, description = "User not found", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
+        (status = 404, description = "User not found", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

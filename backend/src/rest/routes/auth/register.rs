@@ -1,8 +1,8 @@
 use crate::ApiContext;
+use crate::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
+use crate::models::user::UserRecord;
+use crate::models::{ApiError, db_uuid};
 use crate::rest::helpers;
-use crate::rest::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
-use crate::rest::models::user::UserRecord;
-use crate::rest::models::{ApiError, db_uuid};
 #[cfg(feature = "telegram-auth")]
 use crate::telegram;
 use axum::Json;
@@ -46,8 +46,8 @@ fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> Ap
     request_body = RegisterRequest,
     responses(
         (status = 201, description = "Registration succeeded", body = AuthResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

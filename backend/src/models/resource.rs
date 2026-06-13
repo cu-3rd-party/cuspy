@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::rest::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid};
+use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid};
 use base64::Engine;
 use sha2::{Digest, Sha256};
 use sqlx::any::AnyRow;

@@ -1,4 +1,4 @@
-use crate::rest::models::{ApiError, db_uuid};
+use crate::models::{ApiError, db_uuid};
 use serde_json::{Map, Value};
 use sqlx::AnyPool;
 use uuid::Uuid;

@@ -1,4 +1,4 @@
-use crate::rest::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
+use crate::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{FromRow, Row, any::AnyRow};

@@ -1,6 +1,6 @@
+use crate::models::kill::{KillEventRecord, KillEventResponse, ReportKillRequest};
+use crate::models::{ApiError, db_json, db_uuid, kill};
 use crate::rest::extractor::AuthUser;
-use crate::rest::models::kill::{KillEventRecord, KillEventResponse, ReportKillRequest};
-use crate::rest::models::{ApiError, db_json, db_uuid, kill};
 use crate::rest::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use crate::{ApiContext, notifier};
 use axum::Json;
@@ -15,9 +15,9 @@ use uuid::Uuid;
     request_body = ReportKillRequest,
     responses(
         (status = 201, description = "Kill event reported", body = KillEventResponse),
-        (status = 400, description = "Bad request", body = crate::rest::models::ErrorResponse),
-        (status = 403, description = "Forbidden", body = crate::rest::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]

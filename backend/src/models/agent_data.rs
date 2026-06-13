@@ -1,4 +1,4 @@
-use crate::rest::models::parse_uuid;
+use crate::models::parse_uuid;
 use serde::{Deserialize, Serialize};
 use sqlx::any::AnyRow;
 use sqlx::{Error, FromRow, Row};

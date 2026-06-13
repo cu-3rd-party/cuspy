@@ -1,8 +1,8 @@
 use crate::ApiContext;
+use crate::models;
 use crate::rest;
 use crate::rest::OpenApi;
 use crate::rest::health;
-use crate::rest::models;
 use crate::rest::routes;
 use axum::Router;
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};

@@ -1,7 +1,7 @@
 use crate::ApiContext;
+use crate::models::kill::KillEventResponse;
+use crate::models::{ApiError, kill};
 use crate::rest::extractor::AuthUser;
-use crate::rest::models::kill::KillEventResponse;
-use crate::rest::models::{ApiError, kill};
 use crate::rest::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use axum::Json;
 use axum::extract::{Query, State};
@@ -63,7 +63,7 @@ impl ListParams {
     responses(
         (status = 200, description = "List kill events", body = [KillEventResponse]),
         (status = 401, description = "Unauthorized"),
-        (status = 500, description = "Internal server error", body = crate::rest::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
     security(("bearer_auth" = []))
 )]
