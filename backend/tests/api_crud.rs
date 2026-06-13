@@ -21,7 +21,7 @@ async fn backend_endpoints_work_end_to_end() {
     assert_eq!(health_body["status"], "ok");
 
     let (root_status, root_body) = ctx
-        .json("GET", "/api/", None, None, None, None)
+        .json("GET", "/api", None, None, None, None)
         .await;
     assert_eq!(root_status, StatusCode::OK);
     assert_eq!(root_body, Value::String("backend up".into()));
@@ -44,7 +44,12 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(resource_status, StatusCode::OK);
-    assert_eq!(resource_body["file_location"], "test/resource.txt");
+    let location =
+        resource_body["file_location"]
+            .to_string();
+    assert!(location.contains("http://127.0.0.1:9000"));
+    assert!(location.contains("test-bucket/"));
+    assert!(location.contains("test/resource.txt"));
 
     #[cfg(feature = "telegram-auth")]
     let user_init_data = telegram_init_data(1001);

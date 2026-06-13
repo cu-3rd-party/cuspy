@@ -7,7 +7,6 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header},
 };
-use clap::Parser;
 use cukiller_backend::rest::helpers;
 use cukiller_backend::{ApiContext, build_rest, config::Config};
 #[cfg(feature = "telegram-auth")]
@@ -202,7 +201,22 @@ impl TestContext {
             bucket: test_bucket(),
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
-            config: Config::parse(),
+            config: Config {
+                database_url: String::new(),
+                bind_address: "0.0.0.0:3000".parse().unwrap(),
+                admin_secret: ADMIN_SECRET.to_string(),
+                jwt_secret: JWT_SECRET.to_string(),
+                cors_origin: "http://localhost:5173".to_string(),
+                access_key: String::new(),
+                secret_key: String::new(),
+                endpoint: String::new(),
+                region: "us-east-1".to_string(),
+                bucket_name: "cukiller".to_string(),
+                #[cfg(feature = "telegram-auth")]
+                telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
+                #[cfg(feature = "telegram-auth")]
+                public_webapp_url: "https://test.example.com".to_string(),
+            },
             profile_request_tx: tokio::sync::broadcast::channel(16).0,
             #[cfg(feature = "telegram-auth")]
             telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),

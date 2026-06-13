@@ -273,7 +273,7 @@ mod tests {
                 .expect("lazy pool"),
             bucket: test_bucket(),
             admin_secret: "admin-secret".into(),
-            config: crate::config::Config::parse(),
+            config: crate::config::Config::parse_from([""]),
             jwt_secret: "jwt-secret".into(),
             profile_request_tx: tokio::sync::broadcast::channel(16).0,
             #[cfg(feature = "telegram-auth")]
