@@ -3,13 +3,16 @@
 	import { replaceState } from '$app/navigation';
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
+	import { Code, ConnectError } from '@connectrpc/connect';
 	import {
 		getSessionFlow,
 		type KillTarget,
 		listAdminProfileRequests,
 		listKillReports,
 		listKillTargets,
-		listRankings
+		listRankings,
+		subscribeToProfileRequests,
+		profileRequestEventToUpdate
 	} from '$lib/shared/api';
 	import { buildSessionFlow, profileFlowTarget } from '$lib/pages/profile-flow';
 	import type {
@@ -48,16 +51,40 @@
 
 	sessionUserStore.set(getInitialSessionUser());
 
+	let subscriptionAc: AbortController | null = null;
+
 	onMount(() => {
 		if (!browser) return;
-		void refreshSession();
 
-		// TODO: заменить это на gRPC server-side streaming и на бекенде пушить события в вебсокет, а тут просто слушать
-		const pollTimer = setInterval(() => {
-			void refreshSession();
-		}, 5000);
+		const init = async () => {
+			await refreshSession();
+			const userId = sessionUser?.user_id;
+			if (!userId) return;
 
-		return () => clearInterval(pollTimer);
+			const ac = new AbortController();
+			subscriptionAc = ac;
+
+			while (!ac.signal.aborted) {
+				try {
+					for await (const event of subscribeToProfileRequests(userId)) {
+						if (ac.signal.aborted) break;
+						updateSessionFromEvent(event);
+					}
+				} catch (err) {
+					if (ac.signal.aborted) break;
+					if (err instanceof ConnectError && err.code === Code.Unauthenticated) break;
+				}
+				if (!ac.signal.aborted) {
+					await new Promise((r) => setTimeout(r, 3000));
+				}
+			}
+		};
+
+		init();
+
+		return () => {
+			subscriptionAc?.abort();
+		};
 	});
 
 	const adminViews: AppView[] = ['admin-moderation', 'admin-events'];
@@ -123,6 +150,25 @@
 			}
 		} catch {
 			// Network error — backend unreachable, keep current session
+		}
+	};
+
+	const updateSessionFromEvent = (
+		event: import('$lib/proto/profilerequest/profilerequest_pb').ProfileRequestEvent
+	) => {
+		const update = profileRequestEventToUpdate(event);
+		const all = sessionFlow.allRequests;
+		const idx = all.findIndex((r) => r.profile_request_id === update.profile_request_id);
+
+		if (idx >= 0) {
+			const updated = all.map((r, i) => (i === idx ? { ...r, ...update } : r));
+			const latest = updated[updated.length - 1] ?? null;
+			sessionFlow = buildSessionFlow(sessionUser, latest, updated);
+			if (guardedView(view) !== view) {
+				navigate(profileFlowTarget(sessionFlow));
+			}
+		} else {
+			void refreshSession();
 		}
 	};
 
