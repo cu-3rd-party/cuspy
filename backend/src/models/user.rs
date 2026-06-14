@@ -98,10 +98,11 @@ pub struct User {
 impl User {
     pub fn from_headers(state: &ApiContext, header_map: &HeaderMap) -> Result<Self, ApiError> {
         Self::from_lookup(state, |name| {
-            header_map
+            let option = header_map
                 .get(name)
                 .and_then(|value| value.to_str().ok())
-                .map(str::to_owned)
+                .map(str::to_owned);
+            option
         })
     }
 

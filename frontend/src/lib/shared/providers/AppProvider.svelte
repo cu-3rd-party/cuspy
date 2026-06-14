@@ -2,7 +2,7 @@
 	import { browser } from '$app/environment';
 	import { replaceState } from '$app/navigation';
 	import type { Snippet } from 'svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { Code, ConnectError } from '@connectrpc/connect';
 	import {
 		getSessionFlow,
@@ -52,18 +52,22 @@
 	sessionUserStore.set(getInitialSessionUser());
 
 	let subscriptionAc: AbortController | null = null;
+	let subscribedUserId: string | null = null;
 
 	onMount(() => {
 		if (!browser) return;
+		void refreshSession();
+	});
 
-		const init = async () => {
-			await refreshSession();
-			const userId = sessionUser?.user_id;
-			if (!userId) return;
+	onDestroy(() => {
+		subscriptionAc?.abort();
+	});
 
-			const ac = new AbortController();
-			subscriptionAc = ac;
+	const subscribeToUser = (userId: string) => {
+		const ac = new AbortController();
+		subscriptionAc = ac;
 
+		const run = async () => {
 			while (!ac.signal.aborted) {
 				try {
 					for await (const event of subscribeToProfileRequests(userId)) {
@@ -80,11 +84,17 @@
 			}
 		};
 
-		init();
+		run();
+	};
 
-		return () => {
-			subscriptionAc?.abort();
-		};
+	$effect(() => {
+		if (!browser) return;
+		const uid = sessionUser?.user_id ?? null;
+		if (uid === subscribedUserId) return;
+		subscribedUserId = uid;
+		subscriptionAc?.abort();
+		subscriptionAc = null;
+		if (uid) subscribeToUser(uid);
 	});
 
 	const adminViews: AppView[] = ['admin-moderation', 'admin-events'];

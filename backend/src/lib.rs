@@ -64,6 +64,7 @@ fn build_cors_layer(state: &ApiContext) -> CorsLayer {
             header::CONTENT_TYPE,
             HeaderName::from_str("x-grpc-web").unwrap(),
             HeaderName::from_str("x-user-agent").unwrap(),
+            HeaderName::from_str("x-admin-secret").unwrap(),
         ])
         .allow_credentials(true)
         .max_age(Duration::from_hours(24))

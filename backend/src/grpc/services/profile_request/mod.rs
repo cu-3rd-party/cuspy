@@ -1,3 +1,4 @@
+use log::{debug, info};
 use crate::grpc::RequestAuthExt;
 use crate::models::profile::ProfileRequestEvent;
 use profilerequest::profile_request_server::ProfileRequest;
@@ -50,9 +51,12 @@ impl ProfileRequest for ProfileRequestService {
 
         tokio::spawn(async move {
             loop {
+                info!("user={:?} subscribed to event loop", &user_id);
                 match broadcast_rx.recv().await {
                     Ok(event) => {
+                        info!("RECEIVED EVENT: {:?}", event);
                         if event.user_id == user_id {
+                            info!("SENDING EVENT: user={:?} event = {:?}", &user_id, event);
                             if tx
                                 .send(Ok(ProtoEvent {
                                     profile_request_id: event.profile_request_id.to_string(),
