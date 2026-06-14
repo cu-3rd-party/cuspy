@@ -16,19 +16,19 @@ pub struct Config {
     pub cors_origin: String,
 
     #[clap(env = "S3_ACCESS_KEY", default_value = "")]
-    pub access_key: String,
+    pub s3_access_key: String,
 
     #[clap(env = "S3_SECRET_KEY", default_value = "")]
-    pub secret_key: String,
+    pub s3_secret_key: String,
 
     #[clap(env = "S3_ENDPOINT", default_value = "")]
-    pub endpoint: String,
+    pub s3_endpoint: String,
 
     #[clap(env = "S3_REGION", default_value = "us-east-1")]
-    pub region: String,
+    pub s3_region: String,
 
     #[clap(env = "S3_BUCKET_NAME", default_value = "cukiller")]
-    pub bucket_name: String,
+    pub s3_bucket_name: String,
 
     #[clap(long, env)]
     #[cfg(feature = "telegram-auth")]

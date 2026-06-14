@@ -80,25 +80,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     run_migrations(&db).await?;
 
     let credentials = Credentials {
-        access_key: Some(config.access_key.clone()),
-        secret_key: Some(config.secret_key.clone()),
+        access_key: Some(config.s3_access_key.clone()),
+        secret_key: Some(config.s3_secret_key.clone()),
         security_token: None,
         session_token: None,
         expiration: None,
     };
 
     let region = Region::Custom {
-        region: config.region.clone(),
-        endpoint: config.endpoint.clone(),
+        region: config.s3_region.clone(),
+        endpoint: config.s3_endpoint.clone(),
     };
 
     let bucket =
-        Bucket::new(&config.bucket_name, region.clone(), credentials.clone())?.with_path_style();
+        Bucket::new(&config.s3_bucket_name, region.clone(), credentials.clone())?.with_path_style();
     match bucket.head_object("").await {
         Ok(_) => Ok::<(), anyhow::Error>(()),
         Err(S3Error::HttpFailWithBody(404, _)) => {
             Bucket::create_with_path_style(
-                &config.bucket_name,
+                &config.s3_bucket_name,
                 region.clone(),
                 credentials.clone(),
                 BucketConfiguration::default(),

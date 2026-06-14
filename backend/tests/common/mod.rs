@@ -207,11 +207,11 @@ impl TestContext {
                 admin_secret: ADMIN_SECRET.to_string(),
                 jwt_secret: JWT_SECRET.to_string(),
                 cors_origin: "http://localhost:5173".to_string(),
-                access_key: String::new(),
-                secret_key: String::new(),
-                endpoint: String::new(),
-                region: "us-east-1".to_string(),
-                bucket_name: "cukiller".to_string(),
+                s3_access_key: String::new(),
+                s3_secret_key: String::new(),
+                s3_endpoint: String::new(),
+                s3_region: "us-east-1".to_string(),
+                s3_bucket_name: "cukiller".to_string(),
                 #[cfg(feature = "telegram-auth")]
                 telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
                 #[cfg(feature = "telegram-auth")]
