@@ -18,6 +18,7 @@ import type {
 } from '$lib/shared/model';
 
 const DEFAULT_BACKEND_URL = 'http://127.0.0.1:3000/api';
+const isProduction = env.PUBLIC_PRODUCTION === 'true';
 
 type BackendUser = Omit<SessionUser, 'agent_data'> & {
 	agent_data?: AgentProfileData | null;
@@ -149,13 +150,15 @@ export const getCurrentUser = async (token = readAccessToken(), customFetch?: ty
 	return normalizeUser(user, customFetch);
 };
 
-export const loginUser = async (payload: AuthPayload, customFetch?: typeof fetch) => {
+export const loginUser = async (payload?: AuthPayload, customFetch?: typeof fetch) => {
+	const options: RequestInit = { method: 'POST' };
+	if (!isProduction && payload) {
+		options.body = JSON.stringify(payload);
+	}
+
 	const response = await backendJson<{ access_token: string; user: BackendUser }>(
 		'/auth/login',
-		{
-			method: 'POST',
-			body: JSON.stringify(payload)
-		},
+		options,
 		customFetch
 	);
 
@@ -169,6 +172,31 @@ export const getSessionFlow = async (
 	token = readAccessToken(),
 	customFetch?: typeof fetch
 ): Promise<SessionFlow> => {
+	if (isProduction) {
+		// In production, Telegram WebApp auto-sends x-telegram-init-data header.
+		// Try to restore session from stored token first, or login fresh (no body needed).
+		if (token) {
+			try {
+				const user = await getCurrentUser(token, customFetch);
+				const requests = await listProfileRequests(token, customFetch);
+				return buildSessionFlow(user, requests[0] ?? null, requests);
+			} catch {
+				// Token expired — fall through to login
+			}
+		}
+
+		try {
+			const loginResult = await loginUser(undefined, customFetch);
+			writeAccessToken(loginResult.access_token);
+			const user = loginResult.user;
+			const requests = await listProfileRequests(loginResult.access_token, customFetch);
+			return buildSessionFlow(user, requests[0] ?? null, requests);
+		} catch {
+			clearAccessToken();
+			return buildSessionFlow(null, null);
+		}
+	}
+
 	if (!token) {
 		return buildSessionFlow(null, null);
 	}

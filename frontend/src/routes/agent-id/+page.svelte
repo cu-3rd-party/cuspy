@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { env } from '$env/dynamic/public';
 	import { onMount } from 'svelte';
 	import {
 		writeAccessToken,
@@ -10,6 +11,8 @@
 	import { loginUser, registerUser, getCurrentUser } from '$lib/shared/api';
 	import { getAppContext } from '$lib/shared/providers';
 	import { applyProfileDataToDraft } from '$lib/pages/profile-flow';
+
+	const isProduction = env.PUBLIC_PRODUCTION === 'true';
 	import {
 		isAgentIdComplete,
 		loadDossierDraft,
@@ -189,6 +192,16 @@
 		try {
 			if (activeSessionUser) {
 				app.setSessionUser(activeSessionUser);
+				saveAndProceed();
+				return;
+			}
+
+			if (isProduction) {
+				// In production, Telegram WebApp auto-sends x-telegram-init-data header.
+				// POST /auth/login without body uses that header for authentication.
+				const loginPayload = await loginUser();
+				writeAccessToken(loginPayload.access_token);
+				app.setSessionUser(loginPayload.user);
 				saveAndProceed();
 				return;
 			}
