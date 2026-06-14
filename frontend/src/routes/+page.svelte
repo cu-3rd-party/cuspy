@@ -100,8 +100,6 @@
 		};
 	});
 
-	app.refreshSession();
-
 	$effect(() => {
 		const view = app.view;
 
