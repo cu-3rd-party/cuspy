@@ -9,6 +9,7 @@ mod r#const;
 #[cfg(feature = "telegram-auth")]
 pub mod telegram;
 
+use std::str::FromStr;
 use std::time::{Duration, Instant};
 
 use crate::config::Config;
@@ -24,7 +25,7 @@ use axum::{
     response::Response,
 };
 use axum_tonic::RestGrpcService;
-use http::{HeaderValue, Method};
+use http::{HeaderName, HeaderValue, Method};
 use log::{error, info, warn};
 use rest::docs;
 use s3::Bucket;
@@ -58,7 +59,12 @@ fn build_cors_layer(state: &ApiContext) -> CorsLayer {
             Method::PATCH,
             Method::DELETE,
         ])
-        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+        .allow_headers([
+            header::AUTHORIZATION,
+            header::CONTENT_TYPE,
+            HeaderName::from_str("x-grpc-web").unwrap(),
+            HeaderName::from_str("x-user-agent").unwrap(),
+        ])
         .allow_credentials(true)
         .max_age(Duration::from_hours(24))
 }
