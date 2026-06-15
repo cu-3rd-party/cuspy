@@ -1,7 +1,7 @@
 use crate::ApiContext;
-use crate::models::{ApiError, db_uuid};
+use crate::models::profile::ProfileRequestRecord;
+use crate::models::{ApiError};
 use crate::rest::extractor::AuthUser;
-use crate::rest::helpers;
 use axum::extract::{Path, State};
 use http::StatusCode;
 use uuid::Uuid;
@@ -13,6 +13,7 @@ use uuid::Uuid;
     params(("request_id" = Uuid, Path, description = "Profile request id")),
     responses(
         (status = 204, description = "Profile request deleted"),
+        (status = 304, description = "Profile request wasn't deleted (for some reason db returned 0 rows changed)"),
         (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
         (status = 404, description = "Profile request not found", body = crate::models::ErrorResponse),
         (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
@@ -24,24 +25,18 @@ pub async fn delete_profile_request(
     AuthUser(user): AuthUser,
     Path(request_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
-    let owner_user_id = sqlx::query_scalar::<_, String>(r#"select cast(user_id as text) from profile_request where profile_request_id = cast($1 as uuid)"#)
-    .bind(db_uuid(request_id))
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or(ApiError::NotFound)?;
-    let owner_user_id = Uuid::parse_str(&owner_user_id)
-        .map_err(|error| ApiError::Database(sqlx::Error::Decode(Box::new(error))))?;
-    helpers::ensure_owner(&user, owner_user_id)?;
-
-    let result =
-        sqlx::query(r#"delete from profile_request where profile_request_id = cast($1 as uuid)"#)
-            .bind(db_uuid(request_id))
-            .execute(&state.db)
-            .await?;
-
-    if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound);
+    let mut tx = state.db.begin().await?;
+    let profile = ProfileRequestRecord::get_by_id(&mut *tx, request_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
+    if profile.user_id != user.user_id && !user.is_admin {
+        return Err(ApiError::Forbidden);
     }
+    let deleted = profile.delete(&mut *tx).await?;
+    if !deleted {
+        return Ok(StatusCode::NOT_MODIFIED);
+    }
+    tx.commit().await?; // удаляем только если бд реально чето удалила
 
     Ok(StatusCode::NO_CONTENT)
 }

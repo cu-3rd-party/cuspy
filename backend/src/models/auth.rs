@@ -1,10 +1,8 @@
-use crate::models::user::{User, UserResponse};
+use crate::models::user::{User};
 use crate::models::{ApiError, db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid};
 use crate::rest::helpers;
-use s3::Bucket;
 use serde::{Deserialize, Serialize};
-use sqlx::{Executor, FromRow, PgConnection, Postgres, postgres::PgRow};
-use std::sync::Arc;
+use sqlx::{Executor, FromRow, Postgres, postgres::PgRow};
 use utoipa::ToSchema;
 use uuid::Uuid;
 

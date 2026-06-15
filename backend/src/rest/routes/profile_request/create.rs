@@ -1,74 +1,109 @@
-use crate::models::profile::{CreateProfileRequest, ProfileRequestRecord, ProfileRequestResponse};
-use crate::models::{ApiError, db_uuid};
+use crate::ApiContext;
+use crate::models::ApiError;
+use crate::models::agent_data::AgentData;
+use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
+use crate::models::resource::Resource;
 use crate::rest::extractor::AuthUser;
-use crate::rest::helpers;
-use crate::{ApiContext, notifier};
-use axum::Json;
-use axum::extract::State;
-use http::StatusCode;
-use uuid::Uuid;
+use axum::extract::{Multipart, State};
+use axum::response::Json;
+use utoipa::ToSchema;
+
+#[derive(ToSchema)]
+pub struct CreateProfileRequestMultipart {
+    #[schema(
+        example = r#"{"codename":"Cipher","physical_contact_allowed":true,"hugs_close_proximity_allowed":false}"#
+    )]
+    pub data: String,
+    #[schema(value_type = String, format = Binary)]
+    pub image: Option<String>,
+}
 
 #[utoipa::path(
     post,
     path = "/api/profile-requests",
     tag = "profile-request",
-    request_body = CreateProfileRequest,
-    responses(
-        (status = 201, description = "Profile request created", body = ProfileRequestResponse),
-        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
-        (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
+    request_body(
+        content = CreateProfileRequestMultipart,
+        content_type = "multipart/form-data",
+        description = "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file"
     ),
-    security(("bearer_auth" = []))
+    responses(
+        (status = 200, description = "Profile data created", body = AgentData),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
+    )
 )]
 pub async fn create_profile_request(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,
-    Json(payload): Json<CreateProfileRequest>,
-) -> Result<(StatusCode, Json<ProfileRequestResponse>), ApiError> {
-    let request = sqlx::query_as::<_, ProfileRequestRecord>(
-        r#"
-        insert into profile_request (
-            profile_request_id,
-            user_id,
-            requested_profile_data_id,
-            status
-        )
-        values (cast($1 as uuid), cast($2 as uuid), cast($3 as uuid), 'sent')
-        returning
-            cast(profile_request_id as text) as profile_request_id,
-            cast(user_id as text) as user_id,
-            cast(requested_profile_data_id as text) as requested_profile_data_id,
-            status,
-            reviewer_note,
-            cast(reviewed_at as text) as reviewed_at,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
-    )
-    .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(user.user_id))
-    .bind(db_uuid(payload.agent_data_id))
-    .fetch_one(&state.db)
-    .await?;
+    mut multipart: Multipart,
+) -> Result<Json<ProfileRequestResponse>, ApiError> {
+    let mut metadata: Option<crate::models::agent_data::AgentDataMetadata> = None;
+    let mut image = None;
+    // осознанно не использую тут транзакцию чтоб не заставлять ее висеть пока я читаю боди запроса
+    if ProfileRequestRecord::get_by_user_id(&state.db, user.user_id)
+        .await?
+        .into_iter()
+        .any(|r| r.status == "sent".to_string())
+    {
+        return Err(ApiError::BadRequest(
+            "you already have a pending profile".to_string(),
+        ));
+    }
 
-    notifier::notify_user(
-        &state,
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?
+    {
+        let name = field
+            .name()
+            .ok_or_else(|| ApiError::BadRequest("no field name".to_string()))?
+            .to_string();
+
+        match name.as_str() {
+            "data" => {
+                let text = field.text().await.map_err(|e| {
+                    ApiError::BadRequest(format!("failed to parse field body: {e}"))
+                })?;
+
+                metadata = Some(serde_json::from_str(&text).map_err(|e| {
+                    ApiError::BadRequest(format!("failed to parse json body: {e}"))
+                })?);
+            }
+            "image" => {
+                let content_type = field.content_type().map(String::from);
+                let content = field.bytes().await.map_err(|e| {
+                    ApiError::BadRequest(format!("failed to parse field body: {e}"))
+                })?;
+                image = Some((content, content_type));
+            }
+            _ => {
+                return Err(ApiError::BadRequest(format!(
+                    "unknown multipart field name provided: {name}"
+                )));
+            }
+        };
+    }
+
+    let metadata = metadata.ok_or_else(|| ApiError::BadRequest("no data supplied".to_string()))?;
+    let mut tx = state.db.begin().await?;
+    let resource = match image {
+        Some((content, content_type)) => {
+            Some(Resource::new(&mut *tx, state.bucket.clone(), content, content_type).await?)
+        }
+        None => None,
+    };
+    let agent_data = AgentData::create(&mut *tx, metadata, resource).await?;
+    let profile = ProfileRequestRecord::create(
+        &mut *tx,
         user.user_id,
-        "Profile request submitted. Review queue active. Gameplay access remains available while moderators verify dossier.",
+        agent_data.agent_data_id,
+        "sent".to_string(),
     )
-    .await;
-    notifier::notify_admins(
-        &state,
-        format!(
-            "New profile request {} waiting for moderation.",
-            request.profile_request_id
-        ),
-    )
-    .await;
+    .await?;
+    let response = profile.into_response(&mut *tx).await?;
+    tx.commit().await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(helpers::to_profile_request_response(request)),
-    ))
+    Ok(Json(response))
 }

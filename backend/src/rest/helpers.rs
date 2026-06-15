@@ -2,37 +2,20 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::ApiError;
 use crate::models::auth::{AuthClaims, AuthTokenPair, AuthUserRecord, RefreshClaims};
-use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::models::similarity::SimilarityResponse;
 use crate::models::user::{User, UserResponse};
-use crate::models::{db_optional_uuid, db_uuid};
 use crate::{ApiContext, r#const};
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use jsonwebtoken::{EncodingKey, Header, encode};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub const DEFAULT_RATING: i64 = 1000;
 
 pub fn format_timestamp(value: time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
-}
-
-pub fn to_profile_request_response(record: ProfileRequestRecord) -> ProfileRequestResponse {
-    ProfileRequestResponse {
-        profile_request_id: record.profile_request_id,
-        user_id: record.user_id,
-        requested_profile_data_id: record.requested_profile_data_id,
-        status: record.status,
-        reviewer_note: record.reviewer_note,
-        reviewed_at: record.reviewed_at.map(format_timestamp),
-        created_at: format_timestamp(record.created_at),
-        updated_at: format_timestamp(record.updated_at),
-    }
 }
 
 pub fn to_user_response(user: User) -> UserResponse {

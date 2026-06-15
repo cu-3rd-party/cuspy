@@ -1,6 +1,6 @@
 use crate::ApiContext;
 use crate::models::auth::{AuthTokenPair, AuthUserRecord, EmailRegisterRequest};
-use crate::models::{ApiError, db_uuid};
+use crate::models::{ApiError};
 use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
 use axum::Json;

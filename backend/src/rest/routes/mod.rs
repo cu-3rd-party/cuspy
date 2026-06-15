@@ -3,8 +3,6 @@ use crate::rest::health;
 use axum::Router;
 use axum::routing::get;
 
-pub mod admin;
-pub mod agent_data;
 pub mod auth;
 pub mod kill;
 pub mod profile_request;
@@ -20,7 +18,5 @@ pub fn router() -> Router<ApiContext> {
         .nest("/kill", kill::router())
         .nest("/stats", stats::router())
         .nest("/profile-requests", profile_request::router())
-        .nest("/admin", admin::router())
-        .nest("/agent-data", agent_data::router())
         .nest("/resource", resource::router())
 }

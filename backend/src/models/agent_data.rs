@@ -3,12 +3,13 @@ use crate::models::{ApiError, db_uuid, parse_uuid};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
 use sqlx::{Error, Executor, FromRow, Postgres, Row, postgres::PgConnection};
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
+#[derive(Clone, Deserialize, Serialize, ToSchema, Debug)]
 pub enum AcademicLevel {
     Bachelor,
     Master,
@@ -36,7 +37,7 @@ impl Display for AcademicLevel {
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema, Debug)]
+#[derive(Clone, Deserialize, Serialize, ToSchema, Debug)]
 pub enum BachelorTrack {
     SWE,
     AI,
@@ -67,7 +68,7 @@ impl Display for BachelorTrack {
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema, Default, Debug)]
+#[derive(Clone, Deserialize, Serialize, ToSchema, Default, Debug)]
 pub struct AgentData {
     pub agent_data_id: Uuid,
     pub codename: Option<String>,
@@ -187,6 +188,49 @@ impl AgentData {
         .await
         .ok()
         .flatten()
+    }
+
+    pub async fn get_by_ids<'c, E>(executor: E, ids: &[Uuid]) -> HashMap<Uuid, Self>
+    where
+        E: Executor<'c, Database = Postgres>,
+    {
+        if ids.is_empty() {
+            return HashMap::new();
+        }
+        let placeholders: Vec<String> = (1..=ids.len())
+            .map(|i| format!("cast(${i} as uuid)"))
+            .collect();
+        let query_str = format!(
+            r#"
+            select
+                cast(agent_data_id as text) as agent_data_id,
+                codename,
+                academic_group,
+                academic_level,
+                course_number,
+                bachelor_track,
+                identification_name,
+                cast(identification_image_id as text) as identification_image_id,
+                physical_contact_allowed,
+                hugs_close_proximity_allowed
+            from agent_data
+            where agent_data_id in ({})
+            "#,
+            placeholders.join(", ")
+        );
+
+        let mut query = sqlx::query_as::<_, Self>(&query_str);
+        for id in ids {
+            query = query.bind(db_uuid(*id));
+        }
+
+        query
+            .fetch_all(executor)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| (a.agent_data_id, a))
+            .collect()
     }
 }
 

@@ -1,15 +1,24 @@
+use crate::rest::helpers::format_timestamp;
 use crate::ApiContext;
+use crate::models::agent_data::AgentData;
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::models::{ApiError, db_uuid};
+use crate::models::ApiError;
 use crate::rest::extractor::AuthUser;
-use crate::rest::helpers;
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
+use serde::Deserialize;
+use utoipa::IntoParams;
+
+#[derive(Deserialize, IntoParams)]
+pub struct ListParams {
+    all: bool,
+}
 
 #[utoipa::path(
     get,
     path = "/api/profile-requests",
     tag = "profile-request",
+    params(ListParams),
     responses(
         (status = 200, description = "Current user's profile requests", body = [ProfileRequestResponse]),
         (status = 401, description = "Unauthorized", body = crate::models::ErrorResponse),
@@ -20,31 +29,37 @@ use axum::extract::State;
 pub async fn list_profile_requests(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,
+    Query(query): Query<ListParams>,
 ) -> Result<Json<Vec<ProfileRequestResponse>>, ApiError> {
-    let requests = sqlx::query_as::<_, ProfileRequestRecord>(
-        r#"
-        select
-            cast(profile_request_id as text) as profile_request_id,
-            cast(user_id as text) as user_id,
-            cast(requested_profile_data_id as text) as requested_profile_data_id,
-            status,
-            reviewer_note,
-            cast(reviewed_at as text) as reviewed_at,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        from profile_request
-        where cast(user_id as text) = $1
-        order by created_at desc
-        "#,
-    )
-    .bind(db_uuid(user.user_id))
-    .fetch_all(&state.db)
-    .await?;
+    let mut tx = state.db.begin().await?;
+    let requests: Vec<ProfileRequestRecord>;
+    if query.all && user.is_admin {
+        requests = ProfileRequestRecord::get_all(&mut *tx).await?;
+    } else {
+        requests = ProfileRequestRecord::get_by_user_id(&mut *tx, user.user_id).await?;
+    }
 
-    Ok(Json(
-        requests
-            .into_iter()
-            .map(helpers::to_profile_request_response)
-            .collect(),
-    ))
+    let agent_data_ids: Vec<_> = requests
+        .iter()
+        .map(|r| r.requested_profile_data_id)
+        .collect();
+    let agent_data_map = AgentData::get_by_ids(&mut *tx, &agent_data_ids).await;
+
+    let requests = requests
+        .into_iter()
+        .map(|r| ProfileRequestResponse {
+            profile_request_id: r.profile_request_id,
+            user_id: r.user_id,
+            requested_profile_data: agent_data_map.get(&r.requested_profile_data_id).cloned(),
+            status: r.status,
+            reviewer_note: r.reviewer_note,
+            reviewed_at: r.reviewed_at.map(format_timestamp),
+            created_at: format_timestamp(r.created_at),
+            updated_at: r.updated_at.map(format_timestamp),
+        })
+        .collect();
+
+    tx.commit().await?;
+
+    Ok(Json(requests))
 }
