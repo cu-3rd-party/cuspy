@@ -1,11 +1,11 @@
 use crate::ApiContext;
 use crate::models::ApiError;
 use crate::models::auth::{AuthTokenPair, AuthUserRecord, EmailLoginRequest};
-use axum::Json;
-use axum::extract::State;
 use crate::models::user::User;
 use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
+use axum::Json;
+use axum::extract::State;
 
 #[utoipa::path(
     post,
@@ -27,14 +27,17 @@ pub async fn login(
     Json(payload): Json<EmailLoginRequest>,
 ) -> Result<Json<AuthTokenPair>, ApiError> {
     let mut tx = state.db.begin().await?;
-    let auth_user = AuthUserRecord::get_by_email(&mut *tx, payload.email).await
+    let auth_user = AuthUserRecord::get_by_email(&mut *tx, payload.email)
+        .await
         .ok_or(ApiError::BadRequest("check email or password".to_string()))?; // obfuscation of db users emails
     // не должно быть ситуации, где у пользователя нет пароля
     if let Some(password_hash) = auth_user.password_hash.clone() {
         helpers::verify_password(&password_hash, &payload.password)?;
     } else {
         // но на всякий случай
-        return Err(ApiError::Internal("auth user doesn't have password hash. refusing to validate".to_string()))
+        return Err(ApiError::Internal(
+            "auth user doesn't have password hash. refusing to validate".to_string(),
+        ));
     }
     if let Some(user_id) = auth_user.user_id {
         user = User::get_by_id(&mut *tx, user_id).await;

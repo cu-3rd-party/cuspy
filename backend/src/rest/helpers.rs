@@ -2,10 +2,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::ApiError;
 use crate::models::auth::{AuthClaims, AuthTokenPair, AuthUserRecord, RefreshClaims};
-use crate::models::{db_optional_uuid, db_uuid};
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::models::similarity::SimilarityResponse;
 use crate::models::user::{User, UserResponse};
+use crate::models::{db_optional_uuid, db_uuid};
 use crate::{ApiContext, r#const};
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
@@ -158,13 +158,10 @@ fn create_refresh_token(
         &claims,
         &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
     )
-        .map_err(|_| ApiError::Token)
+    .map_err(|_| ApiError::Token)
 }
 
-fn create_access_token(
-    state: &ApiContext,
-    user: Option<User>,
-) -> Result<String, ApiError> {
+fn create_access_token(state: &ApiContext, user: Option<User>) -> Result<String, ApiError> {
     let exp = SystemTime::now()
         .checked_add(r#const::AUTH_TOKEN_TTL)
         .ok_or(ApiError::Token)?
@@ -172,10 +169,7 @@ fn create_access_token(
         .map_err(|_| ApiError::Token)?
         .as_secs() as usize;
 
-    let claims = AuthClaims {
-        user,
-        exp,
-    };
+    let claims = AuthClaims { user, exp };
 
     encode(
         &Header::default(),
@@ -187,7 +181,6 @@ fn create_access_token(
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use super::*;
     use clap::Parser;
     #[cfg(feature = "telegram-auth")]
@@ -199,6 +192,7 @@ mod tests {
     #[cfg(feature = "telegram-auth")]
     use sha2::{Digest, Sha256};
     use sqlx::postgres::PgPoolOptions;
+    use std::sync::Arc;
 
     #[cfg(feature = "telegram-auth")]
     fn telegram_init_data(user_id: i64) -> String {

@@ -1,12 +1,12 @@
-use std::sync::Arc;
-use s3::Bucket;
-use crate::models::{db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid, ApiError};
 use crate::models::user::{User, UserResponse};
+use crate::models::{ApiError, db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid};
+use crate::rest::helpers;
+use s3::Bucket;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, postgres::PgRow, PgConnection, Postgres, Executor};
+use sqlx::{Executor, FromRow, PgConnection, Postgres, postgres::PgRow};
+use std::sync::Arc;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use crate::rest::helpers;
 
 #[derive(Deserialize, ToSchema)]
 pub struct EmailRegisterRequest {
@@ -48,19 +48,19 @@ impl AuthUserRecord {
         telegram_id: i64,
     ) -> Result<Self, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         Ok(sqlx::query_as(
             r#"
                 insert into "auth_user" (user_id, telegram_id)
                 values (cast($1 as uuid), $2)
                 returning *
-            "#
+            "#,
         )
-            .bind(db_optional_uuid(user_id))
-            .bind(telegram_id)
-            .fetch_one(executor)
-            .await?)
+        .bind(db_optional_uuid(user_id))
+        .bind(telegram_id)
+        .fetch_one(executor)
+        .await?)
     }
 
     pub async fn new_email_user<'c, E>(
@@ -70,7 +70,7 @@ impl AuthUserRecord {
         password: String,
     ) -> Result<Self, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         let password_hash = helpers::hash_password(&password)?;
         Ok(sqlx::query_as(
@@ -78,71 +78,67 @@ impl AuthUserRecord {
                 insert into "auth_user" (user_id, email, password_hash)
                 values (cast($1 as uuid), $2, $3)
                 returning *
-            "#
+            "#,
         )
-            .bind(db_optional_uuid(user_id))
-            .bind(email)
-            .bind(password_hash)
-            .fetch_one(executor)
-            .await?)
+        .bind(db_optional_uuid(user_id))
+        .bind(email)
+        .bind(password_hash)
+        .fetch_one(executor)
+        .await?)
     }
 
-    pub async fn get_by_id<'c, E>(
-        executor: E,
-        auth_user_id: Uuid,
-    ) -> Option<Self>
+    pub async fn get_by_id<'c, E>(executor: E, auth_user_id: Uuid) -> Option<Self>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
-         sqlx::query_as(
+        sqlx::query_as(
             r#"
                 select *
                 from auth_user
                 where auth_user_id = cast($1 as uuid)
                 limit 1
-            "#
+            "#,
         )
-            .bind(db_uuid(auth_user_id))
-            .fetch_optional(executor)
-            .await.ok().flatten()
+        .bind(db_uuid(auth_user_id))
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 
-    pub async fn get_by_user_id<'c, E>(
-        executor: E,
-        user_id: Uuid,
-    ) -> Option<Vec<Self>>
+    pub async fn get_by_user_id<'c, E>(executor: E, user_id: Uuid) -> Option<Vec<Self>>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
                 select *
                 from auth_user
                 where user_id = cast($1 as uuid)
-            "#
+            "#,
         )
-            .bind(db_uuid(user_id))
-            .fetch_all(executor)
-            .await.ok()
+        .bind(db_uuid(user_id))
+        .fetch_all(executor)
+        .await
+        .ok()
     }
 
-    pub async fn get_by_email<'c, E>(
-        executor: E,
-        email: String,
-    ) -> Option<Self>
+    pub async fn get_by_email<'c, E>(executor: E, email: String) -> Option<Self>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
                 select *
                 from auth_user
                 where email = $1
-            "#
+            "#,
         )
-            .bind(email)
-            .fetch_optional(executor)
-            .await.ok().flatten()
+        .bind(email)
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 
     pub async fn update_user_id<'c, E>(
@@ -151,7 +147,7 @@ impl AuthUserRecord {
         new_user_id: Uuid,
     ) -> Result<Self, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         Ok(sqlx::query_as(
             r#"
@@ -159,12 +155,12 @@ impl AuthUserRecord {
                 set user_id = cast($2 as uuid)
                 where auth_user_id = cast($1 as uuid)
                 returning *
-            "#
+            "#,
         )
-            .bind(db_uuid(self.auth_user_id))
-            .bind(db_uuid(new_user_id))
-            .fetch_one(executor)
-            .await?)
+        .bind(db_uuid(self.auth_user_id))
+        .bind(db_uuid(new_user_id))
+        .fetch_one(executor)
+        .await?)
     }
 }
 

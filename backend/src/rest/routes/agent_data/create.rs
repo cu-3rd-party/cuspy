@@ -1,9 +1,9 @@
-use axum::extract::{Multipart, State};
-use axum::response::Json;
 use crate::ApiContext;
+use crate::models::ApiError;
 use crate::models::agent_data::AgentData;
 use crate::models::resource::Resource;
-use crate::models::ApiError;
+use axum::extract::{Multipart, State};
+use axum::response::Json;
 use utoipa::ToSchema;
 
 pub(crate) async fn create_agent_data_inner(
@@ -25,18 +25,19 @@ pub(crate) async fn create_agent_data_inner(
 
         match name.as_str() {
             "data" => {
-                let text = field.text().await
-                    .map_err(|e| ApiError::BadRequest(format!("failed to parse field body: {e}")))?;
+                let text = field.text().await.map_err(|e| {
+                    ApiError::BadRequest(format!("failed to parse field body: {e}"))
+                })?;
 
-                metadata = Some(serde_json::from_str(&text)
-                    .map_err(|e| ApiError::BadRequest(format!("failed to parse json body: {e}")))?);
+                metadata = Some(serde_json::from_str(&text).map_err(|e| {
+                    ApiError::BadRequest(format!("failed to parse json body: {e}"))
+                })?);
             }
             "image" => {
-                let content_type = field
-                    .content_type()
-                    .map(String::from);
-                let content = field.bytes().await
-                    .map_err(|e| ApiError::BadRequest(format!("failed to parse field body: {e}")))?;
+                let content_type = field.content_type().map(String::from);
+                let content = field.bytes().await.map_err(|e| {
+                    ApiError::BadRequest(format!("failed to parse field body: {e}"))
+                })?;
                 image = Some((content, content_type));
             }
             _ => {
@@ -63,7 +64,9 @@ pub(crate) async fn create_agent_data_inner(
 
 #[derive(ToSchema)]
 pub struct CreateAgentDataMultipartRequest {
-    #[schema(example = r#"{"codename":"Cipher","physical_contact_allowed":true,"hugs_close_proximity_allowed":false}"#)]
+    #[schema(
+        example = r#"{"codename":"Cipher","physical_contact_allowed":true,"hugs_close_proximity_allowed":false}"#
+    )]
     pub data: String,
     #[schema(value_type = String, format = Binary)]
     pub image: Option<String>,

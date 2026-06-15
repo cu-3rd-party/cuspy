@@ -23,8 +23,13 @@ async fn create_user_response(
     payload: CreateUserRequest,
 ) -> Result<UserResponse, ApiError> {
     let mut tx = db.begin().await?;
-    let user = User::create(&mut *tx, payload.username, payload.is_admin.unwrap_or(false), None)
-        .await?;
+    let user = User::create(
+        &mut *tx,
+        payload.username,
+        payload.is_admin.unwrap_or(false),
+        None,
+    )
+    .await?;
 
     sqlx::query(
         r#"
@@ -45,7 +50,9 @@ async fn create_user_response(
 }
 
 async fn get_user_response(db: sqlx::PgPool, user_id: Uuid) -> Result<UserResponse, ApiError> {
-    let user = User::get_by_id(&db, user_id).await.ok_or(ApiError::NotFound)?;
+    let user = User::get_by_id(&db, user_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
     user.into_response(&db).await
 }
 
@@ -54,7 +61,9 @@ async fn update_user_response(
     user_id: Uuid,
     payload: UpdateUserRequest,
 ) -> Result<UserResponse, ApiError> {
-    let mut user = User::get_by_id(&db, user_id).await.ok_or(ApiError::NotFound)?;
+    let mut user = User::get_by_id(&db, user_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
     if let Some(username) = payload.username {
         user.username = Some(username);
     }
@@ -123,7 +132,10 @@ pub async fn admin_create_user(
     AdminUser(_user): AdminUser,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<(StatusCode, Json<UserResponse>), ApiError> {
-    Ok((StatusCode::CREATED, Json(create_user_response(state.db.clone(), payload).await?)))
+    Ok((
+        StatusCode::CREATED,
+        Json(create_user_response(state.db.clone(), payload).await?),
+    ))
 }
 
 #[utoipa::path(
@@ -165,7 +177,9 @@ pub async fn admin_update_user(
     Path(user_id): Path<Uuid>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    Ok(Json(update_user_response(state.db.clone(), user_id, payload).await?))
+    Ok(Json(
+        update_user_response(state.db.clone(), user_id, payload).await?,
+    ))
 }
 
 #[utoipa::path(

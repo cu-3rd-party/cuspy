@@ -1,6 +1,6 @@
 use crate::ApiContext;
-use crate::models::resource::Resource;
 use crate::models::ApiError;
+use crate::models::resource::Resource;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;

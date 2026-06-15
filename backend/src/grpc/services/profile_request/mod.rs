@@ -1,6 +1,6 @@
-use log::info;
 use crate::grpc::RequestAuthExt;
 use crate::models::profile::ProfileRequestEvent;
+use log::info;
 use profilerequest::profile_request_server::ProfileRequest;
 use profilerequest::{ProfileRequestEvent as ProtoEvent, SubscribeRequest};
 use tokio::sync::broadcast;

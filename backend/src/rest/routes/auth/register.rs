@@ -1,11 +1,11 @@
 use crate::ApiContext;
 use crate::models::auth::{AuthTokenPair, AuthUserRecord, EmailRegisterRequest};
 use crate::models::{ApiError, db_uuid};
+use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
 use axum::Json;
 use axum::extract::State;
 use http::StatusCode;
-use crate::rest::extractor::MaybeAuthUser;
 
 #[utoipa::path(
     post,
@@ -29,13 +29,11 @@ pub async fn register(
     // let user = User::create(&mut *tx, payload.username, user.is_some_and(|u| u.is_admin), None).await?;
     // todo: here i removed rating addition. this is done by default by trigger in the db i suppose. check this
 
-    let auth_user = AuthUserRecord::new_email_user(&mut *tx, None, payload.email, payload.password).await?;
+    let auth_user =
+        AuthUserRecord::new_email_user(&mut *tx, None, payload.email, payload.password).await?;
 
     tx.commit().await?;
 
     let token_pair = helpers::create_token_pair(&state, &auth_user, user)?;
-    Ok((
-        StatusCode::CREATED,
-        Json(token_pair),
-    ))
+    Ok((StatusCode::CREATED, Json(token_pair)))
 }

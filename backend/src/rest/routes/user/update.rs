@@ -1,6 +1,6 @@
 use crate::ApiContext;
-use crate::models::user::{UpdateUserRequest, User, UserResponse};
 use crate::models::ApiError;
+use crate::models::user::{UpdateUserRequest, User, UserResponse};
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
 use axum::Json;
@@ -29,7 +29,9 @@ pub async fn update_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     helpers::ensure_owner(&user, user_id)?;
 
-    let mut user = User::get_by_id(&state.db, user_id).await.ok_or(ApiError::NotFound)?;
+    let mut user = User::get_by_id(&state.db, user_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
     if let Some(username) = payload.username {
         user.username = Some(username);
     }

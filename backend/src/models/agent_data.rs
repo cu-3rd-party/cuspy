@@ -1,4 +1,5 @@
-use crate::models::{db_uuid, parse_uuid, ApiError};
+use crate::models::resource::Resource;
+use crate::models::{ApiError, db_uuid, parse_uuid};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
 use sqlx::{Error, Executor, FromRow, Postgres, Row, postgres::PgConnection};
@@ -6,7 +7,6 @@ use std::fmt::Display;
 use std::str::FromStr;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use crate::models::resource::Resource;
 
 #[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub enum AcademicLevel {
@@ -85,7 +85,7 @@ impl AgentData {
     pub async fn create(
         executor: &mut PgConnection,
         metadata: AgentDataMetadata,
-        resource: Option<Resource>
+        resource: Option<Resource>,
     ) -> Result<Self, ApiError> {
         let mut data: Self = Self::create_from_meta(&mut *executor, metadata).await?;
         if let Some(resource) = resource {
@@ -93,13 +93,13 @@ impl AgentData {
         }
         Ok(data)
     }
-    
+
     async fn create_from_meta<'c, E>(
         executor: E,
         metadata: AgentDataMetadata,
     ) -> Result<Self, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         Ok(sqlx::query_as(r#"
                 insert into "agent_data" (codename, academic_group, academic_level, course_number, bachelor_track, identification_name, physical_contact_allowed, hugs_close_proximity_allowed)
@@ -127,14 +127,14 @@ impl AgentData {
             .fetch_one(executor)
             .await?)
     }
-    
+
     async fn add_profile_picture<'c, E>(
         &mut self,
         executor: E,
         resource: Resource,
     ) -> Result<(), ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         *self = sqlx::query_as(
             r#"
@@ -162,12 +162,9 @@ impl AgentData {
         Ok(())
     }
 
-    pub async fn get_by_id<'c, E>(
-        executor: E,
-        agent_data_id: Uuid,
-    ) -> Option<Self>
+    pub async fn get_by_id<'c, E>(executor: E, agent_data_id: Uuid) -> Option<Self>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
@@ -185,10 +182,11 @@ impl AgentData {
             from agent_data where agent_data_id = cast($1 as uuid)
         "#,
         )
-            .bind(db_uuid(agent_data_id))
-            .fetch_optional(executor)
-            .await
-            .ok().flatten()
+        .bind(db_uuid(agent_data_id))
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 }
 

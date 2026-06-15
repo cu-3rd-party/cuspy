@@ -1,10 +1,11 @@
 use crate::ApiContext;
+use crate::models::agent_data::AgentData;
 use crate::models::auth::AuthClaims;
 use crate::models::{
     ApiError, db_optional_uuid, db_uuid, parse_optional_timestamp, parse_optional_uuid,
     parse_timestamp, parse_uuid,
 };
-use crate::models::agent_data::AgentData;
+use crate::rest::helpers::format_timestamp;
 use http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,6 @@ use sqlx::{Executor, FromRow, Postgres, Row, postgres::PgRow};
 use tonic::metadata::MetadataMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use crate::rest::helpers::format_timestamp;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
@@ -44,10 +44,10 @@ impl User {
         agent_data: Option<AgentData>,
     ) -> Result<Self, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         let user: User = sqlx::query_as(
-        r#"
+            r#"
                 insert into "user" (username, is_admin, agent_data_id)
                 values ($1, $2, cast($3 as uuid))
                 returning
@@ -60,20 +60,17 @@ impl User {
                     cast(updated_at as text) as updated_at
             "#,
         )
-            .bind(username)
-            .bind(is_admin)
-            .bind(db_optional_uuid(agent_data.map(|d| d.agent_data_id)))
-            .fetch_one(executor)
-            .await?;
+        .bind(username)
+        .bind(is_admin)
+        .bind(db_optional_uuid(agent_data.map(|d| d.agent_data_id)))
+        .fetch_one(executor)
+        .await?;
         Ok(user)
     }
 
-    pub async fn update<'c, E>(
-        &mut self,
-        executor: E,
-    ) -> Result<(), ApiError>
+    pub async fn update<'c, E>(&mut self, executor: E) -> Result<(), ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         *self = sqlx::query_as(
             r#"
@@ -91,23 +88,20 @@ impl User {
                     is_admin,
                     cast(created_at as text) as created_at,
                     cast(updated_at as text) as updated_at
-            "#
+            "#,
         )
-            .bind(db_uuid(self.user_id))
-            .bind(self.username.clone())
-            .bind(db_optional_uuid(self.agent_data_id.clone()))
-            .bind(self.is_admin.clone())
-            .fetch_one(executor)
-            .await?;
+        .bind(db_uuid(self.user_id))
+        .bind(self.username.clone())
+        .bind(db_optional_uuid(self.agent_data_id.clone()))
+        .bind(self.is_admin.clone())
+        .fetch_one(executor)
+        .await?;
         Ok(())
     }
 
-    pub async fn get_by_id<'c, E>(
-        executor: E,
-        user_id: Uuid,
-    ) -> Option<Self>
+    pub async fn get_by_id<'c, E>(executor: E, user_id: Uuid) -> Option<Self>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
@@ -122,20 +116,18 @@ impl User {
                 from "user"
                 where user_id = cast($1 as uuid)
                 limit 1
-            "#
+            "#,
         )
-            .bind(db_uuid(user_id))
-            .fetch_optional(executor)
-            .await
-            .ok().flatten()
+        .bind(db_uuid(user_id))
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 
-    pub async fn get_by_username<'c, E>(
-        executor: E,
-        username: String,
-    ) -> Option<Self>
+    pub async fn get_by_username<'c, E>(executor: E, username: String) -> Option<Self>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
@@ -150,19 +142,18 @@ impl User {
                 from "user"
                 where username = $1
                 limit 1
-            "#
+            "#,
         )
-            .bind(username)
-            .fetch_optional(executor)
-            .await
-            .ok().flatten()
+        .bind(username)
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 
-    pub async fn list<'c, E>(
-        executor: E,
-    ) -> Result<Vec<Self>, ApiError>
+    pub async fn list<'c, E>(executor: E) -> Result<Vec<Self>, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         Ok(sqlx::query_as(
             r#"
@@ -182,12 +173,9 @@ impl User {
         .await?)
     }
 
-    pub async fn delete<'c, E>(
-        executor: E,
-        user_id: Uuid,
-    ) -> Result<bool, ApiError>
+    pub async fn delete<'c, E>(executor: E, user_id: Uuid) -> Result<bool, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         let result = sqlx::query(r#"delete from "user" where user_id = cast($1 as uuid)"#)
             .bind(db_uuid(user_id))
@@ -196,12 +184,9 @@ impl User {
         Ok(result.rows_affected() > 0)
     }
 
-    pub async fn into_response<'c, E>(
-        self,
-        executor: E,
-    ) -> Result<UserResponse, ApiError>
+    pub async fn into_response<'c, E>(self, executor: E) -> Result<UserResponse, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         let agent_data = match self.agent_data_id {
             Some(id) => AgentData::get_by_id(executor, id).await,

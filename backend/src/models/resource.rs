@@ -1,11 +1,11 @@
-use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid};
+use crate::models::{ApiError, db_uuid, parse_optional_timestamp, parse_timestamp, parse_uuid};
 use base64::Engine;
+use s3::Bucket;
 use sha2::{Digest, Sha256};
+use sqlx::postgres::PgRow;
 use sqlx::{Error, Executor, FromRow, Postgres, Row, postgres::PgConnection};
 use std::io::Cursor;
 use std::sync::Arc;
-use s3::Bucket;
-use sqlx::postgres::PgRow;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -31,7 +31,7 @@ impl Resource {
         mime_type: Option<String>,
     ) -> Result<Self, ApiError>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         let resource_id = Uuid::new_v4();
         let location =
@@ -62,12 +62,12 @@ impl Resource {
                     cast(updated_at as text) as updated_at
             "#,
         )
-            .bind(&location)
-            .bind(file_size)
-            .bind(&mime_type)
-            .bind(&checksum)
-            .fetch_one(executor)
-            .await?;
+        .bind(&location)
+        .bind(file_size)
+        .bind(&mime_type)
+        .bind(&checksum)
+        .fetch_one(executor)
+        .await?;
 
         Ok(resource)
     }
@@ -87,12 +87,9 @@ impl Resource {
         Ok(Self::create(&mut *executor, bucket, content, checksum, mime_type).await?)
     }
 
-    pub async fn get_by_id<'c, E>(
-        executor: E,
-        resource_id: Uuid,
-    ) -> Option<Resource>
+    pub async fn get_by_id<'c, E>(executor: E, resource_id: Uuid) -> Option<Resource>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
@@ -109,18 +106,16 @@ impl Resource {
             limit 1
         "#,
         )
-            .bind(db_uuid(resource_id))
-            .fetch_optional(executor)
-            .await
-            .ok().flatten()
+        .bind(db_uuid(resource_id))
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 
-    pub async fn get_by_checksum<'c, E>(
-        executor: E,
-        checksum: &String,
-    ) -> Option<Resource>
+    pub async fn get_by_checksum<'c, E>(executor: E, checksum: &String) -> Option<Resource>
     where
-        E: Executor<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>,
     {
         sqlx::query_as(
             r#"
@@ -137,25 +132,21 @@ impl Resource {
             limit 1
         "#,
         )
-            .bind(&checksum)
-            .fetch_optional(executor)
-            .await
-            .ok().flatten()
+        .bind(&checksum)
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
     }
 
-    pub fn calculate_checksum(
-        content: &bytes::Bytes,
-    ) -> String {
+    pub fn calculate_checksum(content: &bytes::Bytes) -> String {
         let mut hasher = Sha256::new();
         hasher.update(content.as_ref());
         format!("{:x}", hasher.finalize())
     }
 
     const PRESIGN_EXPIRY_SECS: u32 = 1 * 60;
-    pub async fn presign_get(
-        &self,
-        bucket: Arc<Box<Bucket>>,
-    ) -> Result<String, ApiError> {
+    pub async fn presign_get(&self, bucket: Arc<Box<Bucket>>) -> Result<String, ApiError> {
         Ok(bucket
             .presign_get(&self.file_location, Self::PRESIGN_EXPIRY_SECS, None)
             .await?)
