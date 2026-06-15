@@ -1,20 +1,21 @@
 use crate::ApiContext;
 use crate::models::auth::AuthClaims;
-use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid};
+use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid, db_optional_uuid};
 #[cfg(feature = "telegram-auth")]
 use crate::telegram;
 use http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{FromRow, Row, any::AnyRow};
+use sqlx::{FromRow, Row, any::AnyRow, Any, Acquire};
 use tonic::metadata::MetadataMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
+use crate::models::agent_data::{AgentData, AgentDataMetadata};
+use crate::models::resource::Resource;
 
 pub struct UserRecord {
     pub user_id: Uuid,
-    pub telegram_id: i64,
     pub username: Option<String>,
     pub agent_data_id: Option<Uuid>,
     pub rating: i64,
@@ -23,11 +24,148 @@ pub struct UserRecord {
     pub updated_at: Option<time::OffsetDateTime>,
 }
 
+#[derive(Serialize, ToSchema)]
+pub struct UserResponse {
+    pub user_id: Uuid,
+    pub username: Option<String>,
+    pub agent_data: Option<AgentData>,
+    pub is_admin: bool,
+    pub rating: i64,
+    pub created_at: String,
+    pub updated_at: Option<String>,
+}
+
+impl UserRecord {
+    pub async fn create<'c, A>(
+        executor: A,
+        username: String,
+        is_admin: bool,
+        agent_data: Option<AgentData>,
+    ) -> Result<Self, ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+        let mut user: UserRecord = sqlx::query_as(
+        r#"
+                insert into "user" (username, is_admin)
+                values ($1, $2)
+                returning
+                    cast(user_id as text) as user_id,
+                    username,
+                    cast(agent_data_id as text) as agent_data_id,
+                    rating,
+                    is_admin,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+            "#,
+        )
+            .bind(username)
+            .bind(is_admin)
+            .fetch_one(&mut *executor)
+            .await?;
+        if let Some(agent_data) = agent_data {
+            user = sqlx::query_as(
+                r#"
+                    update "user"
+                    set agent_data_id = cast($1 as uuid)
+                    where user_id = cast($2 as uuid)
+                    returning
+                        cast(user_id as text) as user_id,
+                        username,
+                        cast(agent_data_id as text) as agent_data_id,
+                        rating,
+                        is_admin,
+                        cast(created_at as text) as created_at,
+                        cast(updated_at as text) as updated_at
+                "#
+            )
+                .bind(db_uuid(agent_data.agent_data_id))
+                .bind(db_uuid(user.user_id))
+                .fetch_one(&mut *executor)
+                .await?;
+        }
+        Ok(user)
+    }
+
+    pub async fn update<'c, A>(
+        &mut self,
+        executor: A,
+    ) -> Result<(), ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+        *self = sqlx::query_as(
+            r#"
+                update "user"
+                set
+                    username = $2,
+                    agent_data_id = cast($3 as uuid),
+                    is_admin = $4
+                where user_id = cast($1 as uuid)
+                returning
+                    cast(user_id as text) as user_id,
+                    username,
+                    cast(agent_data_id as text) as agent_data_id,
+                    rating,
+                    is_admin,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+            "#
+        )
+            .bind(db_uuid(self.user_id))
+            .bind(self.username)
+            .bind(db_optional_uuid(self.agent_data_id))
+            .bind(self.is_admin)
+            .fetch_one(&mut *executor)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn get_by_id<'c, A>(
+        executor: A,
+        user_id: Uuid,
+    ) -> Option<Self>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await.ok()?;
+        sqlx::query_as(
+            r#"
+                select * from "user" where user_id = cast($1 as uuid)
+            "#
+        )
+            .bind(db_uuid(user_id))
+            .fetch_optional(&mut *executor)
+            .await
+            .ok().flatten()
+    }
+
+    pub async fn get_by_username<'c, A>(
+        executor: A,
+        username: String,
+    ) -> Option<Self>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await.ok()?;
+        sqlx::query_as(
+            r#"
+                select * from "user" where username = $1
+            "#
+        )
+            .bind(username)
+            .fetch_optional(&mut *executor)
+            .await
+            .ok().flatten()
+    }
+}
+
 impl<'r> FromRow<'r, AnyRow> for UserRecord {
     fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
         Ok(Self {
             user_id: parse_uuid(row, "user_id")?,
-            telegram_id: row.get("telegram_id"),
             username: row.try_get("username").ok(),
             agent_data_id: parse_uuid(row, "agent_data_id").ok(),
             rating: row.get("rating"),
@@ -35,39 +173,6 @@ impl<'r> FromRow<'r, AnyRow> for UserRecord {
             created_at: parse_timestamp(row, "created_at")?,
             updated_at: parse_optional_timestamp(row, "updated_at").ok().flatten(),
         })
-    }
-}
-
-#[derive(Serialize, ToSchema)]
-pub struct UserResponse {
-    pub user_id: Uuid,
-    pub telegram_id: i64,
-    pub username: Option<String>,
-    pub agent_data_id: Option<Uuid>,
-    pub is_admin: bool,
-    pub rating: i64,
-    pub created_at: String,
-    pub updated_at: Option<String>,
-}
-
-impl From<&UserRecord> for UserResponse {
-    fn from(value: &UserRecord) -> Self {
-        Self {
-            user_id: value.user_id,
-            telegram_id: value.telegram_id,
-            username: value.username.clone(),
-            agent_data_id: value.agent_data_id,
-            is_admin: value.is_admin,
-            rating: value.rating,
-            created_at: value
-                .created_at
-                .format(&time::format_description::well_known::Rfc3339)
-                .unwrap_or_default(),
-            updated_at: value.updated_at.and_then(|t| {
-                t.format(&time::format_description::well_known::Rfc3339)
-                    .ok()
-            }),
-        }
     }
 }
 
