@@ -1,10 +1,11 @@
-use crate::ApiContext;
-use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid};
+use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid};
 use base64::Engine;
 use sha2::{Digest, Sha256};
 use sqlx::any::AnyRow;
-use sqlx::{Error, FromRow, Row};
+use sqlx::{Acquire, Any, Error, FromRow, Row};
 use std::io::Cursor;
+use std::sync::Arc;
+use s3::Bucket;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -22,37 +23,17 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub async fn new(
-        state: &ApiContext,
+    async fn create<'c, A>(
+        executor: A,
+        bucket: Arc<Box<Bucket>>,
         content: bytes::Bytes,
+        checksum: String,
         mime_type: Option<String>,
-    ) -> Result<Self, ApiError> {
-        let mut hasher = Sha256::new();
-        hasher.update(content.as_ref());
-        let checksum = format!("{:x}", hasher.finalize());
-
-        let existing_resource = sqlx::query_as::<_, Resource>(
-            r#"
-                    select
-                        cast(resource_id as text) as resource_id,
-                        file_location,
-                        file_size,
-                        mime_type,
-                        checksum,
-                        cast(created_at as text) as created_at,
-                        cast(updated_at as text) as updated_at
-                    from "resource"
-                    where checksum = $1
-                "#,
-        )
-        .bind(&checksum)
-        .fetch_optional(&state.db)
-        .await?;
-
-        if let Some(resource) = existing_resource {
-            return Ok(resource);
-        }
-
+    ) -> Result<Self, ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
         let resource_id = Uuid::new_v4();
         let location =
             base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(resource_id.as_bytes());
@@ -61,39 +42,137 @@ impl Resource {
         let mut reader = Cursor::new(content.as_ref());
 
         if let Some(mime_type) = mime_type.as_deref() {
-            state
-                .bucket
+            bucket
                 .put_object_stream_with_content_type(&mut reader, &location, mime_type)
                 .await?;
         } else {
-            state
-                .bucket
-                .put_object_stream(&mut reader, &location)
-                .await?;
+            bucket.put_object_stream(&mut reader, &location).await?;
         }
 
         let resource: Resource = sqlx::query_as(
             r#"
-                    insert into "resource" (file_location, file_size, mime_type, checksum)
-                    values ($1, $2, $3, $4)
-                    returning
-                        cast(resource_id as text) as resource_id,
-                        file_location,
-                        file_size,
-                        mime_type,
-                        checksum,
-                        cast(created_at as text) as created_at,
-                        cast(updated_at as text) as updated_at
-                "#,
+                insert into "resource" (file_location, file_size, mime_type, checksum)
+                values ($1, $2, $3, $4)
+                returning
+                    cast(resource_id as text) as resource_id,
+                    file_location,
+                    file_size,
+                    mime_type,
+                    checksum,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+            "#,
         )
-        .bind(&location)
-        .bind(file_size)
-        .bind(&mime_type)
-        .bind(&checksum)
-        .fetch_one(&state.db)
-        .await?;
+            .bind(&location)
+            .bind(file_size)
+            .bind(&mime_type)
+            .bind(&checksum)
+            .fetch_one(&mut *executor)
+            .await?;
 
         Ok(resource)
+    }
+    pub async fn new<'c, A>(
+        executor: A,
+        bucket: Arc<Box<Bucket>>,
+        content: bytes::Bytes,
+        mime_type: Option<String>,
+    ) -> Result<Self, ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+
+        let checksum = Self::calculate_checksum(&content);
+
+        let existing_resource = Self::get_by_checksum(&mut *executor, &checksum).await;
+        if let Some(resource) = existing_resource {
+            return Ok(resource);
+        }
+
+        Ok(Self::create(
+            &mut *executor,
+            bucket,
+            content,
+            checksum,
+            mime_type,
+        ).await?)
+    }
+
+    pub async fn get_by_id<'c, A>(
+        executor: A,
+        resource_id: Uuid,
+    ) -> Option<Resource>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await.ok()?;
+        sqlx::query_as(
+            r#"
+            select
+                cast(resource_id as text) as resource_id,
+                file_location,
+                file_size,
+                mime_type,
+                checksum,
+                cast(created_at as text) as created_at,
+                cast(updated_at as text) as updated_at
+            from "resource"
+            where resource_id = cast($1 as uuid)
+            limit 1
+        "#,
+        )
+            .bind(db_uuid(resource_id))
+            .fetch_optional(&mut *executor)
+            .await
+            .ok().flatten()
+    }
+
+    pub async fn get_by_checksum<'c, A>(
+        executor: A,
+        checksum: &String,
+    ) -> Option<Resource>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await.ok()?;
+        sqlx::query_as(
+            r#"
+            select
+                cast(resource_id as text) as resource_id,
+                file_location,
+                file_size,
+                mime_type,
+                checksum,
+                cast(created_at as text) as created_at,
+                cast(updated_at as text) as updated_at
+            from "resource"
+            where checksum = $1
+            limit 1
+        "#,
+        )
+            .bind(&checksum)
+            .fetch_optional(&mut *executor)
+            .await
+            .ok().flatten()
+    }
+
+    pub fn calculate_checksum(
+        content: &bytes::Bytes,
+    ) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(content.as_ref());
+        format!("{:x}", hasher.finalize())
+    }
+
+    const PRESIGN_EXPIRY_SECS: u32 = 1 * 60;
+    pub async fn presign_get(
+        &self,
+        bucket: Arc<Box<Bucket>>,
+    ) -> Result<String, ApiError> {
+        Ok(bucket
+            .presign_get(&self.file_location, Self::PRESIGN_EXPIRY_SECS, None)
+            .await?)
     }
 }
 

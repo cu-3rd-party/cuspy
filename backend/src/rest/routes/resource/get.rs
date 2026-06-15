@@ -1,6 +1,6 @@
 use crate::ApiContext;
 use crate::models::resource::Resource;
-use crate::models::{ApiError, db_uuid};
+use crate::models::ApiError;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -21,26 +21,8 @@ pub async fn get_resource(
     State(state): State<ApiContext>,
     Path(resource_id): Path<Uuid>,
 ) -> Result<Json<Resource>, ApiError> {
-    let mut resource: Resource = sqlx::query_as(
-        r#"
-            select
-                cast(resource_id as text) as resource_id,
-                file_location,
-                file_size,
-                mime_type,
-                checksum,
-                cast(created_at as text) as created_at,
-                cast(updated_at as text) as updated_at
-            from "resource"
-            where resource_id = cast($1 as uuid)
-        "#,
-    )
-    .bind(db_uuid(resource_id))
-    .fetch_one(&state.db)
-    .await?;
-    resource.file_location = state
-        .bucket
-        .presign_get(&resource.file_location, 1 * 60, None)
-        .await?;
+    let resource = Resource::get_by_id(&state.db, resource_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
     Ok(Json(resource))
 }
