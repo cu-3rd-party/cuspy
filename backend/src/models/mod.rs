@@ -55,6 +55,7 @@ pub mod agent_data;
 pub mod auth;
 pub mod kill;
 pub mod profile;
+pub mod rating;
 pub mod resource;
 pub mod similarity;
 pub mod user;
