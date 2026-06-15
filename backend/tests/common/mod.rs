@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 #[cfg(feature = "telegram-auth")]
 use sha2::{Digest, Sha256};
 use sqlx::Row;
-use sqlx::any::AnyPoolOptions;
+use sqlx::any::PgPoolOptions;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 use url::Url;
@@ -185,7 +185,7 @@ impl TestContext {
             .expect("connect test database");
         let mut any_url = Url::parse(&admin_database_url).expect("parse admin database url");
         any_url.set_path(&format!("/{db_name}"));
-        let any_test_pool = AnyPoolOptions::new()
+        let any_test_pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(any_url.as_ref())
             .await

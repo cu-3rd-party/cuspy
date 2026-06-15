@@ -10,6 +10,7 @@ mod r#const;
 pub mod telegram;
 
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crate::config::Config;
@@ -30,15 +31,15 @@ use log::{error, info, warn};
 use rest::docs;
 use s3::Bucket;
 use serde_json::{Value, json};
-use sqlx::AnyPool;
+use sqlx::PgPool;
 use tokio::sync::broadcast;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct ApiContext {
-    pub db: AnyPool,
-    pub bucket: Box<Bucket>,
+    pub db: PgPool,
+    pub bucket: Arc<Box<Bucket>>,
     pub config: Config,
     pub admin_secret: String,
     pub jwt_secret: String,
@@ -212,7 +213,7 @@ struct AuditLogInsert {
     access_context: Value,
 }
 
-async fn persist_audit_log(db: &AnyPool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
+async fn persist_audit_log(db: &PgPool, entry: AuditLogInsert) -> Result<(), sqlx::Error> {
     sqlx::query(r#"
         insert into audit_log (
             audit_log_id,

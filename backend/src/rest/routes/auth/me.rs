@@ -1,8 +1,7 @@
-use crate::ApiContext;
+use crate::{ApiContext};
 use crate::models::ApiError;
 use crate::models::user::UserResponse;
 use crate::rest::extractor::AuthUser;
-use crate::rest::helpers;
 use axum::Json;
 use axum::extract::State;
 
@@ -18,10 +17,11 @@ use axum::extract::State;
     ),
     security(("bearer_auth" = []))
 )]
+#[axum::debug_handler]
 pub async fn me(
     State(state): State<ApiContext>,
     AuthUser(user): AuthUser,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let user = helpers::fetch_user(&state.db, user.user_id).await?;
-    Ok(Json(helpers::to_user_response(user)))
+    Ok(Json(user.into_response(&state.db).await?))
+    // Ok(Json(UserResponse::default()))
 }

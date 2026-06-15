@@ -1,7 +1,7 @@
 use crate::models::{parse_optional_timestamp, parse_timestamp, parse_uuid};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{FromRow, Row, any::AnyRow};
+use sqlx::{FromRow, Row, postgres::PgRow};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -26,8 +26,8 @@ pub struct ProfileRequestRecord {
     pub updated_at: time::OffsetDateTime,
 }
 
-impl<'r> FromRow<'r, AnyRow> for ProfileRequestRecord {
-    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+impl<'r> FromRow<'r, PgRow> for ProfileRequestRecord {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
         Ok(Self {
             profile_request_id: parse_uuid(row, "profile_request_id")?,
             user_id: parse_uuid(row, "user_id")?,

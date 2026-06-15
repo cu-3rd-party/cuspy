@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::models::user::{CreateUserRequest, UpdateUserRequest, UserRecord, UserResponse};
+use crate::models::user::{CreateUserRequest, UpdateUserRequest, User, UserResponse};
 use crate::models::{ApiError, db_uuid};
 use crate::rest::extractor::AdminUser;
 use crate::rest::helpers;
@@ -35,7 +35,7 @@ pub async fn admin_list_users(
     State(state): State<ApiContext>,
     AdminUser(_user): AdminUser,
 ) -> Result<Json<Vec<UserResponse>>, ApiError> {
-    let users = sqlx::query_as::<_, UserRecord>(
+    let users = sqlx::query_as::<_, User>(
         r#"
         select
             cast(user_id as text) as user_id,
@@ -76,7 +76,7 @@ pub async fn admin_create_user(
     let mut tx = state.db.begin().await?;
     let user_id = Uuid::now_v7();
 
-    let user = sqlx::query_as::<_, UserRecord>(
+    let user = sqlx::query_as::<_, User>(
         r#"
         insert into "user" (user_id, telegram_id, username, is_admin)
         values (cast($1 as uuid), $2, $3, $4)
@@ -158,7 +158,7 @@ pub async fn admin_update_user(
     Path(user_id): Path<Uuid>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let user = sqlx::query_as::<_, UserRecord>(
+    let user = sqlx::query_as::<_, User>(
         r#"
         update "user"
         set

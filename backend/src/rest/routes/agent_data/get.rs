@@ -27,5 +27,5 @@ pub async fn get_agent_data(
     // пока что сделаем так что человек всегда может получить данные по айди
     // в дальнейшем может быть залочить эту логику только когда человеку реально
     // разрешено просматривать эти данные и сделать IP-TGID based lockdown
-    Ok(Json(AgentData::get_by_id(&state.db, agent_data_id).await?))
+    Ok(Json(AgentData::get_by_id(&state.db, agent_data_id).await.ok_or(ApiError::NotFound)?))
 }

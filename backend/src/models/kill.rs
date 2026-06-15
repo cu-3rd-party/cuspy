@@ -1,7 +1,7 @@
 use crate::rest::helpers;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{FromRow, any::AnyRow};
+use sqlx::{FromRow, postgres::PgRow};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -57,8 +57,8 @@ pub struct UserStatsResponse {
     pub pending_kills: i64,
 }
 
-impl<'r> FromRow<'r, AnyRow> for RankingEntry {
-    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+impl<'r> FromRow<'r, PgRow> for RankingEntry {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
         use crate::models::parse_uuid;
         use sqlx::Row;
 
@@ -73,8 +73,8 @@ impl<'r> FromRow<'r, AnyRow> for RankingEntry {
     }
 }
 
-impl<'r> FromRow<'r, AnyRow> for UserStatsResponse {
-    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+impl<'r> FromRow<'r, PgRow> for UserStatsResponse {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
         use crate::models::parse_uuid;
         use sqlx::Row;
 
@@ -107,8 +107,8 @@ pub struct KillEventRecord {
     pub updated_at: Option<time::OffsetDateTime>,
 }
 
-impl<'r> FromRow<'r, sqlx::any::AnyRow> for KillEventRecord {
-    fn from_row(row: &'r sqlx::any::AnyRow) -> Result<Self, sqlx::Error> {
+impl<'r> FromRow<'r, sqlx::postgres::PgRow> for KillEventRecord {
+    fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
         use crate::models::{
             parse_json, parse_optional_timestamp, parse_optional_uuid, parse_timestamp, parse_uuid,
         };

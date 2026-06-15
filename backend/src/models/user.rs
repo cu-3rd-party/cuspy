@@ -1,20 +1,18 @@
 use crate::ApiContext;
 use crate::models::auth::AuthClaims;
 use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid, db_optional_uuid};
-#[cfg(feature = "telegram-auth")]
-use crate::telegram;
+use crate::models::agent_data::AgentData;
 use http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use sqlx::{FromRow, Row, any::AnyRow, Any, Acquire};
+use sqlx::{FromRow, Row, postgres::PgRow, Acquire, Postgres};
 use tonic::metadata::MetadataMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
-use crate::models::agent_data::{AgentData, AgentDataMetadata};
-use crate::models::resource::Resource;
+use crate::rest::helpers::format_timestamp;
 
-pub struct UserRecord {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct User {
     pub user_id: Uuid,
     pub username: Option<String>,
     pub agent_data_id: Option<Uuid>,
@@ -23,19 +21,18 @@ pub struct UserRecord {
     pub created_at: time::OffsetDateTime,
     pub updated_at: Option<time::OffsetDateTime>,
 }
-
-#[derive(Serialize, ToSchema)]
+#[derive(Debug, Serialize, ToSchema, Default)]
 pub struct UserResponse {
     pub user_id: Uuid,
     pub username: Option<String>,
     pub agent_data: Option<AgentData>,
-    pub is_admin: bool,
     pub rating: i64,
+    pub is_admin: bool,
     pub created_at: String,
     pub updated_at: Option<String>,
 }
 
-impl UserRecord {
+impl User {
     pub async fn create<'c, A>(
         executor: A,
         username: String,
@@ -43,13 +40,13 @@ impl UserRecord {
         agent_data: Option<AgentData>,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
-        let mut user: UserRecord = sqlx::query_as(
+        let user: User = sqlx::query_as(
         r#"
-                insert into "user" (username, is_admin)
-                values ($1, $2)
+                insert into "user" (username, is_admin, agent_data_id)
+                values ($1, $2, cast($3 as uuid))
                 returning
                     cast(user_id as text) as user_id,
                     username,
@@ -62,29 +59,9 @@ impl UserRecord {
         )
             .bind(username)
             .bind(is_admin)
+            .bind(db_optional_uuid(agent_data.map(|d| d.agent_data_id)))
             .fetch_one(&mut *executor)
             .await?;
-        if let Some(agent_data) = agent_data {
-            user = sqlx::query_as(
-                r#"
-                    update "user"
-                    set agent_data_id = cast($1 as uuid)
-                    where user_id = cast($2 as uuid)
-                    returning
-                        cast(user_id as text) as user_id,
-                        username,
-                        cast(agent_data_id as text) as agent_data_id,
-                        rating,
-                        is_admin,
-                        cast(created_at as text) as created_at,
-                        cast(updated_at as text) as updated_at
-                "#
-            )
-                .bind(db_uuid(agent_data.agent_data_id))
-                .bind(db_uuid(user.user_id))
-                .fetch_one(&mut *executor)
-                .await?;
-        }
         Ok(user)
     }
 
@@ -93,7 +70,7 @@ impl UserRecord {
         executor: A,
     ) -> Result<(), ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
         *self = sqlx::query_as(
@@ -115,9 +92,9 @@ impl UserRecord {
             "#
         )
             .bind(db_uuid(self.user_id))
-            .bind(self.username)
-            .bind(db_optional_uuid(self.agent_data_id))
-            .bind(self.is_admin)
+            .bind(self.username.clone())
+            .bind(db_optional_uuid(self.agent_data_id.clone()))
+            .bind(self.is_admin.clone())
             .fetch_one(&mut *executor)
             .await?;
         Ok(())
@@ -128,7 +105,7 @@ impl UserRecord {
         user_id: Uuid,
     ) -> Option<Self>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
@@ -147,7 +124,7 @@ impl UserRecord {
         username: String,
     ) -> Option<Self>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
@@ -160,10 +137,34 @@ impl UserRecord {
             .await
             .ok().flatten()
     }
+
+    pub async fn into_response<'c, A>(
+        self,
+        executor: A,
+    ) -> Result<UserResponse, ApiError>
+    where
+        A: Acquire<'c, Database = Postgres>
+    {
+        let mut executor = executor.acquire().await?;
+        let agent_data = match self.agent_data_id {
+            Some(id) => AgentData::get_by_id(&mut *executor, id).await,
+            None => None,
+        };
+
+        Ok(UserResponse {
+            user_id: self.user_id,
+            username: self.username,
+            agent_data,
+            rating: self.rating,
+            is_admin: self.is_admin,
+            created_at: format_timestamp(self.created_at),
+            updated_at: self.updated_at.map(format_timestamp),
+        })
+    }
 }
 
-impl<'r> FromRow<'r, AnyRow> for UserRecord {
-    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+impl<'r> FromRow<'r, PgRow> for User {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
         Ok(Self {
             user_id: parse_uuid(row, "user_id")?,
             username: row.try_get("username").ok(),
@@ -177,27 +178,9 @@ impl<'r> FromRow<'r, AnyRow> for UserRecord {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct CreateUserRequest {
+pub struct UserRequest {
     pub telegram_id: i64,
     pub username: Option<String>,
-    pub agent_data: Option<Value>,
-    pub is_admin: Option<bool>,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct UpdateUserRequest {
-    pub telegram_id: Option<i64>,
-    pub username: Option<String>,
-    pub agent_data: Option<Value>,
-    pub is_admin: Option<bool>,
-}
-
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-pub struct User {
-    pub user_id: Uuid,
-    pub is_admin: bool,
-    #[cfg(feature = "telegram-auth")]
-    pub tg: telegram::TelegramInitData,
 }
 
 impl User {
@@ -241,20 +224,18 @@ impl User {
         if auth_token.is_none() && has_valid_admin_header {
             return Ok(Self {
                 user_id: Uuid::nil(),
+                username: None,
+                agent_data_id: None,
+                rating: 0,
                 is_admin: true,
-                #[cfg(feature = "telegram-auth")]
-                tg: telegram::TelegramInitData {
-                    user: telegram::TelegramUser { id: 0 },
-                },
+                created_at: time::OffsetDateTime::UNIX_EPOCH,
+                updated_at: None,
             });
         }
 
         let auth_token = auth_token.ok_or(ApiError::BadRequest(
             "no authorization header supplied".to_string(),
         ))?;
-
-        #[cfg(feature = "telegram-auth")]
-        let telegram_init_data = get("x-telegram-init-data").ok_or(ApiError::Unauthorized)?;
 
         let decoded = decode::<AuthClaims>(
             &auth_token,
@@ -263,15 +244,6 @@ impl User {
         )
         .map_err(|_| ApiError::Unauthorized)?;
 
-        Ok(Self {
-            user_id: decoded.claims.user_id,
-            is_admin: decoded.claims.is_admin || has_valid_admin_header,
-            #[cfg(feature = "telegram-auth")]
-            tg: telegram::TelegramInitData::from_header(
-                &state.telegram_bot_token,
-                &telegram_init_data,
-            )
-            .ok_or(ApiError::Unauthorized)?,
-        })
+        decoded.claims.user.ok_or(ApiError::Unauthorized)
     }
 }

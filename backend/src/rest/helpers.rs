@@ -5,8 +5,7 @@ use crate::models::auth::{AuthClaims, AuthUserRecord, RefreshClaims};
 use crate::models::db_uuid;
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::models::similarity::SimilarityResponse;
-use crate::models::user::User;
-use crate::models::user::{UserRecord, UserResponse};
+use crate::models::user::{User, UserResponse};
 use crate::{ApiContext, r#const};
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
@@ -19,19 +18,6 @@ pub const DEFAULT_RATING: i64 = 1000;
 
 pub fn format_timestamp(value: time::OffsetDateTime) -> String {
     value.unix_timestamp().to_string()
-}
-
-pub fn to_user_response(record: UserRecord) -> UserResponse {
-    UserResponse {
-        user_id: record.user_id,
-        telegram_id: record.telegram_id,
-        username: record.username,
-        agent_data_id: record.agent_data_id,
-        is_admin: record.is_admin,
-        rating: record.rating,
-        created_at: format_timestamp(record.created_at),
-        updated_at: record.updated_at.map(format_timestamp),
-    }
 }
 
 pub fn to_profile_request_response(record: ProfileRequestRecord) -> ProfileRequestResponse {
@@ -182,7 +168,7 @@ pub fn create_refresh_token(
     .map_err(|_| ApiError::Token)
 }
 
-pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord, ApiError> {
+pub async fn fetch_user(db: &sqlx::PgPool, user_id: Uuid) -> Result<User, ApiError> {
     Ok(sqlx::query_as(
         r#"
             select
@@ -216,7 +202,7 @@ mod tests {
     use serde_json::json;
     #[cfg(feature = "telegram-auth")]
     use sha2::{Digest, Sha256};
-    use sqlx::any::AnyPoolOptions;
+    use sqlx::any::PgPoolOptions;
 
     #[cfg(feature = "telegram-auth")]
     fn telegram_init_data(user_id: i64) -> String {
@@ -268,7 +254,7 @@ mod tests {
 
     fn test_state() -> ApiContext {
         ApiContext {
-            db: AnyPoolOptions::new()
+            db: PgPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),
             bucket: test_bucket(),

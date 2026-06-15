@@ -1,11 +1,11 @@
 use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid};
 use base64::Engine;
 use sha2::{Digest, Sha256};
-use sqlx::any::AnyRow;
-use sqlx::{Acquire, Any, Error, FromRow, Row};
+use sqlx::{Acquire, Error, FromRow, Postgres, Row};
 use std::io::Cursor;
 use std::sync::Arc;
 use s3::Bucket;
+use sqlx::postgres::PgRow;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -31,7 +31,7 @@ impl Resource {
         mime_type: Option<String>,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
         let resource_id = Uuid::new_v4();
@@ -79,7 +79,7 @@ impl Resource {
         mime_type: Option<String>,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
 
@@ -104,7 +104,7 @@ impl Resource {
         resource_id: Uuid,
     ) -> Option<Resource>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
@@ -133,7 +133,7 @@ impl Resource {
         checksum: &String,
     ) -> Option<Resource>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
@@ -176,8 +176,8 @@ impl Resource {
     }
 }
 
-impl<'r> FromRow<'r, AnyRow> for Resource {
-    fn from_row(row: &'r AnyRow) -> Result<Self, Error> {
+impl<'r> FromRow<'r, PgRow> for Resource {
+    fn from_row(row: &'r PgRow) -> Result<Self, Error> {
         Ok(Self {
             id: parse_uuid(row, "resource_id")?,
             file_location: row.get("file_location"),

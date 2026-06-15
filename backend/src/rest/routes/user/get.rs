@@ -1,8 +1,7 @@
 use crate::ApiContext;
 use crate::models::ApiError;
-use crate::models::user::UserResponse;
+use crate::models::user::{User, UserResponse};
 use crate::rest::extractor::AuthUser;
-use crate::rest::helpers;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -22,10 +21,11 @@ use uuid::Uuid;
 )]
 pub async fn get_user(
     State(state): State<ApiContext>,
-    AuthUser(user): AuthUser,
+    AuthUser(_user): AuthUser,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    helpers::ensure_owner(&user, user_id)?;
-    let user = helpers::fetch_user(&state.db, user_id).await?;
-    Ok(Json(helpers::to_user_response(user)))
+    Ok(Json(
+        User::get_by_id(&state.db, user_id).await.ok_or(ApiError::NotFound)?
+            .into_response(&state.db).await?
+    ))
 }

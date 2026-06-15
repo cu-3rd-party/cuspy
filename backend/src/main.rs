@@ -5,8 +5,9 @@ use log::info;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::{Bucket, BucketConfiguration, Region};
-use sqlx::{AnyPool, any::AnyPoolOptions, migrate::Migrator};
+use sqlx::{PgPool, any::PgPoolOptions, migrate::Migrator};
 use std::path::Path;
+use std::sync::Arc;
 use teloxide::{
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo},
@@ -52,15 +53,15 @@ async fn run_bot(bot_token: String, webapp_url: String) {
         .await;
 }
 
-async fn connect_database(database_url: &str) -> Result<AnyPool, Box<dyn std::error::Error>> {
-    Ok(AnyPoolOptions::new()
+async fn connect_database(database_url: &str) -> Result<PgPool, Box<dyn std::error::Error>> {
+    Ok(PgPoolOptions::new()
         .max_connections(10)
         .connect(database_url)
         .await?)
 }
 
 const MIGRATION_ROOT: &str = "./migrations";
-async fn run_migrations(db: &AnyPool) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_migrations(db: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
     Migrator::new(Path::new(MIGRATION_ROOT))
         .await?
         .run(db)
@@ -113,7 +114,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = ApiContext {
         db,
-        bucket,
+        bucket: Arc::new(bucket),
         config: config.clone(), // просто на всякий случай
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,

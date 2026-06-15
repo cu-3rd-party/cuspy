@@ -1,7 +1,7 @@
 use crate::models::{db_uuid, parse_uuid, ApiError};
 use serde::{Deserialize, Serialize};
-use sqlx::any::AnyRow;
-use sqlx::{Acquire, Any, Error, FromRow, Row};
+use sqlx::postgres::PgRow;
+use sqlx::{Acquire, Any, Error, FromRow, Postgres, Row};
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::models::resource::Resource;
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub enum AcademicLevel {
     Bachelor,
     Master,
@@ -38,7 +38,7 @@ impl Display for AcademicLevel {
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub enum BachelorTrack {
     SWE,
     AI,
@@ -69,7 +69,7 @@ impl Display for BachelorTrack {
     }
 }
 
-#[derive(Deserialize, Serialize, ToSchema, Default)]
+#[derive(Deserialize, Serialize, ToSchema, Default, Debug)]
 pub struct AgentData {
     pub agent_data_id: Uuid,
     pub codename: Option<String>,
@@ -90,7 +90,7 @@ impl AgentData {
         resource: Option<Resource>
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
         let mut data: Self = Self::create_from_meta(&mut *executor, metadata).await?;
@@ -105,7 +105,7 @@ impl AgentData {
         metadata: AgentDataMetadata,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
         Ok(sqlx::query_as(r#"
@@ -141,7 +141,7 @@ impl AgentData {
         resource: Resource,
     ) -> Result<(), ApiError>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
         let mut executor = executor.acquire().await?;
         *self = sqlx::query_as(
@@ -173,12 +173,12 @@ impl AgentData {
     pub async fn get_by_id<'c, A>(
         executor: A,
         agent_data_id: Uuid,
-    ) -> Result<Self, ApiError>
+    ) -> Option<Self>
     where
-        A: Acquire<'c, Database = Any>
+        A: Acquire<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
-        Ok(sqlx::query_as(
+        let mut executor = executor.acquire().await.ok()?;
+        sqlx::query_as(
             r#"
             select
                 cast(agent_data_id as text) as agent_data_id,
@@ -195,13 +195,14 @@ impl AgentData {
         "#,
         )
             .bind(db_uuid(agent_data_id))
-            .fetch_one(&mut *executor)
-            .await?)
+            .fetch_optional(&mut *executor)
+            .await
+            .ok().flatten()
     }
 }
 
-impl<'r> FromRow<'r, AnyRow> for AgentData {
-    fn from_row(row: &'r AnyRow) -> Result<Self, Error> {
+impl<'r> FromRow<'r, PgRow> for AgentData {
+    fn from_row(row: &'r PgRow) -> Result<Self, Error> {
         Ok(Self {
             agent_data_id: parse_uuid(row, "agent_data_id")?,
             codename: row.try_get("codename").ok(),

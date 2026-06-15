@@ -1,7 +1,7 @@
 use crate::models::parse_uuid;
-use crate::models::user::UserResponse;
+use crate::models::user::{User, UserResponse};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, any::AnyRow};
+use sqlx::{FromRow, postgres::PgRow};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -19,6 +19,11 @@ pub struct LoginRequest {
     pub password: Option<String>,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct TelegramInitDataRequest {
+    pub init_data: String,
+}
+
 #[derive(Serialize, ToSchema)]
 pub struct AuthResponse {
     pub access_token: String,
@@ -33,8 +38,8 @@ pub struct AuthUserRecord {
     pub password_hash: Option<String>,
 }
 
-impl<'r> FromRow<'r, AnyRow> for AuthUserRecord {
-    fn from_row(row: &'r AnyRow) -> Result<Self, sqlx::Error> {
+impl<'r> FromRow<'r, PgRow> for AuthUserRecord {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
         use sqlx::Row;
 
         Ok(Self {
@@ -46,13 +51,11 @@ impl<'r> FromRow<'r, AnyRow> for AuthUserRecord {
     }
 }
 
-// This is what gets derived from user's auth token
+// This is what gets derived from user's access token
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct AuthClaims {
     pub sub: String,
-    pub user_id: Uuid,
-    pub auth_user_id: Uuid,
-    pub is_admin: bool,
+    pub user: Option<User>,
     pub exp: usize,
 }
 
@@ -60,7 +63,6 @@ pub struct AuthClaims {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RefreshClaims {
     pub sub: String,
-    pub user_id: Uuid,
     pub auth_user_id: Uuid,
     pub exp: usize,
 }

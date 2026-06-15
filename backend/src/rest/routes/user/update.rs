@@ -1,5 +1,5 @@
 use crate::ApiContext;
-use crate::models::user::{UpdateUserRequest, UserRecord, UserResponse};
+use crate::models::user::{UpdateUserRequest, User, UserResponse};
 use crate::models::{ApiError, db_uuid};
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
@@ -29,7 +29,7 @@ pub async fn update_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     helpers::ensure_owner(&user, user_id)?;
 
-    let user = sqlx::query_as::<_, UserRecord>(
+    let user = sqlx::query_as::<_, User>(
         r#"
         update "user"
         set

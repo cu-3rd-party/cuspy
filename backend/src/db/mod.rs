@@ -1,6 +1,6 @@
 use crate::models::{ApiError, db_uuid};
 use serde_json::{Map, Value};
-use sqlx::AnyPool;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 fn profile_data_object(payload: &Value) -> Result<&Map<String, Value>, ApiError> {
@@ -23,7 +23,7 @@ fn optional_i64(map: &Map<String, Value>, key: &str) -> Option<i64> {
 
 #[allow(dead_code)]
 pub async fn insert_agent_data_from_profile(
-    db: &AnyPool,
+    db: &PgPool,
     payload: &Value,
 ) -> Result<Uuid, ApiError> {
     let payload = profile_data_object(payload)?;
@@ -62,7 +62,7 @@ pub async fn insert_agent_data_from_profile(
 }
 
 pub async fn update_agent_data_from_profile(
-    db: &AnyPool,
+    db: &PgPool,
     agent_data_id: Uuid,
     payload: &Value,
 ) -> Result<(), ApiError> {

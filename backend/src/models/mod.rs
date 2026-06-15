@@ -4,7 +4,7 @@ use http::StatusCode;
 use s3::error::S3Error;
 use serde::Serialize;
 use serde_json::json;
-use sqlx::{Row, any::AnyRow};
+use sqlx::{Row, postgres::PgRow};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -123,12 +123,12 @@ pub struct ErrorResponse {
     pub error: String,
 }
 
-pub fn parse_uuid(row: &AnyRow, column: &str) -> Result<Uuid, sqlx::Error> {
+pub fn parse_uuid(row: &PgRow, column: &str) -> Result<Uuid, sqlx::Error> {
     let value: String = row.try_get(column)?;
     Uuid::parse_str(&value).map_err(|error| sqlx::Error::Decode(Box::new(error)))
 }
 
-pub fn parse_optional_uuid(row: &AnyRow, column: &str) -> Result<Option<Uuid>, sqlx::Error> {
+pub fn parse_optional_uuid(row: &PgRow, column: &str) -> Result<Option<Uuid>, sqlx::Error> {
     let value: Option<String> = row.try_get(column)?;
     match value {
         Some(value) => Uuid::parse_str(&value)
@@ -138,13 +138,13 @@ pub fn parse_optional_uuid(row: &AnyRow, column: &str) -> Result<Option<Uuid>, s
     }
 }
 
-pub fn parse_json(row: &AnyRow, column: &str) -> Result<serde_json::Value, sqlx::Error> {
+pub fn parse_json(row: &PgRow, column: &str) -> Result<serde_json::Value, sqlx::Error> {
     let value: String = row.try_get(column)?;
     serde_json::from_str(&value).map_err(|error| sqlx::Error::Decode(Box::new(error)))
 }
 
 pub fn parse_optional_timestamp(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<Option<sqlx::types::time::OffsetDateTime>, sqlx::Error> {
     let value: Option<String> = row.try_get(column)?;
@@ -154,7 +154,7 @@ pub fn parse_optional_timestamp(
 }
 
 pub fn parse_timestamp(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<sqlx::types::time::OffsetDateTime, sqlx::Error> {
     let value: String = row.try_get(column)?;
