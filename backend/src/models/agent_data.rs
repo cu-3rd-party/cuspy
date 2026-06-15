@@ -1,11 +1,14 @@
-use crate::models::parse_uuid;
+use crate::models::{db_uuid, parse_uuid, ApiError};
 use serde::{Deserialize, Serialize};
 use sqlx::any::AnyRow;
-use sqlx::{Error, FromRow, Row};
+use sqlx::{Acquire, Any, Error, FromRow, Row};
 use std::fmt::Display;
 use std::str::FromStr;
+use std::sync::Arc;
+use s3::Bucket;
 use utoipa::ToSchema;
 use uuid::Uuid;
+use crate::models::resource::Resource;
 
 #[derive(Deserialize, Serialize, ToSchema)]
 pub enum AcademicLevel {
@@ -78,6 +81,123 @@ pub struct AgentData {
     pub identification_image_id: Option<Uuid>,
     pub physical_contact_allowed: bool,
     pub hugs_close_proximity_allowed: bool,
+}
+
+impl AgentData {
+    pub async fn create<'c, A>(
+        executor: A,
+        metadata: AgentDataMetadata,
+        resource: Option<Resource>
+    ) -> Result<Self, ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+        let mut data: Self = Self::create_from_meta(&mut *executor, metadata).await?;
+        if let Some(resource) = resource {
+            data.add_profile_picture(&mut *executor, resource).await?;
+        }
+        Ok(data)
+    }
+    
+    async fn create_from_meta<'c, A>(
+        executor: A,
+        metadata: AgentDataMetadata,
+    ) -> Result<Self, ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+        Ok(sqlx::query_as(r#"
+                insert into "agent_data" (codename, academic_group, academic_level, course_number, bachelor_track, identification_name, physical_contact_allowed, hugs_close_proximity_allowed)
+                values ($1, $2, $3, $4, $5, $6, $7, $8)
+                returning
+                    cast(agent_data_id as text) as agent_data_id,
+                    codename,
+                    academic_group,
+                    academic_level,
+                    course_number,
+                    bachelor_track,
+                    identification_name,
+                    cast(identification_image_id as text) as identification_image_id,
+                    physical_contact_allowed,
+                    hugs_close_proximity_allowed
+                "#)
+            .bind(metadata.codename)
+            .bind(metadata.academic_group)
+            .bind(metadata.academic_level.map(|s| s.to_string()))
+            .bind(metadata.course_number)
+            .bind(metadata.bachelor_track.map(|s| s.to_string()))
+            .bind(metadata.identification_name)
+            .bind(metadata.physical_contact_allowed)
+            .bind(metadata.hugs_close_proximity_allowed)
+            .fetch_one(&mut *executor)
+            .await?)
+    }
+    
+    async fn add_profile_picture<'c, A>(
+        &mut self,
+        executor: A,
+        resource: Resource,
+    ) -> Result<(), ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+        *self = sqlx::query_as(
+            r#"
+            update "agent_data"
+            set identification_image_id = cast($2 as uuid)
+            where agent_data_id = cast($1 as uuid)
+            returning
+                cast(agent_data_id as text) as agent_data_id,
+                codename,
+                academic_group,
+                academic_level,
+                course_number,
+                bachelor_track,
+                identification_name,
+                cast(identification_image_id as text) as identification_image_id,
+                physical_contact_allowed,
+                hugs_close_proximity_allowed
+        "#,
+        )
+        .bind(db_uuid(self.agent_data_id))
+        .bind(db_uuid(resource.id))
+        .fetch_one(&mut *executor)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn get_by_id<'c, A>(
+        executor: A,
+        agent_data_id: Uuid,
+    ) -> Result<Self, ApiError>
+    where
+        A: Acquire<'c, Database = Any>
+    {
+        let mut executor = executor.acquire().await?;
+        Ok(sqlx::query_as(
+            r#"
+            select
+                cast(agent_data_id as text) as agent_data_id,
+                codename,
+                academic_group,
+                academic_level,
+                course_number,
+                bachelor_track,
+                identification_name,
+                cast(identification_image_id as text) as identification_image_id,
+                physical_contact_allowed,
+                hugs_close_proximity_allowed
+            from agent_data where agent_data_id = cast($1 as uuid)
+        "#,
+        )
+            .bind(db_uuid(agent_data_id))
+            .fetch_one(&mut *executor)
+            .await?)
+    }
 }
 
 impl<'r> FromRow<'r, AnyRow> for AgentData {
