@@ -67,9 +67,9 @@ impl utoipa::Modify for SecurityAddon {
         schemas(
             models::ErrorResponse,
             models::HealthResponse,
-            models::auth::LoginRequest,
-            models::auth::RegisterRequest,
-            models::auth::AuthResponse,
+            models::auth::EmailLoginRequest,
+            models::auth::EmailRegisterRequest,
+            models::auth::AuthTokenPair,
             models::user::UserResponse,
             models::user::CreateUserRequest,
             models::user::UpdateUserRequest,
