@@ -13,7 +13,6 @@ create table if not exists kill_event
                                                                 'REJECTED')) default 'PENDING',
     evidence_resource_id uuid,
     foreign key (evidence_resource_id) references "resource" (resource_id),
-    details              jsonb       not null                                default '{}'::jsonb,
     killer_confirmed_at  timestamptz,
     victim_confirmed_at  timestamptz,
     confirmed_at         timestamptz,

@@ -1,9 +1,9 @@
-use crate::rest::helpers::format_timestamp;
 use crate::ApiContext;
+use crate::models::ApiError;
 use crate::models::agent_data::AgentData;
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::models::ApiError;
 use crate::rest::extractor::AuthUser;
+use crate::rest::helpers::format_timestamp;
 use axum::Json;
 use axum::extract::{Query, State};
 use serde::Deserialize;

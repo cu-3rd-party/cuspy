@@ -1,6 +1,6 @@
 use crate::ApiContext;
+use crate::models::ApiError;
 use crate::models::profile::ProfileRequestRecord;
-use crate::models::{ApiError};
 use crate::rest::extractor::AuthUser;
 use axum::extract::{Path, State};
 use http::StatusCode;

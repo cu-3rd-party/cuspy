@@ -87,6 +87,26 @@ impl Resource {
         Ok(Self::create(&mut *executor, bucket, content, checksum, mime_type).await?)
     }
 
+    pub async fn get_url_by_option_id(
+        executor: &mut PgConnection,
+        bucket: Arc<Box<Bucket>>,
+        resource_id: Option<Uuid>,
+    ) -> Option<String> {
+        if let Some(id) = resource_id {
+            return Self::get_url_by_id(executor, bucket, id).await;
+        }
+        None
+    }
+
+    pub async fn get_url_by_id(
+        executor: &mut PgConnection,
+        bucket: Arc<Box<Bucket>>,
+        resource_id: Uuid,
+    ) -> Option<String> {
+        let resource = Self::get_by_id(&mut *executor, resource_id).await?;
+        resource.presign_get(bucket).await.ok()
+    }
+
     pub async fn get_by_id<'c, E>(executor: E, resource_id: Uuid) -> Option<Resource>
     where
         E: Executor<'c, Database = Postgres>,

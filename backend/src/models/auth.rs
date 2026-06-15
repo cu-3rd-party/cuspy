@@ -1,4 +1,4 @@
-use crate::models::user::{User};
+use crate::models::user::User;
 use crate::models::{ApiError, db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid};
 use crate::rest::helpers;
 use serde::{Deserialize, Serialize};

@@ -1,7 +1,7 @@
 use crate::ApiContext;
+use crate::models::ApiError;
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse, UpdateProfileRequest};
-use crate::models::{ApiError};
-use crate::rest::extractor::{AdminUser};
+use crate::rest::extractor::AdminUser;
 use axum::Json;
 use axum::extract::{Path, State};
 use uuid::Uuid;
@@ -27,7 +27,9 @@ pub async fn update_profile_request(
     Json(req): Json<UpdateProfileRequest>,
 ) -> Result<Json<ProfileRequestResponse>, ApiError> {
     let mut tx = state.db.begin().await?;
-    let profile = ProfileRequestRecord::get_by_id(&mut *tx, request_id).await.ok_or(ApiError::NotFound)?;
+    let profile = ProfileRequestRecord::get_by_id(&mut *tx, request_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
 
     let profile = profile
         .update(&mut *tx, req.status, req.reviewer_note)

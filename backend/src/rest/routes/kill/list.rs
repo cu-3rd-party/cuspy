@@ -2,7 +2,6 @@ use crate::ApiContext;
 use crate::models::kill::KillEventResponse;
 use crate::models::{ApiError, kill};
 use crate::rest::extractor::AuthUser;
-use crate::rest::routes::kill::helpers::KILL_EVENT_COLUMNS;
 use axum::Json;
 use axum::extract::{Query, State};
 use serde::Deserialize;
@@ -37,13 +36,11 @@ impl ListParams {
             }
         }
 
-        let mut query = format!(
-            r#"
-            select
-                {KILL_EVENT_COLUMNS}
+        let mut query = r#"
+            select *
             from kill_event
             "#
-        );
+        .to_string();
 
         if !conditions.is_empty() {
             query.push_str(" where ");
@@ -72,13 +69,15 @@ pub async fn list_kills(
     AuthUser(_user): AuthUser,
     Query(query): Query<ListParams>,
 ) -> Result<Json<Vec<KillEventResponse>>, ApiError> {
-    let records = sqlx::query_as::<_, kill::KillEventRecord>(&query.build_query())
-        .fetch_all(&state.db)
+    let mut tx = state.db.begin().await?;
+    let _records = sqlx::query_as::<_, kill::KillEventRecord>(&query.build_query())
+        .fetch_all(&mut *tx)
         .await?;
 
-    Ok(Json(
-        records.into_iter().map(kill::to_kill_response).collect(),
-    ))
+    todo!()
+    // Ok(Json(
+    //     records.into_iter().map(|k| k.into_response()).collect(),
+    // ))
 }
 
 #[cfg(test)]

@@ -41,7 +41,6 @@ impl utoipa::Modify for SecurityAddon {
         routes::user::delete::delete_user,
         routes::resource::get::get_resource,
         routes::kill::list::list_kills,
-        routes::kill::report::report_kill,
         routes::kill::confirm::confirm_kill,
         routes::kill::moderate::moderate_kill,
         routes::profile_request::list::list_profile_requests,

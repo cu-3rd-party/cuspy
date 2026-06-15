@@ -1,5 +1,5 @@
 use crate::models::ApiError;
-use crate::models::agent_data::{AgentData};
+use crate::models::agent_data::AgentData;
 use crate::models::{
     db_optional_timestamp, db_uuid, parse_optional_timestamp, parse_timestamp, parse_uuid,
 };

@@ -1,6 +1,6 @@
 use crate::ApiContext;
+use crate::models::ApiError;
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
-use crate::models::{ApiError};
 use crate::rest::extractor::AuthUser;
 use axum::Json;
 use axum::extract::{Path, State};
