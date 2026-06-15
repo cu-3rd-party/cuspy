@@ -22,7 +22,7 @@ async fn telegram_auth_requires_valid_init_data() {
                 "password": "password123",
                 "telegram_id": 7001,
                 "rating": 7,
-                "agent_name": "Telegram",
+                "username": "Telegram",
                 "agent_data": { "track": "tg" }
             })),
             None,

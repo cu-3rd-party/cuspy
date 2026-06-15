@@ -6,7 +6,7 @@ const makeUser = (): SessionUser => ({
 	user_id: 'user-1',
 	telegram_id: 1,
 	rating: 1000,
-	agent_name: 'Alpha',
+	username: 'Alpha',
 	agent_data_id: null,
 	agent_data: {},
 	is_admin: false,

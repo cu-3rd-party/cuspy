@@ -25,7 +25,7 @@ pub fn to_user_response(record: UserRecord) -> UserResponse {
     UserResponse {
         user_id: record.user_id,
         telegram_id: record.telegram_id,
-        agent_name: record.agent_name,
+        username: record.username,
         agent_data_id: record.agent_data_id,
         is_admin: record.is_admin,
         rating: record.rating,
@@ -188,7 +188,7 @@ pub async fn fetch_user(db: &sqlx::AnyPool, user_id: Uuid) -> Result<UserRecord,
             select
                 cast(user_id as text) as user_id,
                 telegram_id,
-                agent_name,
+                username,
                 cast(agent_data_id as text) as agent_data_id,
                 rating,
                 is_admin,

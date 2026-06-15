@@ -42,7 +42,7 @@ pub struct KillEventResponse {
 pub struct RankingEntry {
     pub rank: i64,
     pub user_id: Uuid,
-    pub agent_name: Option<String>,
+    pub username: Option<String>,
     pub rating: i64,
     pub approved_kills: i64,
     pub approved_deaths: i64,
@@ -65,7 +65,7 @@ impl<'r> FromRow<'r, AnyRow> for RankingEntry {
         Ok(Self {
             rank: row.get("rank"),
             user_id: parse_uuid(row, "user_id")?,
-            agent_name: row.try_get("agent_name").ok(),
+            username: row.try_get("username").ok(),
             rating: row.get("rating"),
             approved_kills: row.get("approved_kills"),
             approved_deaths: row.get("approved_deaths"),

@@ -179,7 +179,7 @@ Backend-типы (`BackendUser`, `BackendAgentData`, `BackendProfileRequest`) м
 ## Авторизация (`src/lib/shared/auth/session.ts`)
 
 - JWT-токен хранится в `localStorage` + cookie (дублируется для SSR-совместимости).
-- Auth-payload (email/password/telegram_id/agent_name) сохраняется в `localStorage` для авто-релогина при протухании токена.
+- Auth-payload (email/password/telegram_id/username) сохраняется в `localStorage` для авто-релогина при протухании токена.
 - `getSessionFlow()` при невалидном токене пытается перелогиниться через `loginUser()`. Если не получается — чистит токен и возвращает guest-сессию.
 
 ---

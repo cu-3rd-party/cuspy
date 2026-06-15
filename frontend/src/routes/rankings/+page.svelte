@@ -30,7 +30,7 @@
 
 		return data.rankings.map((entry: RankingEntry, index: number) => ({
 			rank: String(index + 1).padStart(2, '0'),
-			name: entry.agent_name ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
+			name: entry.username ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
 			syndicate: entry.user_id === activeUserId ? 'ACTIVE_SESSION' : 'CONFIRMED_OPERATIVE',
 			rating: numberFormat.format(entry.rating),
 			discoveries: numberFormat.format(entry.approved_kills),

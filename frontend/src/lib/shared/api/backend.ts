@@ -122,7 +122,7 @@ export const registerUser = async (
 		email?: string | null;
 		password?: string | null;
 		telegram_id?: number | null;
-		agent_name?: string | null;
+		username?: string | null;
 	},
 	customFetch?: typeof fetch
 ) => {
@@ -349,7 +349,7 @@ export const listKillTargets = async (token = readAccessToken()): Promise<KillTa
 	const rankings = await listRankings(token);
 	return rankings.map((entry) => ({
 		target_id: entry.user_id,
-		identifier: entry.agent_name ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
+		identifier: entry.username ?? `AGENT_${entry.user_id.slice(0, 4).toUpperCase()}`,
 		last_known_location: 'CLASSIFIED',
 		status: 'active'
 	}));

@@ -89,7 +89,7 @@ async fn backend_endpoints_work_end_to_end() {
         )
         .await;
     assert_eq!(get_user_status, StatusCode::OK);
-    assert_eq!(get_user_body["agent_name"], "Alpha");
+    assert_eq!(get_user_body["username"], "Alpha");
     assert_eq!(get_user_body["rating"], 1000);
 
     let (update_user_status, update_user_body) = ctx
@@ -97,7 +97,7 @@ async fn backend_endpoints_work_end_to_end() {
             "PATCH",
             &format!("/api/user/{user_id}"),
             Some(json!({
-                "agent_name": "Alpha Prime"
+                "username": "Alpha Prime"
             })),
             Some(&token),
             None,
@@ -106,7 +106,7 @@ async fn backend_endpoints_work_end_to_end() {
         .await;
     assert_eq!(update_user_status, StatusCode::OK);
     assert_eq!(update_user_body["rating"], 1000);
-    assert_eq!(update_user_body["agent_name"], "Alpha Prime");
+    assert_eq!(update_user_body["username"], "Alpha Prime");
 
     let (create_request_status, create_request_body) = ctx
         .json(
@@ -187,7 +187,7 @@ async fn backend_endpoints_work_end_to_end() {
             "/api/admin/user",
             Some(json!({
                 "telegram_id": 2002,
-                "agent_name": "Bravo",
+                "username": "Bravo",
                 "agent_data": { "track": "frontend" },
                 "is_admin": true
             })),
@@ -218,7 +218,7 @@ async fn backend_endpoints_work_end_to_end() {
         .json(
             "PATCH",
             &format!("/api/admin/user/{admin_created_user_id}"),
-            Some(json!({ "agent_name": "Bravo Lead", "is_admin": false })),
+            Some(json!({ "username": "Bravo Lead", "is_admin": false })),
             None,
             Some(&ctx.admin_secret),
             None,

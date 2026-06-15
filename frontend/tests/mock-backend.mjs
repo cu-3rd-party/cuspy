@@ -10,7 +10,7 @@ const users = {
 		user_id: 'user-pending',
 		telegram_id: 101,
 		rating: 1000,
-		agent_name: 'Pending Agent',
+		username: 'Pending Agent',
 		agent_data: { codename: 'PENDING_AGENT' },
 		is_admin: false,
 		created_at: '1',
@@ -20,7 +20,7 @@ const users = {
 		user_id: 'user-approved',
 		telegram_id: 202,
 		rating: 1300,
-		agent_name: 'Approved Agent',
+		username: 'Approved Agent',
 		agent_data: { codename: 'APPROVED_AGENT' },
 		is_admin: false,
 		created_at: '1',
@@ -30,7 +30,7 @@ const users = {
 		user_id: 'user-rejected',
 		telegram_id: 303,
 		rating: 990,
-		agent_name: 'Rejected Agent',
+		username: 'Rejected Agent',
 		agent_data: { codename: 'REJECTED_AGENT' },
 		is_admin: false,
 		created_at: '1',
@@ -40,7 +40,7 @@ const users = {
 		user_id: 'user-admin',
 		telegram_id: 404,
 		rating: 1700,
-		agent_name: 'Admin Agent',
+		username: 'Admin Agent',
 		agent_data: { codename: 'CONTROL_NODE' },
 		is_admin: true,
 		created_at: '1',
@@ -196,7 +196,7 @@ const server = http.createServer((request, response) => {
 				user_id: userId,
 				telegram_id: payload.telegram_id ?? 0,
 				rating: payload.rating ?? 0,
-				agent_name: payload.agent_name ?? 'Generated Agent',
+				username: payload.username ?? 'Generated Agent',
 				agent_data: payload.agent_data ?? {},
 				is_admin: false,
 				created_at: nextUnix(),
@@ -242,7 +242,7 @@ const server = http.createServer((request, response) => {
 
 			profileRequestsByUserId.set(user.user_id, [profileRequest]);
 			user.agent_data = requestedProfileData;
-			user.agent_name = requestedProfileData.codename ?? user.agent_name;
+			user.username = requestedProfileData.codename ?? user.username;
 
 			adminRequests = [
 				{
@@ -282,7 +282,7 @@ const server = http.createServer((request, response) => {
 			const report = {
 				kill_report_id: nextId('kill-report'),
 				reporter_user_id: user.user_id,
-				reporter_codename: user.agent_data?.codename ?? user.agent_name ?? 'AGENT',
+				reporter_codename: user.agent_data?.codename ?? user.username ?? 'AGENT',
 				target_id: target.target_id,
 				target_identifier: target.identifier,
 				modus_operandi: payload.modus_operandi ?? '',
@@ -379,7 +379,7 @@ const server = http.createServer((request, response) => {
 		const rankingUsers = [users.approved, users.pending]
 			.map((user) => ({
 				user_id: user.user_id,
-				agent_name: user.agent_name,
+				username: user.username,
 				rating: user.rating,
 				approved_kills: killReports.filter(
 					(report) => report.reporter_user_id === user.user_id && report.status === 'confirmed'

@@ -23,7 +23,7 @@
 
 	let codename = $derived(
 		(flow?.user?.agent_data?.codename as string | undefined) ??
-			flow?.user?.agent_name ??
+			flow?.user?.username ??
 			'OPERATIVE_X'
 	);
 	let clearance = $derived(

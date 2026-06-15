@@ -17,7 +17,7 @@
 	const app = getAppContext();
 	let flow = $derived(data.sessionFlow);
 	let codename = $derived(
-		(flow.user?.agent_data?.codename as string | undefined) ?? flow.user?.agent_name ?? 'AGENT'
+		(flow.user?.agent_data?.codename as string | undefined) ?? flow.user?.username ?? 'AGENT'
 	);
 	let submittedAt = $derived(
 		flow.latestProfileRequest?.created_at

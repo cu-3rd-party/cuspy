@@ -15,7 +15,7 @@ use uuid::Uuid;
 pub struct UserRecord {
     pub user_id: Uuid,
     pub telegram_id: i64,
-    pub agent_name: Option<String>,
+    pub username: Option<String>,
     pub agent_data_id: Option<Uuid>,
     pub rating: i64,
     pub is_admin: bool,
@@ -28,7 +28,7 @@ impl<'r> FromRow<'r, AnyRow> for UserRecord {
         Ok(Self {
             user_id: parse_uuid(row, "user_id")?,
             telegram_id: row.get("telegram_id"),
-            agent_name: row.try_get("agent_name").ok(),
+            username: row.try_get("username").ok(),
             agent_data_id: parse_uuid(row, "agent_data_id").ok(),
             rating: row.get("rating"),
             is_admin: row.get("is_admin"),
@@ -42,7 +42,7 @@ impl<'r> FromRow<'r, AnyRow> for UserRecord {
 pub struct UserResponse {
     pub user_id: Uuid,
     pub telegram_id: i64,
-    pub agent_name: Option<String>,
+    pub username: Option<String>,
     pub agent_data_id: Option<Uuid>,
     pub is_admin: bool,
     pub rating: i64,
@@ -55,7 +55,7 @@ impl From<&UserRecord> for UserResponse {
         Self {
             user_id: value.user_id,
             telegram_id: value.telegram_id,
-            agent_name: value.agent_name.clone(),
+            username: value.username.clone(),
             agent_data_id: value.agent_data_id,
             is_admin: value.is_admin,
             rating: value.rating,
@@ -74,7 +74,7 @@ impl From<&UserRecord> for UserResponse {
 #[derive(Deserialize, ToSchema)]
 pub struct CreateUserRequest {
     pub telegram_id: i64,
-    pub agent_name: Option<String>,
+    pub username: Option<String>,
     pub agent_data: Option<Value>,
     pub is_admin: Option<bool>,
 }
@@ -82,7 +82,7 @@ pub struct CreateUserRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateUserRequest {
     pub telegram_id: Option<i64>,
-    pub agent_name: Option<String>,
+    pub username: Option<String>,
     pub agent_data: Option<Value>,
     pub is_admin: Option<bool>,
 }

@@ -2,6 +2,7 @@ use crate::ApiContext;
 use crate::models::ApiError;
 use crate::models::user::User;
 use http::request::Parts;
+
 pub struct AuthUser(pub User);
 pub struct MaybeAuthUser(pub Option<User>);
 pub struct AdminUser(pub User);

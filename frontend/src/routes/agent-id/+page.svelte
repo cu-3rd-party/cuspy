@@ -236,7 +236,7 @@
 				email: `${draft.agentId.codename.toLowerCase()}@dev.local`,
 				password: 'password123',
 				telegram_id: telegramId,
-				agent_name: draft.agentId.codename
+				username: draft.agentId.codename
 			};
 			const response = await registerUser(payload);
 			writeAccessToken(response.access_token);

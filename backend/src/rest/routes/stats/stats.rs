@@ -51,7 +51,7 @@ pub async fn rankings(
         select
             rank() over (order by coalesce(latest_ratings.rating, $1) desc, u.created_at asc)::bigint as rank,
             u.user_id,
-            u.agent_name,
+            u.username,
             coalesce(latest_ratings.rating, $1) as rating,
             coalesce(kill_totals.approved_kills, 0) as approved_kills,
             coalesce(kill_totals.approved_deaths, 0) as approved_deaths
@@ -59,7 +59,7 @@ pub async fn rankings(
         left join latest_ratings on latest_ratings.user_id = u.user_id
         left join kill_totals on kill_totals.user_id = u.user_id
         )
-        select rank, cast(user_id as text) as user_id, agent_name, rating, approved_kills, approved_deaths
+        select rank, cast(user_id as text) as user_id, username, rating, approved_kills, approved_deaths
         from leaderboard
         order by rank asc, user_id asc
         "#,

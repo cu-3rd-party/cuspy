@@ -34,7 +34,7 @@ export interface AuthPayload {
 	email: string;
 	password: string;
 	telegram_id: number;
-	agent_name: string;
+	username: string;
 }
 
 export const readAuthPayload = (): AuthPayload | null => {

@@ -34,12 +34,12 @@ pub async fn update_user(
         update "user"
         set
             telegram_id = coalesce($2, telegram_id),
-            agent_name = coalesce($3, agent_name)
+            username = coalesce($3, username)
         where user_id = cast($1 as uuid)
         returning
             cast(user_id as text) as user_id,
             telegram_id,
-            agent_name,
+            username,
             cast(agent_data_id as text) as agent_data_id,
             rating,
             is_admin,
@@ -49,7 +49,7 @@ pub async fn update_user(
     )
     .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
-    .bind(payload.agent_name)
+    .bind(payload.username)
     .fetch_optional(&state.db)
     .await?
     .ok_or(ApiError::NotFound)?;

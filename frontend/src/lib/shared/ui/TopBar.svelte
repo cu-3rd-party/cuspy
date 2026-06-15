@@ -11,7 +11,7 @@
 	let app = getAppContext();
 	let codename = $derived(
 		(flow?.user?.agent_data?.codename as string | undefined) ??
-			flow?.user?.agent_name ??
+			flow?.user?.username ??
 			flow?.status ??
 			'undef'
 	);

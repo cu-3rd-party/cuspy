@@ -380,7 +380,7 @@ pub async fn register_user(
     ctx: &TestContext,
     email: &str,
     telegram_id: i64,
-    agent_name: &str,
+    username: &str,
     telegram_init_data: Option<&str>,
 ) -> (String, Value) {
     let (status, body) = ctx
@@ -392,7 +392,7 @@ pub async fn register_user(
                 "password": "password123",
                 "telegram_id": telegram_id,
                 "rating": 42,
-                "agent_name": agent_name,
+                "username": username,
                 "agent_data": { "track": "backend", "city": "Kyiv" }
             })),
             None,
@@ -434,7 +434,7 @@ pub async fn seed_admin_user(
     ctx: &TestContext,
     email: &str,
     telegram_id: i64,
-    agent_name: &str,
+    username: &str,
 ) -> String {
     #[cfg(feature = "telegram-auth")]
     let _ = email;
@@ -442,13 +442,13 @@ pub async fn seed_admin_user(
     let user_id = uuid::Uuid::now_v7();
     sqlx::query(
         r#"
-        insert into "user" (user_id, telegram_id, agent_name, is_admin)
+        insert into "user" (user_id, telegram_id, username, is_admin)
         values ($1, $2, $3, true)
         "#,
     )
     .bind(user_id)
     .bind(telegram_id)
-    .bind(agent_name)
+    .bind(username)
     .execute(&ctx.db)
     .await
     .expect("insert admin user");

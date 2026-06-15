@@ -104,12 +104,12 @@ pub async fn register(
     let user_id = Uuid::now_v7();
     let user = match sqlx::query_as::<_, UserRecord>(
         r#"
-        insert into "user" (user_id, telegram_id, agent_name, is_admin)
+        insert into "user" (user_id, telegram_id, username, is_admin)
         values (cast($1 as uuid), $2, $3, $4)
         returning
             cast(user_id as text) as user_id,
             telegram_id,
-            agent_name,
+            username,
             cast(agent_data_id as text) as agent_data_id,
             rating,
             is_admin,
@@ -119,7 +119,7 @@ pub async fn register(
     )
     .bind(db_uuid(user_id))
     .bind(telegram_id)
-    .bind(payload.agent_name)
+    .bind(payload.username)
     .bind(is_admin)
     .fetch_one(&mut *tx)
     .await

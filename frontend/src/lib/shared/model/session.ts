@@ -21,7 +21,7 @@ export type SessionUser = {
 	user_id: string;
 	telegram_id: number;
 	rating: number;
-	agent_name: string | null;
+	username: string | null;
 	agent_data_id: string | null;
 	agent_data: AgentProfileData | null;
 	is_admin: boolean;
@@ -64,7 +64,7 @@ export type SessionFlow = {
 export type RankingEntry = {
 	rank: number;
 	user_id: string;
-	agent_name: string | null;
+	username: string | null;
 	rating: number;
 	approved_kills: number;
 	approved_deaths: number;

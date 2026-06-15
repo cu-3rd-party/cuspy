@@ -2086,7 +2086,7 @@
             "type": "integer",
             "format": "int64"
           },
-          "agent_name": {
+          "username": {
             "type": [
               "string",
               "null"
@@ -2313,7 +2313,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "agent_name": {
+          "username": {
             "type": [
               "string",
               "null"
@@ -2355,7 +2355,7 @@
             ],
             "format": "int64"
           },
-          "agent_name": {
+          "username": {
             "type": [
               "string",
               "null"
@@ -2448,7 +2448,7 @@
             ],
             "format": "int64"
           },
-          "agent_name": {
+          "username": {
             "type": [
               "string",
               "null"
@@ -2481,7 +2481,7 @@
             "type": "integer",
             "format": "int64"
           },
-          "agent_name": {
+          "username": {
             "type": [
               "string",
               "null"

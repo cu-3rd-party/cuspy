@@ -40,7 +40,7 @@ pub async fn admin_list_users(
         select
             cast(user_id as text) as user_id,
             telegram_id,
-            agent_name,
+            username,
             cast(agent_data_id as text) as agent_data_id,
             rating,
             is_admin,
@@ -78,12 +78,12 @@ pub async fn admin_create_user(
 
     let user = sqlx::query_as::<_, UserRecord>(
         r#"
-        insert into "user" (user_id, telegram_id, agent_name, is_admin)
+        insert into "user" (user_id, telegram_id, username, is_admin)
         values (cast($1 as uuid), $2, $3, $4)
         returning
             cast(user_id as text) as user_id,
             telegram_id,
-            agent_name,
+            username,
             cast(agent_data_id as text) as agent_data_id,
             rating,
             is_admin,
@@ -93,7 +93,7 @@ pub async fn admin_create_user(
     )
     .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
-    .bind(payload.agent_name)
+    .bind(payload.username)
     .bind(payload.is_admin.unwrap_or(false))
     .fetch_one(&mut *tx)
     .await?;
@@ -163,13 +163,13 @@ pub async fn admin_update_user(
         update "user"
         set
             telegram_id = coalesce($2, telegram_id),
-            agent_name = coalesce($3, agent_name),
+            username = coalesce($3, username),
             is_admin = coalesce($4, is_admin)
         where user_id = cast($1 as uuid)
         returning
             cast(user_id as text) as user_id,
             telegram_id,
-            agent_name,
+            username,
             cast(agent_data_id as text) as agent_data_id,
             rating,
             is_admin,
@@ -179,7 +179,7 @@ pub async fn admin_update_user(
     )
     .bind(db_uuid(user_id))
     .bind(payload.telegram_id)
-    .bind(payload.agent_name)
+    .bind(payload.username)
     .bind(payload.is_admin)
     .fetch_optional(&state.db)
     .await?

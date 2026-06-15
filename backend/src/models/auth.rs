@@ -10,7 +10,7 @@ pub struct RegisterRequest {
     pub email: Option<String>,
     pub password: Option<String>,
     pub telegram_id: Option<i64>,
-    pub agent_name: Option<String>,
+    pub username: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]

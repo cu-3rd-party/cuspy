@@ -16,7 +16,7 @@
 	let flow = $derived(data.sessionFlow ?? null);
 	let user = $derived(data.sessionUser ?? flow?.user ?? $sessionUser);
 	let codename = $derived(
-		(user?.agent_data?.codename as string | undefined) || user?.agent_name || 'AGENT'
+		(user?.agent_data?.codename as string | undefined) || user?.username || 'AGENT'
 	);
 	let clearance = $derived(user?.rating ? `Rating ${user.rating}` : m.dossier_clearance_level_4());
 	let reviewerNote = $derived(
