@@ -1,7 +1,7 @@
 use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid};
 use base64::Engine;
 use sha2::{Digest, Sha256};
-use sqlx::{Acquire, Error, FromRow, Postgres, Row};
+use sqlx::{Error, Executor, FromRow, Postgres, Row, postgres::PgConnection};
 use std::io::Cursor;
 use std::sync::Arc;
 use s3::Bucket;
@@ -23,17 +23,16 @@ pub struct Resource {
 }
 
 impl Resource {
-    async fn create<'c, A>(
-        executor: A,
+    async fn create<'c, E>(
+        executor: E,
         bucket: Arc<Box<Bucket>>,
         content: bytes::Bytes,
         checksum: String,
         mime_type: Option<String>,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
         let resource_id = Uuid::new_v4();
         let location =
             base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(resource_id.as_bytes());
@@ -67,22 +66,17 @@ impl Resource {
             .bind(file_size)
             .bind(&mime_type)
             .bind(&checksum)
-            .fetch_one(&mut *executor)
+            .fetch_one(executor)
             .await?;
 
         Ok(resource)
     }
-    pub async fn new<'c, A>(
-        executor: A,
+    pub async fn new(
+        executor: &mut PgConnection,
         bucket: Arc<Box<Bucket>>,
         content: bytes::Bytes,
         mime_type: Option<String>,
-    ) -> Result<Self, ApiError>
-    where
-        A: Acquire<'c, Database = Postgres>
-    {
-        let mut executor = executor.acquire().await?;
-
+    ) -> Result<Self, ApiError> {
         let checksum = Self::calculate_checksum(&content);
 
         let existing_resource = Self::get_by_checksum(&mut *executor, &checksum).await;
@@ -90,23 +84,16 @@ impl Resource {
             return Ok(resource);
         }
 
-        Ok(Self::create(
-            &mut *executor,
-            bucket,
-            content,
-            checksum,
-            mime_type,
-        ).await?)
+        Ok(Self::create(&mut *executor, bucket, content, checksum, mime_type).await?)
     }
 
-    pub async fn get_by_id<'c, A>(
-        executor: A,
+    pub async fn get_by_id<'c, E>(
+        executor: E,
         resource_id: Uuid,
     ) -> Option<Resource>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
             r#"
             select
@@ -123,19 +110,18 @@ impl Resource {
         "#,
         )
             .bind(db_uuid(resource_id))
-            .fetch_optional(&mut *executor)
+            .fetch_optional(executor)
             .await
             .ok().flatten()
     }
 
-    pub async fn get_by_checksum<'c, A>(
-        executor: A,
+    pub async fn get_by_checksum<'c, E>(
+        executor: E,
         checksum: &String,
     ) -> Option<Resource>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
             r#"
             select
@@ -152,7 +138,7 @@ impl Resource {
         "#,
         )
             .bind(&checksum)
-            .fetch_optional(&mut *executor)
+            .fetch_optional(executor)
             .await
             .ok().flatten()
     }

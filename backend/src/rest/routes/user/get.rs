@@ -24,8 +24,6 @@ pub async fn get_user(
     AuthUser(_user): AuthUser,
     Path(user_id): Path<Uuid>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    Ok(Json(
-        User::get_by_id(&state.db, user_id).await.ok_or(ApiError::NotFound)?
-            .into_response(&state.db).await?
-    ))
+    let user = User::get_by_id(&state.db, user_id).await.ok_or(ApiError::NotFound)?;
+    Ok(Json(user.into_response(&state.db).await?))
 }

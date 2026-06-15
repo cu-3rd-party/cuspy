@@ -1,11 +1,9 @@
 use crate::models::{db_uuid, parse_uuid, ApiError};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgRow;
-use sqlx::{Acquire, Any, Error, FromRow, Postgres, Row};
+use sqlx::{Error, Executor, FromRow, Postgres, Row, postgres::PgConnection};
 use std::fmt::Display;
 use std::str::FromStr;
-use std::sync::Arc;
-use s3::Bucket;
 use utoipa::ToSchema;
 use uuid::Uuid;
 use crate::models::resource::Resource;
@@ -84,15 +82,11 @@ pub struct AgentData {
 }
 
 impl AgentData {
-    pub async fn create<'c, A>(
-        executor: A,
+    pub async fn create(
+        executor: &mut PgConnection,
         metadata: AgentDataMetadata,
         resource: Option<Resource>
-    ) -> Result<Self, ApiError>
-    where
-        A: Acquire<'c, Database = Postgres>
-    {
-        let mut executor = executor.acquire().await?;
+    ) -> Result<Self, ApiError> {
         let mut data: Self = Self::create_from_meta(&mut *executor, metadata).await?;
         if let Some(resource) = resource {
             data.add_profile_picture(&mut *executor, resource).await?;
@@ -100,14 +94,13 @@ impl AgentData {
         Ok(data)
     }
     
-    async fn create_from_meta<'c, A>(
-        executor: A,
+    async fn create_from_meta<'c, E>(
+        executor: E,
         metadata: AgentDataMetadata,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
         Ok(sqlx::query_as(r#"
                 insert into "agent_data" (codename, academic_group, academic_level, course_number, bachelor_track, identification_name, physical_contact_allowed, hugs_close_proximity_allowed)
                 values ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -131,19 +124,18 @@ impl AgentData {
             .bind(metadata.identification_name)
             .bind(metadata.physical_contact_allowed)
             .bind(metadata.hugs_close_proximity_allowed)
-            .fetch_one(&mut *executor)
+            .fetch_one(executor)
             .await?)
     }
     
-    async fn add_profile_picture<'c, A>(
+    async fn add_profile_picture<'c, E>(
         &mut self,
-        executor: A,
+        executor: E,
         resource: Resource,
     ) -> Result<(), ApiError>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
         *self = sqlx::query_as(
             r#"
             update "agent_data"
@@ -164,20 +156,19 @@ impl AgentData {
         )
         .bind(db_uuid(self.agent_data_id))
         .bind(db_uuid(resource.id))
-        .fetch_one(&mut *executor)
+        .fetch_one(executor)
         .await?;
 
         Ok(())
     }
 
-    pub async fn get_by_id<'c, A>(
-        executor: A,
+    pub async fn get_by_id<'c, E>(
+        executor: E,
         agent_data_id: Uuid,
     ) -> Option<Self>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
             r#"
             select
@@ -195,7 +186,7 @@ impl AgentData {
         "#,
         )
             .bind(db_uuid(agent_data_id))
-            .fetch_optional(&mut *executor)
+            .fetch_optional(executor)
             .await
             .ok().flatten()
     }

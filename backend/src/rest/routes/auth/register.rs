@@ -101,30 +101,10 @@ pub async fn register(
 
     let mut tx = state.db.begin().await?;
 
-    let user_id = Uuid::now_v7();
-    let user: User = match sqlx::query_as(
-        r#"
-        insert into "user" (user_id, username, is_admin)
-        values (cast($1 as uuid), $3, $4)
-        returning
-            cast(user_id as text) as user_id,
-            username,
-            cast(agent_data_id as text) as agent_data_id,
-            rating,
-            is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
-    )
-    .bind(db_uuid(user_id))
-    .bind(telegram_id)
-    .bind(payload.username)
-    .bind(is_admin)
-    .fetch_one(&mut *tx)
-    .await
-    {
-        Ok(row) => row,
-        Err(error) => return Err(map_register_database_error(error, &login_identifier)),
+    let user = match User::create(&mut *tx, payload.username, is_admin, None).await {
+        Ok(user) => user,
+        Err(ApiError::Database(error)) => return Err(map_register_database_error(error, &login_identifier)),
+        Err(other) => return Err(other),
     };
 
     sqlx::query(
@@ -134,7 +114,7 @@ pub async fn register(
         "#,
     )
     .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(user_id))
+    .bind(db_uuid(user.user_id))
     .bind(helpers::DEFAULT_RATING)
     .bind(helpers::DEFAULT_RATING)
     .bind("initial_rating")
@@ -154,7 +134,7 @@ pub async fn register(
             "#,
     )
     .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(user_id))
+    .bind(db_uuid(user.user_id))
     .bind(login_identifier.clone())
     .bind(password_hash)
     .fetch_one(&mut *tx)
@@ -172,7 +152,7 @@ pub async fn register(
         StatusCode::CREATED,
         Json(AuthResponse {
             access_token,
-            user: helpers::to_user_response(user),
+            user: user.into_response(&state.db).await?,
         }),
     ))
 }

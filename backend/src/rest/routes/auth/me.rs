@@ -23,5 +23,4 @@ pub async fn me(
     AuthUser(user): AuthUser,
 ) -> Result<Json<UserResponse>, ApiError> {
     Ok(Json(user.into_response(&state.db).await?))
-    // Ok(Json(UserResponse::default()))
 }

@@ -2,7 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::ApiError;
 use crate::models::auth::{AuthClaims, AuthUserRecord, RefreshClaims};
-use crate::models::db_uuid;
+use crate::models::{db_optional_uuid, db_uuid};
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::models::similarity::SimilarityResponse;
 use crate::models::user::{User, UserResponse};
@@ -30,6 +30,18 @@ pub fn to_profile_request_response(record: ProfileRequestRecord) -> ProfileReque
         reviewed_at: record.reviewed_at.map(format_timestamp),
         created_at: format_timestamp(record.created_at),
         updated_at: format_timestamp(record.updated_at),
+    }
+}
+
+pub fn to_user_response(user: User) -> UserResponse {
+    UserResponse {
+        user_id: user.user_id,
+        username: user.username,
+        agent_data: None,
+        rating: user.rating,
+        is_admin: user.is_admin,
+        created_at: format_timestamp(user.created_at),
+        updated_at: user.updated_at.map(format_timestamp),
     }
 }
 
@@ -128,9 +140,15 @@ pub fn create_access_token(
 
     let claims = AuthClaims {
         sub: auth_user.login_identifier.clone(),
-        user_id: auth_user.user_id,
-        auth_user_id: auth_user.auth_user_id,
-        is_admin,
+        user: Some(User {
+            user_id: auth_user.user_id,
+            username: None,
+            agent_data_id: None,
+            rating: 0,
+            is_admin,
+            created_at: time::OffsetDateTime::UNIX_EPOCH,
+            updated_at: None,
+        }),
         exp,
     };
 
@@ -155,7 +173,6 @@ pub fn create_refresh_token(
 
     let claims = RefreshClaims {
         sub: auth_user.login_identifier.clone(),
-        user_id: auth_user.user_id,
         auth_user_id: auth_user.auth_user_id,
         exp,
     };
@@ -173,7 +190,6 @@ pub async fn fetch_user(db: &sqlx::PgPool, user_id: Uuid) -> Result<User, ApiErr
         r#"
             select
                 cast(user_id as text) as user_id,
-                telegram_id,
                 username,
                 cast(agent_data_id as text) as agent_data_id,
                 rating,
@@ -192,6 +208,7 @@ pub async fn fetch_user(db: &sqlx::PgPool, user_id: Uuid) -> Result<User, ApiErr
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     use super::*;
     use clap::Parser;
     #[cfg(feature = "telegram-auth")]
@@ -202,7 +219,7 @@ mod tests {
     use serde_json::json;
     #[cfg(feature = "telegram-auth")]
     use sha2::{Digest, Sha256};
-    use sqlx::any::PgPoolOptions;
+    use sqlx::postgres::PgPoolOptions;
 
     #[cfg(feature = "telegram-auth")]
     fn telegram_init_data(user_id: i64) -> String {
@@ -257,7 +274,7 @@ mod tests {
             db: PgPoolOptions::new()
                 .connect_lazy("postgres://postgres:postgres@127.0.0.1/postgres")
                 .expect("lazy pool"),
-            bucket: test_bucket(),
+            bucket: Arc::new(test_bucket()),
             admin_secret: "admin-secret".into(),
             config: crate::config::Config::parse_from([""]),
             jwt_secret: "jwt-secret".into(),

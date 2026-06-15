@@ -50,6 +50,11 @@ pub struct ApiContext {
     pub public_webapp_url: String,
 }
 
+fn _assert_api_context_traits() {
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<ApiContext>();
+}
+
 fn build_cors_layer(state: &ApiContext) -> CorsLayer {
     CorsLayer::new()
         .allow_origin(HeaderValue::from_str(&state.config.cors_origin).expect("cors origin"))

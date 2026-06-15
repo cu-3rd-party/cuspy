@@ -6,34 +6,11 @@ use crate::models::resource::Resource;
 use crate::models::ApiError;
 use utoipa::ToSchema;
 
-#[derive(ToSchema)]
-pub struct CreateAgentDataMultipartRequest {
-    #[schema(example = r#"{"codename":"Cipher","physical_contact_allowed":true,"hugs_close_proximity_allowed":false}"#)]
-    pub data: String,
-    #[schema(value_type = String, format = Binary)]
-    pub image: Option<String>,
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/agent-data",
-    tag = "agent-data",
-    request_body(
-        content = CreateAgentDataMultipartRequest,
-        content_type = "multipart/form-data",
-        description = "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file"
-    ),
-    responses(
-        (status = 200, description = "Agent data created", body = AgentData),
-        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
-        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
-    )
-)]
-pub async fn create_agent_data(
-    State(state): State<ApiContext>,
+pub(crate) async fn create_agent_data_inner(
+    state: ApiContext,
     mut multipart: Multipart,
-) -> Result<Json<AgentData>, ApiError> {
-    let mut metadata = None;
+) -> Result<AgentData, ApiError> {
+    let mut metadata: Option<crate::models::agent_data::AgentDataMetadata> = None;
     let mut image = None;
 
     while let Some(field) = multipart
@@ -70,6 +47,7 @@ pub async fn create_agent_data(
         };
     }
 
+    let metadata = metadata.ok_or_else(|| ApiError::BadRequest("no data supplied".to_string()))?;
     let mut tx = state.db.begin().await?;
     let resource = match image {
         Some((content, content_type)) => {
@@ -77,14 +55,38 @@ pub async fn create_agent_data(
         }
         None => None,
     };
-
-    let agent_data = AgentData::create(
-        &mut *tx,
-        metadata.ok_or_else(|| ApiError::BadRequest("no data supplied".to_string()))?,
-        resource,
-    )
-        .await?;
+    let agent_data = AgentData::create(&mut *tx, metadata, resource).await?;
     tx.commit().await?;
 
-    Ok(Json(agent_data))
+    Ok(agent_data)
+}
+
+#[derive(ToSchema)]
+pub struct CreateAgentDataMultipartRequest {
+    #[schema(example = r#"{"codename":"Cipher","physical_contact_allowed":true,"hugs_close_proximity_allowed":false}"#)]
+    pub data: String,
+    #[schema(value_type = String, format = Binary)]
+    pub image: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/agent-data",
+    tag = "agent-data",
+    request_body(
+        content = CreateAgentDataMultipartRequest,
+        content_type = "multipart/form-data",
+        description = "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file"
+    ),
+    responses(
+        (status = 200, description = "Agent data created", body = AgentData),
+        (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
+        (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
+    )
+)]
+pub async fn create_agent_data(
+    State(state): State<ApiContext>,
+    multipart: Multipart,
+) -> Result<Json<AgentData>, ApiError> {
+    Ok(Json(create_agent_data_inner(state, multipart).await?))
 }

@@ -1,11 +1,15 @@
 use crate::ApiContext;
 use crate::models::auth::AuthClaims;
-use crate::models::{ApiError, parse_optional_timestamp, parse_timestamp, parse_uuid, db_uuid, db_optional_uuid};
+use crate::models::{
+    ApiError, db_optional_uuid, db_uuid, parse_optional_timestamp, parse_optional_uuid,
+    parse_timestamp, parse_uuid,
+};
 use crate::models::agent_data::AgentData;
 use http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, Row, postgres::PgRow, Acquire, Postgres};
+use serde_json::Value;
+use sqlx::{Executor, FromRow, Postgres, Row, postgres::PgRow};
 use tonic::metadata::MetadataMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -33,16 +37,15 @@ pub struct UserResponse {
 }
 
 impl User {
-    pub async fn create<'c, A>(
-        executor: A,
-        username: String,
+    pub async fn create<'c, E>(
+        executor: E,
+        username: Option<String>,
         is_admin: bool,
         agent_data: Option<AgentData>,
     ) -> Result<Self, ApiError>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
         let user: User = sqlx::query_as(
         r#"
                 insert into "user" (username, is_admin, agent_data_id)
@@ -60,19 +63,18 @@ impl User {
             .bind(username)
             .bind(is_admin)
             .bind(db_optional_uuid(agent_data.map(|d| d.agent_data_id)))
-            .fetch_one(&mut *executor)
+            .fetch_one(executor)
             .await?;
         Ok(user)
     }
 
-    pub async fn update<'c, A>(
+    pub async fn update<'c, E>(
         &mut self,
-        executor: A,
+        executor: E,
     ) -> Result<(), ApiError>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
         *self = sqlx::query_as(
             r#"
                 update "user"
@@ -95,59 +97,114 @@ impl User {
             .bind(self.username.clone())
             .bind(db_optional_uuid(self.agent_data_id.clone()))
             .bind(self.is_admin.clone())
-            .fetch_one(&mut *executor)
+            .fetch_one(executor)
             .await?;
         Ok(())
     }
 
-    pub async fn get_by_id<'c, A>(
-        executor: A,
+    pub async fn get_by_id<'c, E>(
+        executor: E,
         user_id: Uuid,
     ) -> Option<Self>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
             r#"
-                select * from "user" where user_id = cast($1 as uuid)
+                select
+                    cast(user_id as text) as user_id,
+                    username,
+                    cast(agent_data_id as text) as agent_data_id,
+                    rating,
+                    is_admin,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+                from "user"
+                where user_id = cast($1 as uuid)
+                limit 1
             "#
         )
             .bind(db_uuid(user_id))
-            .fetch_optional(&mut *executor)
+            .fetch_optional(executor)
             .await
             .ok().flatten()
     }
 
-    pub async fn get_by_username<'c, A>(
-        executor: A,
+    pub async fn get_by_username<'c, E>(
+        executor: E,
         username: String,
     ) -> Option<Self>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await.ok()?;
         sqlx::query_as(
             r#"
-                select * from "user" where username = $1
+                select
+                    cast(user_id as text) as user_id,
+                    username,
+                    cast(agent_data_id as text) as agent_data_id,
+                    rating,
+                    is_admin,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+                from "user"
+                where username = $1
+                limit 1
             "#
         )
             .bind(username)
-            .fetch_optional(&mut *executor)
+            .fetch_optional(executor)
             .await
             .ok().flatten()
     }
 
-    pub async fn into_response<'c, A>(
+    pub async fn list<'c, E>(
+        executor: E,
+    ) -> Result<Vec<Self>, ApiError>
+    where
+        E: Executor<'c, Database = Postgres>
+    {
+        Ok(sqlx::query_as(
+            r#"
+                select
+                    cast(user_id as text) as user_id,
+                    username,
+                    cast(agent_data_id as text) as agent_data_id,
+                    rating,
+                    is_admin,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+                from "user"
+                order by created_at desc
+            "#,
+        )
+        .fetch_all(executor)
+        .await?)
+    }
+
+    pub async fn delete<'c, E>(
+        executor: E,
+        user_id: Uuid,
+    ) -> Result<bool, ApiError>
+    where
+        E: Executor<'c, Database = Postgres>
+    {
+        let result = sqlx::query(r#"delete from "user" where user_id = cast($1 as uuid)"#)
+            .bind(db_uuid(user_id))
+            .execute(executor)
+            .await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    pub async fn into_response<'c, E>(
         self,
-        executor: A,
+        executor: E,
     ) -> Result<UserResponse, ApiError>
     where
-        A: Acquire<'c, Database = Postgres>
+        E: Executor<'c, Database = Postgres>
     {
-        let mut executor = executor.acquire().await?;
         let agent_data = match self.agent_data_id {
-            Some(id) => AgentData::get_by_id(&mut *executor, id).await,
+            Some(id) => AgentData::get_by_id(executor, id).await,
             None => None,
         };
 
@@ -168,13 +225,31 @@ impl<'r> FromRow<'r, PgRow> for User {
         Ok(Self {
             user_id: parse_uuid(row, "user_id")?,
             username: row.try_get("username").ok(),
-            agent_data_id: parse_uuid(row, "agent_data_id").ok(),
+            agent_data_id: parse_optional_uuid(row, "agent_data_id").ok().flatten(),
             rating: row.get("rating"),
             is_admin: row.get("is_admin"),
             created_at: parse_timestamp(row, "created_at")?,
             updated_at: parse_optional_timestamp(row, "updated_at").ok().flatten(),
         })
     }
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateUserRequest {
+    pub telegram_id: Option<i64>,
+    pub username: Option<String>,
+    pub agent_data_id: Option<Uuid>,
+    pub agent_data: Option<Value>,
+    pub is_admin: Option<bool>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateUserRequest {
+    pub telegram_id: Option<i64>,
+    pub username: Option<String>,
+    pub agent_data_id: Option<Uuid>,
+    pub agent_data: Option<Value>,
+    pub is_admin: Option<bool>,
 }
 
 #[derive(Deserialize, ToSchema)]

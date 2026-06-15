@@ -1,10 +1,19 @@
 use crate::ApiContext;
-use crate::models::{ApiError, db_uuid};
+use crate::models::ApiError;
+use crate::models::user::User;
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
 use axum::extract::{Path, State};
 use http::StatusCode;
 use uuid::Uuid;
+
+pub(crate) async fn delete_user_record(db: &sqlx::PgPool, user_id: Uuid) -> Result<(), ApiError> {
+    if !User::delete(db, user_id).await? {
+        return Err(ApiError::NotFound);
+    }
+
+    Ok(())
+}
 
 #[utoipa::path(
     delete,
@@ -25,15 +34,7 @@ pub async fn delete_user(
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     helpers::ensure_owner(&user, user_id)?;
-
-    let result = sqlx::query(r#"delete from "user" where user_id = cast($1 as uuid)"#)
-        .bind(db_uuid(user_id))
-        .execute(&state.db)
-        .await?;
-
-    if result.rows_affected() == 0 {
-        return Err(ApiError::NotFound);
-    }
+    delete_user_record(&state.db, user_id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

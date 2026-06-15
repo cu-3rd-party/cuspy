@@ -1,6 +1,6 @@
 use crate::ApiContext;
 use crate::models::user::{UpdateUserRequest, User, UserResponse};
-use crate::models::{ApiError, db_uuid};
+use crate::models::ApiError;
 use crate::rest::extractor::AuthUser;
 use crate::rest::helpers;
 use axum::Json;
@@ -29,30 +29,14 @@ pub async fn update_user(
 ) -> Result<Json<UserResponse>, ApiError> {
     helpers::ensure_owner(&user, user_id)?;
 
-    let user = sqlx::query_as::<_, User>(
-        r#"
-        update "user"
-        set
-            telegram_id = coalesce($2, telegram_id),
-            username = coalesce($3, username)
-        where user_id = cast($1 as uuid)
-        returning
-            cast(user_id as text) as user_id,
-            telegram_id,
-            username,
-            cast(agent_data_id as text) as agent_data_id,
-            rating,
-            is_admin,
-            cast(created_at as text) as created_at,
-            cast(updated_at as text) as updated_at
-        "#,
-    )
-    .bind(db_uuid(user_id))
-    .bind(payload.telegram_id)
-    .bind(payload.username)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or(ApiError::NotFound)?;
+    let mut user = User::get_by_id(&state.db, user_id).await.ok_or(ApiError::NotFound)?;
+    if let Some(username) = payload.username {
+        user.username = Some(username);
+    }
+    if let Some(agent_data_id) = payload.agent_data_id {
+        user.agent_data_id = Some(agent_data_id);
+    }
 
-    Ok(Json(helpers::to_user_response(user)))
+    user.update(&state.db).await?;
+    Ok(Json(user.into_response(&state.db).await?))
 }

@@ -5,7 +5,7 @@ use log::info;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::{Bucket, BucketConfiguration, Region};
-use sqlx::{PgPool, any::PgPoolOptions, migrate::Migrator};
+use sqlx::{PgPool, migrate::Migrator, postgres::PgPoolOptions};
 use std::path::Path;
 use std::sync::Arc;
 use teloxide::{

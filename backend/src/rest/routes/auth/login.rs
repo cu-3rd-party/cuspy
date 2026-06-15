@@ -111,10 +111,9 @@ pub async fn login(
 
     let user = helpers::fetch_user(&state.db, auth_user.user_id).await?;
     let access_token = helpers::create_access_token(&state, &auth_user, user.is_admin)?;
-    let user = helpers::fetch_user(&state.db, user.user_id).await?;
 
     Ok(Json(AuthResponse {
         access_token,
-        user: helpers::to_user_response(user),
+        user: user.into_response(&state.db).await?,
     }))
 }
