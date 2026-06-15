@@ -1,7 +1,6 @@
 create table if not exists "user"
 (
     user_id       uuid primary key     default uuid_generate_v1mc(),
-    telegram_id   bigint unique,
     username    text collate case_insensitive,
     agent_data_id uuid,
     foreign key (agent_data_id) references "agent_data" ("agent_data_id"),

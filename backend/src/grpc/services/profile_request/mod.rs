@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::info;
 use crate::grpc::RequestAuthExt;
 use crate::models::profile::ProfileRequestEvent;
 use profilerequest::profile_request_server::ProfileRequest;
