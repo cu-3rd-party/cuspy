@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::models::ApiError;
-use crate::models::auth::{AuthClaims, AuthUserRecord, RefreshClaims};
+use crate::models::auth::{AuthClaims, AuthTokenPair, AuthUserRecord, RefreshClaims};
 use crate::models::{db_optional_uuid, db_uuid};
 use crate::models::profile::{ProfileRequestRecord, ProfileRequestResponse};
 use crate::models::similarity::SimilarityResponse;
@@ -11,7 +11,9 @@ use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use jsonwebtoken::{EncodingKey, Header, encode};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub const DEFAULT_RATING: i64 = 1000;
@@ -109,7 +111,6 @@ pub fn compare_profile_similarity(
     })
 }
 
-#[cfg_attr(feature = "telegram-auth", allow(dead_code))]
 pub fn hash_password(password: &str) -> Result<String, ApiError> {
     let salt = SaltString::generate(&mut OsRng);
     let hash = Argon2::default()
@@ -118,7 +119,6 @@ pub fn hash_password(password: &str) -> Result<String, ApiError> {
     Ok(hash.to_string())
 }
 
-#[cfg_attr(feature = "telegram-auth", allow(dead_code))]
 pub fn verify_password(hash: &str, password: &str) -> Result<(), ApiError> {
     let parsed_hash = PasswordHash::new(hash).map_err(|_| ApiError::PasswordHash)?;
     Argon2::default()
@@ -126,41 +126,18 @@ pub fn verify_password(hash: &str, password: &str) -> Result<(), ApiError> {
         .map_err(|_| ApiError::Unauthorized)
 }
 
-pub fn create_access_token(
+pub fn create_token_pair(
     state: &ApiContext,
     auth_user: &AuthUserRecord,
-    is_admin: bool,
-) -> Result<String, ApiError> {
-    let exp = SystemTime::now()
-        .checked_add(r#const::AUTH_TOKEN_TTL)
-        .ok_or(ApiError::Token)?
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| ApiError::Token)?
-        .as_secs() as usize;
-
-    let claims = AuthClaims {
-        sub: auth_user.login_identifier.clone(),
-        user: Some(User {
-            user_id: auth_user.user_id,
-            username: None,
-            agent_data_id: None,
-            rating: 0,
-            is_admin,
-            created_at: time::OffsetDateTime::UNIX_EPOCH,
-            updated_at: None,
-        }),
-        exp,
-    };
-
-    encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
-    )
-    .map_err(|_| ApiError::Token)
+    user: Option<User>,
+) -> Result<AuthTokenPair, ApiError> {
+    Ok(AuthTokenPair {
+        access_token: create_access_token(state, user)?,
+        refresh_token: create_refresh_token(state, auth_user)?,
+    })
 }
 
-pub fn create_refresh_token(
+fn create_refresh_token(
     state: &ApiContext,
     auth_user: &AuthUserRecord,
 ) -> Result<String, ApiError> {
@@ -172,7 +149,6 @@ pub fn create_refresh_token(
         .as_secs() as usize;
 
     let claims = RefreshClaims {
-        sub: auth_user.login_identifier.clone(),
         auth_user_id: auth_user.auth_user_id,
         exp,
     };
@@ -182,28 +158,31 @@ pub fn create_refresh_token(
         &claims,
         &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
     )
-    .map_err(|_| ApiError::Token)
+        .map_err(|_| ApiError::Token)
 }
 
-pub async fn fetch_user(db: &sqlx::PgPool, user_id: Uuid) -> Result<User, ApiError> {
-    Ok(sqlx::query_as(
-        r#"
-            select
-                cast(user_id as text) as user_id,
-                username,
-                cast(agent_data_id as text) as agent_data_id,
-                rating,
-                is_admin,
-                cast(created_at as text) as created_at,
-                cast(updated_at as text) as updated_at
-            from "user"
-            where user_id = cast($1 as uuid)
-            limit 1
-            "#,
+fn create_access_token(
+    state: &ApiContext,
+    user: Option<User>,
+) -> Result<String, ApiError> {
+    let exp = SystemTime::now()
+        .checked_add(r#const::AUTH_TOKEN_TTL)
+        .ok_or(ApiError::Token)?
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| ApiError::Token)?
+        .as_secs() as usize;
+
+    let claims = AuthClaims {
+        user,
+        exp,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
     )
-    .bind(db_uuid(user_id))
-    .fetch_one(db)
-    .await?)
+    .map_err(|_| ApiError::Token)
 }
 
 #[cfg(test)]

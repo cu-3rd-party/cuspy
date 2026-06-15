@@ -1,51 +1,19 @@
 use crate::ApiContext;
-use crate::models::auth::{AuthResponse, AuthUserRecord, RegisterRequest};
-use crate::models::user::User;
+use crate::models::auth::{AuthTokenPair, AuthUserRecord, EmailRegisterRequest};
 use crate::models::{ApiError, db_uuid};
 use crate::rest::helpers;
-#[cfg(feature = "telegram-auth")]
-use crate::telegram;
 use axum::Json;
 use axum::extract::State;
-#[cfg(feature = "telegram-auth")]
-use http::HeaderMap;
 use http::StatusCode;
-use log::error;
-use uuid::Uuid;
-
-fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> ApiError {
-    match error {
-        sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
-            let message = db_err.message();
-            if message.contains("auth_user") || message.contains("login_identifier") {
-                ApiError::BadRequest(format!(
-                    "user with identifier {login_identifier} already exists"
-                ))
-            } else if message.contains("user.telegram_id") || message.contains("telegram_id") {
-                ApiError::BadRequest("user with this telegram_id already exists".into())
-            } else {
-                ApiError::BadRequest("user already exists".into())
-            }
-        }
-        sqlx::Error::Decode(err) => {
-            error!("db error occurred: {}", &err.to_string());
-            ApiError::Internal(format!("column not found: {}", err.to_string()).into())
-        }
-        sqlx::Error::ColumnNotFound(err) => {
-            error!("db error occurred: {}", &err);
-            ApiError::Internal(format!("column not found: {err}").into())
-        }
-        other => other.into(),
-    }
-}
+use crate::rest::extractor::MaybeAuthUser;
 
 #[utoipa::path(
     post,
     path = "/api/auth/register",
     tag = "auth",
-    request_body = RegisterRequest,
+    request_body = EmailRegisterRequest,
     responses(
-        (status = 201, description = "Registration succeeded", body = AuthResponse),
+        (status = 201, description = "Registration succeeded", body = AuthTokenPair),
         (status = 400, description = "Bad request", body = crate::models::ErrorResponse),
         (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
@@ -53,106 +21,21 @@ fn map_register_database_error(error: sqlx::Error, login_identifier: &str) -> Ap
 )]
 pub async fn register(
     State(state): State<ApiContext>,
-    #[cfg(feature = "telegram-auth")] headers: HeaderMap,
-    Json(payload): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<AuthResponse>), ApiError> {
-    #[cfg(feature = "telegram-auth")]
-    let (login_identifier, password_hash, telegram_id) = {
-        let init_data = headers
-            .get("x-telegram-init-data")
-            .and_then(|value| value.to_str().ok())
-            .and_then(|value| {
-                telegram::TelegramInitData::from_header(&state.telegram_bot_token, value)
-            })
-            .ok_or(ApiError::Unauthorized)?;
-        let telegram_user_id = init_data.user.id;
-        (
-            telegram_user_id.to_string(),
-            None::<String>,
-            telegram_user_id,
-        )
-    };
+    MaybeAuthUser(user): MaybeAuthUser,
+    Json(payload): Json<EmailRegisterRequest>,
+) -> Result<(StatusCode, Json<AuthTokenPair>), ApiError> {
+    let mut tx = state.db.begin().await?; // may be useful in future
 
-    #[cfg(not(feature = "telegram-auth"))]
-    let (login_identifier, password_hash, telegram_id) = {
-        let email = payload
-            .email
-            .as_deref()
-            .unwrap_or_default()
-            .trim()
-            .to_lowercase();
-        let password = payload.password.as_deref().unwrap_or_default();
-        if email.is_empty() || password.len() < 8 {
-            return Err(ApiError::BadRequest(
-                "email must be present and password must be at least 8 characters".into(),
-            ));
-        }
+    // let user = User::create(&mut *tx, payload.username, user.is_some_and(|u| u.is_admin), None).await?;
+    // todo: here i removed rating addition. this is done by default by trigger in the db i suppose. check this
 
-        let telegram_id = payload.telegram_id.ok_or(ApiError::BadRequest(
-            "telegram_id is required when Telegram auth is disabled".into(),
-        ))?;
-        (email, Some(helpers::hash_password(password)?), telegram_id)
-    };
-
-    #[cfg(feature = "telegram-auth")]
-    let is_admin = false;
-    #[cfg(not(feature = "telegram-auth"))]
-    let is_admin = false;
-
-    let mut tx = state.db.begin().await?;
-
-    let user = match User::create(&mut *tx, payload.username, is_admin, None).await {
-        Ok(user) => user,
-        Err(ApiError::Database(error)) => return Err(map_register_database_error(error, &login_identifier)),
-        Err(other) => return Err(other),
-    };
-
-    sqlx::query(
-        r#"
-        insert into rating_history (rating_history_id, user_id, rating, change, reason)
-        values (cast($1 as uuid), cast($2 as uuid), $3, $4, $5)
-        "#,
-    )
-    .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(user.user_id))
-    .bind(helpers::DEFAULT_RATING)
-    .bind(helpers::DEFAULT_RATING)
-    .bind("initial_rating")
-    .execute(&mut *tx)
-    .await
-    .map_err(|error| map_register_database_error(error, &login_identifier))?;
-
-    let auth_user = match sqlx::query_as::<_, AuthUserRecord>(
-        r#"
-            insert into auth_user (auth_user_id, user_id, login_identifier, password_hash)
-            values (cast($1 as uuid), cast($2 as uuid), $3, $4)
-            returning
-                cast(auth_user_id as text) as auth_user_id,
-                cast(user_id as text) as user_id,
-                login_identifier,
-                password_hash
-            "#,
-    )
-    .bind(db_uuid(Uuid::now_v7()))
-    .bind(db_uuid(user.user_id))
-    .bind(login_identifier.clone())
-    .bind(password_hash)
-    .fetch_one(&mut *tx)
-    .await
-    {
-        Ok(user) => user,
-        Err(error) => return Err(map_register_database_error(error, &login_identifier)),
-    };
+    let auth_user = AuthUserRecord::new_email_user(&mut *tx, None, payload.email, payload.password).await?;
 
     tx.commit().await?;
 
-    let access_token = helpers::create_access_token(&state, &auth_user, user.is_admin)?;
-    let user = helpers::fetch_user(&state.db, user.user_id).await?;
+    let token_pair = helpers::create_token_pair(&state, &auth_user, user)?;
     Ok((
         StatusCode::CREATED,
-        Json(AuthResponse {
-            access_token,
-            user: user.into_response(&state.db).await?,
-        }),
+        Json(token_pair),
     ))
 }

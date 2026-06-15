@@ -97,7 +97,12 @@ mod tests {
     fn make_user(id: Uuid, is_admin: bool) -> User {
         User {
             user_id: id,
+            username: None,
+            agent_data_id: None,
+            rating: 0,
             is_admin,
+            created_at: time::OffsetDateTime::now_utc(),
+            updated_at: Some(time::OffsetDateTime::now_utc()),
         }
     }
 
