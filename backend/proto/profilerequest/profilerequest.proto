@@ -4,6 +4,10 @@ package profilerequest;
 service ProfileRequest {
   rpc Subscribe (SubscribeRequest) returns (stream ProfileRequestEvent);
   rpc GetProfileRequest (ProfileRequestId) returns (ProfileRequestResponse);
+  rpc ListProfileRequests (ListProfileRequestsRequest) returns (ListProfileRequestsResponse);
+  rpc CreateProfileRequest (CreateProfileRequestRequest) returns (ProfileRequestResponse);
+  rpc UpdateProfileRequest (UpdateProfileRequestRequest) returns (ProfileRequestResponse);
+  rpc DeleteProfileRequest (ProfileRequestId) returns (DeleteProfileRequestResponse);
 }
 
 message ProfileRequestId {
@@ -23,6 +27,22 @@ message AgentData {
   bool hugs_close_proximity_allowed = 10;
 }
 
+message AgentDataMetadata {
+  optional string codename = 1;
+  optional string academic_group = 2;
+  optional string academic_level = 3;
+  optional int64 course_number = 4;
+  optional string bachelor_track = 5;
+  optional string identification_name = 6;
+  bool physical_contact_allowed = 7;
+  bool hugs_close_proximity_allowed = 8;
+}
+
+message ResourceUpload {
+  bytes content = 1;
+  optional string content_type = 2;
+}
+
 // что за царский нейминг сука
 message ProfileRequestResponse {
   string profile_request_id = 1;
@@ -31,6 +51,29 @@ message ProfileRequestResponse {
   string status = 4;
   optional string reviewer_note = 5;
   optional string reviewed_at = 6;
+}
+
+message ListProfileRequestsRequest {
+  bool all = 1;
+}
+
+message ListProfileRequestsResponse {
+  repeated ProfileRequestResponse profile_requests = 1;
+}
+
+message CreateProfileRequestRequest {
+  AgentDataMetadata requested_profile_data = 1;
+  ResourceUpload image = 2;
+}
+
+message UpdateProfileRequestRequest {
+  string profile_request_id = 1;
+  optional string status = 2;
+  optional string reviewer_note = 3;
+}
+
+message DeleteProfileRequestResponse {
+  bool deleted = 1;
 }
 
 message SubscribeRequest {

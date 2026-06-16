@@ -1,5 +1,5 @@
 mod middleware;
-mod services;
+pub mod services;
 
 use crate::ApiContext;
 use crate::grpc::middleware::auth_interceptor::AuthInterceptor;
@@ -51,7 +51,7 @@ pub fn router(state: ApiContext) -> Router {
     let auth_layer = InterceptorLayer::new(AuthInterceptor::new(state.clone()));
     let grpc_service = auth_layer.layer(GreeterServer::new(GreeterService));
     let profile_request_service = auth_layer.layer(ProfileRequestServer::new(
-        ProfileRequestService::new(state.db.clone(), profile_tx),
+        ProfileRequestService::new(state.db.clone(), state.bucket.clone(), profile_tx),
     ));
 
     Router::new()
