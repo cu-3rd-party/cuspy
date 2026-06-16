@@ -282,7 +282,7 @@ async fn backend_endpoints_work_end_to_end() {
     let (other_token, other_user) =
         register_user(&ctx, "other@example.com", 3003, "Other", other_auth).await;
     let other_user_id = other_user["user_id"].as_str().expect("other user id");
-    let admin_token = seed_admin_user(&ctx, "admin@example.com", 4004, "Control").await;
+    let admin_token = seed_admin_user(&ctx, "admin@example.com", "Control").await;
 
     #[cfg(feature = "telegram-auth")]
     let admin_init_data = telegram_init_data(4004);
@@ -356,7 +356,7 @@ async fn backend_endpoints_work_end_to_end() {
             "POST",
             &format!("/api/kill/{kill_id}/moderate"),
             Some(json!({ "action": "APPROVE", "reason": "verified" })),
-            Some(&admin_token),
+            Some(&admin_token.access_token),
             None,
             admin_auth,
         )

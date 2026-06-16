@@ -1,5 +1,6 @@
 use std::process::Command;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::{
@@ -7,6 +8,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode, header},
 };
+use cukiller_backend::models::auth::{AuthTokenPair, AuthUserRecord};
 use cukiller_backend::rest::helpers;
 use cukiller_backend::{ApiContext, build_rest, config::Config};
 #[cfg(feature = "telegram-auth")]
@@ -18,7 +20,6 @@ use serde_json::{Value, json};
 #[cfg(feature = "telegram-auth")]
 use sha2::{Digest, Sha256};
 use sqlx::Row;
-use sqlx::any::PgPoolOptions;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 use url::Url;
@@ -198,7 +199,7 @@ impl TestContext {
 
         let state = ApiContext {
             db: any_test_pool,
-            bucket: test_bucket(),
+            bucket: Arc::new(test_bucket()),
             admin_secret: ADMIN_SECRET.to_string(),
             jwt_secret: JWT_SECRET.to_string(),
             config: Config {
@@ -430,92 +431,34 @@ pub async fn create_agent_data(ctx: &TestContext, codename: &str) -> Value {
 }
 
 #[allow(dead_code)]
-pub async fn seed_admin_user(
-    ctx: &TestContext,
-    email: &str,
-    telegram_id: i64,
-    username: &str,
-) -> String {
-    #[cfg(feature = "telegram-auth")]
-    let _ = email;
-
-    let user_id = uuid::Uuid::now_v7();
-    sqlx::query(
-        r#"
-        insert into "user" (user_id, telegram_id, username, is_admin)
-        values ($1, $2, $3, true)
-        "#,
-    )
-    .bind(user_id)
-    .bind(telegram_id)
-    .bind(username)
-    .execute(&ctx.db)
-    .await
-    .expect("insert admin user");
-
-    sqlx::query(
-        r#"
-        insert into rating_history (rating_history_id, user_id, rating, change, reason)
-        values ($1, $2, $3, $4, $5)
-        "#,
-    )
-    .bind(uuid::Uuid::now_v7())
-    .bind(user_id)
-    .bind(helpers::DEFAULT_RATING)
-    .bind(helpers::DEFAULT_RATING)
-    .bind("initial_rating")
-    .execute(&ctx.db)
-    .await
-    .expect("insert admin rating history");
-
-    #[cfg(not(feature = "telegram-auth"))]
-    let (login_identifier, password_hash, login_payload, telegram_init_data) = (
-        email.to_string(),
-        Some(helpers::hash_password("password123").expect("hash password")),
-        json!({ "email": email, "password": "password123" }),
-        None::<String>,
-    );
-
-    #[cfg(feature = "telegram-auth")]
-    let (login_identifier, password_hash, login_payload, telegram_init_data) = {
-        let telegram_init_data = telegram_init_data(telegram_id);
-        (
-            telegram_id.to_string(),
-            None::<String>,
-            json!({}),
-            Some(telegram_init_data),
-        )
-    };
-
-    sqlx::query(
-        r#"
-        insert into auth_user (auth_user_id, user_id, login_identifier, password_hash)
-        values ($1, $2, $3, $4)
-        "#,
-    )
-    .bind(uuid::Uuid::now_v7())
-    .bind(user_id)
-    .bind(login_identifier)
-    .bind(password_hash)
-    .execute(&ctx.db)
-    .await
-    .expect("insert admin auth user");
+pub async fn seed_admin_user(ctx: &TestContext, email: &str, password: &str) -> AuthTokenPair {
+    let mut tx = ctx.db.begin().await.expect("transaction");
+    let admin_auth_user =
+        AuthUserRecord::new_email_user(&mut *tx, None, email.to_string(), password.to_string())
+            .await
+            .expect("admin_auth_user creation");
 
     let (status, body) = ctx
         .json(
             "POST",
             "/api/auth/login",
-            Some(login_payload),
+            Some(json!({"email": email, "password": password})),
             None,
             None,
-            telegram_init_data.as_deref(),
+            None,
         )
         .await;
     assert_eq!(status, StatusCode::OK);
-    body["access_token"]
-        .as_str()
-        .expect("admin token")
-        .to_string()
+    AuthTokenPair {
+        access_token: body["access_token"]
+            .as_str()
+            .expect("admin token")
+            .to_string(),
+        refresh_token: body["refresh_token"]
+            .as_str()
+            .expect("admin token")
+            .to_string(),
+    }
 }
 
 #[allow(dead_code)]

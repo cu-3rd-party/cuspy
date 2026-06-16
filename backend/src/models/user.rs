@@ -8,9 +8,11 @@ use crate::models::{
 use crate::rest::helpers::format_timestamp;
 use http::{HeaderMap, header};
 use jsonwebtoken::{DecodingKey, Validation, decode};
+use rand::distr::SampleString;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{Executor, FromRow, Postgres, Row, postgres::PgRow};
+use std::time::SystemTime;
 use tonic::metadata::MetadataMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -24,6 +26,20 @@ pub struct User {
     pub is_admin: bool,
     pub created_at: time::OffsetDateTime,
     pub updated_at: Option<time::OffsetDateTime>,
+}
+
+impl Default for User {
+    fn default() -> Self {
+        Self {
+            user_id: Uuid::new_v4(),
+            username: Some(rand::distr::Alphabetic.sample_string(&mut rand::rng(), 10)),
+            agent_data_id: None,
+            rating: 600,
+            is_admin: false,
+            created_at: SystemTime::now().into(),
+            updated_at: Some(SystemTime::now().into()),
+        }
+    }
 }
 #[derive(Debug, Serialize, ToSchema, Default)]
 pub struct UserResponse {
@@ -282,28 +298,25 @@ impl User {
             .transpose()?;
 
         if auth_token.is_none() && has_valid_admin_header {
-            return Ok(Self {
-                user_id: Uuid::nil(),
-                username: None,
-                agent_data_id: None,
-                rating: 0,
-                is_admin: true,
-                created_at: time::OffsetDateTime::UNIX_EPOCH,
-                updated_at: None,
-            });
+            let mut admin_user = User::default();
+            admin_user.user_id = Uuid::nil();
+            admin_user.is_admin = true;
+            return Ok(admin_user);
         }
 
         let auth_token = auth_token.ok_or(ApiError::BadRequest(
             "no authorization header supplied".to_string(),
         ))?;
 
-        let decoded = decode::<AuthClaims>(
+        let mut decoded = decode::<AuthClaims>(
             &auth_token,
             &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
             &Validation::default(),
         )
         .map_err(|_| ApiError::Unauthorized)?;
 
-        decoded.claims.user.ok_or(ApiError::Unauthorized)
+        let mut decoded = decoded.claims.user.ok_or(ApiError::Unauthorized)?;
+        decoded.is_admin = decoded.is_admin || has_valid_admin_header; // user can be natively not admin, but supplying admin header makes him such
+        Ok(decoded)
     }
 }

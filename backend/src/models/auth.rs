@@ -1,6 +1,8 @@
 use crate::models::user::User;
 use crate::models::{ApiError, db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid};
 use crate::rest::helpers;
+use rand::RngExt;
+use rand::distr::SampleString;
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, FromRow, Postgres, postgres::PgRow};
 use utoipa::ToSchema;
@@ -37,6 +39,21 @@ pub struct AuthUserRecord {
     pub telegram_id: Option<i64>,
     pub email: Option<String>,
     pub password_hash: Option<String>,
+}
+
+impl Default for AuthUserRecord {
+    fn default() -> Self {
+        Self {
+            auth_user_id: Uuid::new_v4(),
+            user_id: None,
+            telegram_id: None,
+            email: Some(format!(
+                "{}@default.com",
+                rand::distr::Alphabetic.sample_string(&mut rand::rng(), 5),
+            )),
+            password_hash: Some(helpers::hash_password("devpassword").unwrap()),
+        }
+    }
 }
 
 impl AuthUserRecord {

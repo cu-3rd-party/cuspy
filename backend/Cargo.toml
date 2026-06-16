@@ -42,6 +42,7 @@ prost = "0.13.5"
 tonic-middleware = "0.3.0"
 tonic-reflection = "0.13.1"
 tokio-stream = { version = "0.1", features = ["sync"] }
+rand = { version = "0.10.1", features = ["log", "serde"] }
 
 [dev-dependencies]
 http-body-util = "0.1.3"

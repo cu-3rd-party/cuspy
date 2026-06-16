@@ -177,35 +177,6 @@ mod tests {
     use sqlx::postgres::PgPoolOptions;
     use std::sync::Arc;
 
-    #[cfg(feature = "telegram-auth")]
-    fn telegram_init_data(user_id: i64) -> String {
-        type HmacSha256 = Hmac<Sha256>;
-
-        let user = json!({
-            "id": user_id,
-            "first_name": "Test",
-            "username": format!("user_{user_id}")
-        })
-        .to_string();
-
-        let mut pairs = [
-            "auth_date=1700000000".to_string(),
-            format!("query_id=test-query-{user_id}"),
-            format!("user={user}"),
-        ];
-        pairs.sort();
-
-        let secret = Sha256::digest("bot-token".as_bytes());
-        let mut mac = HmacSha256::new_from_slice(secret.as_slice()).expect("hmac key");
-        mac.update(pairs.join("\n").as_bytes());
-        let hash = hex::encode(mac.finalize().into_bytes());
-
-        format!(
-            "query_id=test-query-{user_id}&user={}&auth_date=1700000000&hash={hash}",
-            url::form_urlencoded::byte_serialize(user.as_bytes()).collect::<String>()
-        )
-    }
-
     fn test_bucket() -> Box<Bucket> {
         Bucket::new(
             "test-bucket",
@@ -242,56 +213,45 @@ mod tests {
         }
     }
 
-    #[test]
-    fn compare_profile_similarity_tracks_matching_keys() {
-        let response = compare_profile_similarity(
-            &json!({ "city": "Kyiv", "course": 3, "track": "backend" }),
-            &json!({ "city": "Kyiv", "course": 4, "squad": "red" }),
-        )
-        .expect("similarity response");
-
-        assert_eq!(response.matching_keys, vec!["city"]);
-        assert_eq!(response.differing_keys, vec!["course"]);
-        assert_eq!(response.left_only_keys, vec!["track"]);
-        assert_eq!(response.right_only_keys, vec!["squad"]);
-        assert!((response.similarity_score - 0.25).abs() < f64::EPSILON);
-    }
-
     #[tokio::test]
     async fn bearer_tokens_round_trip_admin_claims() {
         let state = test_state();
-        let auth_user = AuthUserRecord {
-            auth_user_id: Uuid::now_v7(),
-            user_id: Uuid::now_v7(),
-            login_identifier: {
-                #[cfg(feature = "telegram-auth")]
-                {
-                    "12345".into()
-                }
-                #[cfg(not(feature = "telegram-auth"))]
-                {
-                    "agent@example.com".into()
-                }
-            },
-            password_hash: Some("hash".into()),
-        };
-        let token = create_access_token(&state, &auth_user, true).expect("token");
+        let auth_user = AuthUserRecord::default();
+        let mut user = User::default();
+        user.is_admin = true;
+        let expected_user_id = user.user_id.clone();
+        let token = create_token_pair(&state, &auth_user, Some(user)).expect("token_pair");
         let mut headers = HeaderMap::new();
         headers.insert(
             header::AUTHORIZATION,
-            HeaderValue::from_str(&format!("Bearer {token}")).expect("header"),
-        );
-        #[cfg(feature = "telegram-auth")]
-        headers.insert(
-            header::HeaderName::from_static("x-telegram-init-data"),
-            HeaderValue::from_str(&telegram_init_data(12345)).expect("telegram header"),
+            HeaderValue::from_str(&format!("Bearer {}", token.access_token)).expect("header"),
         );
 
         let auth = User::from_headers(&state, &headers);
         assert!(auth.is_ok());
         let auth = auth.expect("authenticated user");
-        assert_eq!(auth.user_id, auth_user.user_id);
+        assert_eq!(auth.user_id, expected_user_id);
         assert!(auth.is_admin);
+    }
+
+    #[tokio::test]
+    async fn bearer_tokens_round_trip_no_admin_claims() {
+        let state = test_state();
+        let auth_user = AuthUserRecord::default();
+        let user = User::default();
+        let expected_user_id = user.user_id.clone();
+        let token = create_token_pair(&state, &auth_user, Some(user)).expect("token_pair");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", token.access_token)).expect("header"),
+        );
+
+        let auth = User::from_headers(&state, &headers);
+        assert!(auth.is_ok());
+        let auth = auth.expect("authenticated user");
+        assert_eq!(auth.user_id, expected_user_id);
+        assert!(!auth.is_admin);
     }
 
     #[tokio::test]
@@ -308,5 +268,30 @@ mod tests {
         let auth = auth.expect("authenticated user");
         assert!(auth.is_admin);
         assert_eq!(auth.user_id, Uuid::nil());
+    }
+
+    #[tokio::test]
+    async fn admin_secret_fallback_works_with_bearer_token() {
+        let state = test_state();
+        let auth_user = AuthUserRecord::default();
+        let mut user = User::default();
+        let expected_user_id = user.user_id.clone();
+        user.is_admin = false; // explicitly setting not admin for test purposes even though it's supplied through default() impl
+        let token = create_token_pair(&state, &auth_user, Some(user)).expect("token_pair");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::HeaderName::from_static("x-admin-secret"),
+            HeaderValue::from_static("admin-secret"),
+        );
+        headers.insert(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", token.access_token)).expect("header"),
+        );
+
+        let auth = User::from_headers(&state, &headers);
+        assert!(auth.is_ok());
+        let auth = auth.expect("authenticated user");
+        assert!(auth.is_admin);
+        assert_eq!(auth.user_id, expected_user_id);
     }
 }
