@@ -115,6 +115,17 @@ impl User {
         Ok(())
     }
 
+
+    pub async fn get_by_option_id<'c, E>(executor: E, user_id: Option<Uuid>) -> Option<Self>
+    where
+        E: Executor<'c, Database = Postgres>,
+    {
+        if let Some(user_id) = user_id {
+            return Self::get_by_id(executor, user_id).await;
+        }
+        None
+    }
+
     pub async fn get_by_id<'c, E>(executor: E, user_id: Uuid) -> Option<Self>
     where
         E: Executor<'c, Database = Postgres>,
@@ -308,7 +319,7 @@ impl User {
             "no authorization header supplied".to_string(),
         ))?;
 
-        let mut decoded = decode::<AuthClaims>(
+        let decoded = decode::<AuthClaims>(
             &auth_token,
             &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
             &Validation::default(),

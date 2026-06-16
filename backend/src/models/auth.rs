@@ -1,10 +1,9 @@
 use crate::models::user::User;
-use crate::models::{ApiError, db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid};
+use crate::models::{db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid, ApiError};
 use crate::rest::helpers;
-use rand::RngExt;
 use rand::distr::SampleString;
 use serde::{Deserialize, Serialize};
-use sqlx::{Executor, FromRow, Postgres, postgres::PgRow};
+use sqlx::{postgres::PgRow, Executor, FromRow, Postgres};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -205,4 +204,9 @@ pub struct AuthClaims {
 pub struct RefreshClaims {
     pub auth_user_id: Uuid,
     pub exp: usize,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug, Clone)]
+pub struct RefreshTokenRequest {
+    pub refresh_token: String,
 }
