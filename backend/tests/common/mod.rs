@@ -9,6 +9,7 @@ use axum::{
     http::{Request, StatusCode, header},
 };
 use cukiller_backend::models::auth::{AuthTokenPair, AuthUserRecord};
+use cukiller_backend::models::user::User;
 use cukiller_backend::rest::helpers;
 use cukiller_backend::{ApiContext, build_rest, config::Config};
 #[cfg(feature = "telegram")]
@@ -430,6 +431,98 @@ pub async fn create_agent_data(ctx: &TestContext, codename: &str) -> Value {
     body
 }
 
+pub async fn seed_authenticated_user(ctx: &TestContext, username: &str) -> (String, Value) {
+    let mut tx = ctx.db.begin().await.expect("transaction");
+    let user = User::create(&mut *tx, Some(username.to_string()), false, None)
+        .await
+        .expect("create user");
+    tx.commit().await.expect("commit seeded user");
+
+    let state = ApiContext {
+        db: ctx.db.clone(),
+        bucket: Arc::new(test_bucket()),
+        admin_secret: ADMIN_SECRET.to_string(),
+        jwt_secret: JWT_SECRET.to_string(),
+        config: Config {
+            database_url: String::new(),
+            bind_address: "0.0.0.0:3000".parse().unwrap(),
+            admin_secret: ADMIN_SECRET.to_string(),
+            jwt_secret: JWT_SECRET.to_string(),
+            cors_origin: "http://localhost:5173".to_string(),
+            s3_access_key: String::new(),
+            s3_secret_key: String::new(),
+            s3_endpoint: String::new(),
+            s3_region: "us-east-1".to_string(),
+            s3_bucket_name: "cukiller".to_string(),
+            #[cfg(feature = "telegram")]
+            telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
+            #[cfg(feature = "telegram")]
+            public_webapp_url: "https://test.example.com".to_string(),
+        },
+        profile_request_tx: tokio::sync::broadcast::channel(16).0,
+        #[cfg(feature = "telegram")]
+        telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
+        #[cfg(feature = "telegram")]
+        public_webapp_url: "https://test.example.com".to_string(),
+    };
+
+    let token = helpers::create_token_pair(
+        &state,
+        &AuthUserRecord {
+            auth_user_id: uuid::Uuid::now_v7(),
+            user_id: Some(user.user_id),
+            telegram_id: None,
+            email: None,
+            password_hash: None,
+        },
+        Some(user.clone()),
+    )
+    .expect("token pair")
+    .access_token;
+
+    (
+        token,
+        serde_json::to_value(user.into_response(&ctx.db).await.expect("user response"))
+            .expect("user json"),
+    )
+}
+
+pub async fn create_profile_request(
+    ctx: &TestContext,
+    codename: &str,
+    bearer: &str,
+    telegram_init_data: Option<&str>,
+) -> Value {
+    let boundary = format!("boundary-{}", uuid::Uuid::now_v7());
+    let data = json!({
+        "codename": codename,
+        "academic_group": "CS-1",
+        "academic_level": "Bachelor",
+        "course_number": 2,
+        "bachelor_track": "SWE",
+        "identification_name": format!("{codename} Name"),
+        "physical_contact_allowed": true,
+        "hugs_close_proximity_allowed": false
+    })
+    .to_string();
+    let body = format!(
+        "--{boundary}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{data}\r\n--{boundary}--\r\n"
+    );
+    let (status, body) = ctx
+        .multipart(
+            "/api/profile-requests",
+            &boundary,
+            body,
+            Some(bearer),
+            None,
+            telegram_init_data,
+        )
+        .await;
+
+    assert_eq!(status, StatusCode::OK, "create_profile_request body: {body}");
+    body
+}
+
 #[allow(dead_code)]
 pub async fn seed_admin_user(ctx: &TestContext, email: &str, password: &str) -> AuthTokenPair {
     let mut tx = ctx.db.begin().await.expect("transaction");
@@ -496,7 +589,7 @@ pub async fn seed_resource(ctx: &TestContext) -> String {
         "#,
     )
     .bind("test/resource.txt")
-    .bind(12_i64)
+    .bind(12_i32)
     .bind("text/plain")
     .bind(format!("checksum-{}", uuid::Uuid::now_v7()))
     .fetch_one(&ctx.db)
