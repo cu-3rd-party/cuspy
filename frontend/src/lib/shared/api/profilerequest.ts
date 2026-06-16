@@ -29,8 +29,7 @@ export function profileRequestEventToUpdate(
 		profile_request_id: event.profileRequestId,
 		user_id: event.userId,
 		status: normalizeStatus(event.status),
-		reviewer_note: event.reviewerNote || null,
-		reviewed_at: event.updatedAt || null,
-		updated_at: event.updatedAt
+		reviewer_note: event.reviewerNote ?? null,
+		reviewed_at: event.reviewedAt ?? null
 	};
 }

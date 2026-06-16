@@ -48,10 +48,10 @@ pub fn router(state: ApiContext) -> Router {
         .expect("grpc reflection service");
 
     let profile_tx = state.profile_request_tx.clone();
-    let auth_layer = InterceptorLayer::new(AuthInterceptor::new(state));
+    let auth_layer = InterceptorLayer::new(AuthInterceptor::new(state.clone()));
     let grpc_service = auth_layer.layer(GreeterServer::new(GreeterService));
     let profile_request_service = auth_layer.layer(ProfileRequestServer::new(
-        ProfileRequestService::new(profile_tx),
+        ProfileRequestService::new(state.db.clone(), profile_tx),
     ));
 
     Router::new()

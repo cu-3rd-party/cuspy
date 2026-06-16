@@ -10,7 +10,130 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file profilerequest/profilerequest.proto.
  */
 export const file_profilerequest_profilerequest: GenFile = /*@__PURE__*/
-  fileDesc("CiNwcm9maWxlcmVxdWVzdC9wcm9maWxlcmVxdWVzdC5wcm90bxIOcHJvZmlsZXJlcXVlc3QiIwoQU3Vic2NyaWJlUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIpEBChNQcm9maWxlUmVxdWVzdEV2ZW50EhoKEnByb2ZpbGVfcmVxdWVzdF9pZBgBIAEoCRIPCgd1c2VyX2lkGAIgASgJEg4KBnN0YXR1cxgDIAEoCRIVCg1yZXZpZXdlcl9ub3RlGAQgASgJEhIKCmNyZWF0ZWRfYXQYBSABKAkSEgoKdXBkYXRlZF9hdBgGIAEoCTJmCg5Qcm9maWxlUmVxdWVzdBJUCglTdWJzY3JpYmUSIC5wcm9maWxlcmVxdWVzdC5TdWJzY3JpYmVSZXF1ZXN0GiMucHJvZmlsZXJlcXVlc3QuUHJvZmlsZVJlcXVlc3RFdmVudDABYgZwcm90bzM");
+  fileDesc("CiNwcm9maWxlcmVxdWVzdC9wcm9maWxlcmVxdWVzdC5wcm90bxIOcHJvZmlsZXJlcXVlc3QiLgoQUHJvZmlsZVJlcXVlc3RJZBIaChJwcm9maWxlX3JlcXVlc3RfaWQYASABKAkiyAMKCUFnZW50RGF0YRIVCg1hZ2VudF9kYXRhX2lkGAEgASgJEhUKCGNvZGVuYW1lGAIgASgJSACIAQESGwoOYWNhZGVtaWNfZ3JvdXAYAyABKAlIAYgBARIbCg5hY2FkZW1pY19sZXZlbBgEIAEoCUgCiAEBEhoKDWNvdXJzZV9udW1iZXIYBSABKANIA4gBARIbCg5iYWNoZWxvcl90cmFjaxgGIAEoCUgEiAEBEiAKE2lkZW50aWZpY2F0aW9uX25hbWUYByABKAlIBYgBARIkChdpZGVudGlmaWNhdGlvbl9pbWFnZV9pZBgIIAEoCUgGiAEBEiAKGHBoeXNpY2FsX2NvbnRhY3RfYWxsb3dlZBgJIAEoCBIkChxodWdzX2Nsb3NlX3Byb3hpbWl0eV9hbGxvd2VkGAogASgIQgsKCV9jb2RlbmFtZUIRCg9fYWNhZGVtaWNfZ3JvdXBCEQoPX2FjYWRlbWljX2xldmVsQhAKDl9jb3Vyc2VfbnVtYmVyQhEKD19iYWNoZWxvcl90cmFja0IWChRfaWRlbnRpZmljYXRpb25fbmFtZUIaChhfaWRlbnRpZmljYXRpb25faW1hZ2VfaWQi6AEKFlByb2ZpbGVSZXF1ZXN0UmVzcG9uc2USGgoScHJvZmlsZV9yZXF1ZXN0X2lkGAEgASgJEg8KB3VzZXJfaWQYAiABKAkSOQoWcmVxdWVzdGVkX3Byb2ZpbGVfZGF0YRgDIAEoCzIZLnByb2ZpbGVyZXF1ZXN0LkFnZW50RGF0YRIOCgZzdGF0dXMYBCABKAkSGgoNcmV2aWV3ZXJfbm90ZRgFIAEoCUgAiAEBEhgKC3Jldmlld2VkX2F0GAYgASgJSAGIAQFCEAoOX3Jldmlld2VyX25vdGVCDgoMX3Jldmlld2VkX2F0IiMKEFN1YnNjcmliZVJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCSKqAQoTUHJvZmlsZVJlcXVlc3RFdmVudBIaChJwcm9maWxlX3JlcXVlc3RfaWQYASABKAkSDwoHdXNlcl9pZBgCIAEoCRIOCgZzdGF0dXMYAyABKAkSGgoNcmV2aWV3ZXJfbm90ZRgEIAEoCUgAiAEBEhgKC3Jldmlld2VkX2F0GAUgASgJSAGIAQFCEAoOX3Jldmlld2VyX25vdGVCDgoMX3Jldmlld2VkX2F0MsUBCg5Qcm9maWxlUmVxdWVzdBJUCglTdWJzY3JpYmUSIC5wcm9maWxlcmVxdWVzdC5TdWJzY3JpYmVSZXF1ZXN0GiMucHJvZmlsZXJlcXVlc3QuUHJvZmlsZVJlcXVlc3RFdmVudDABEl0KEUdldFByb2ZpbGVSZXF1ZXN0EiAucHJvZmlsZXJlcXVlc3QuUHJvZmlsZVJlcXVlc3RJZBomLnByb2ZpbGVyZXF1ZXN0LlByb2ZpbGVSZXF1ZXN0UmVzcG9uc2ViBnByb3RvMw");
+
+/**
+ * @generated from message profilerequest.ProfileRequestId
+ */
+export type ProfileRequestId = Message<"profilerequest.ProfileRequestId"> & {
+  /**
+   * @generated from field: string profile_request_id = 1;
+   */
+  profileRequestId: string;
+};
+
+/**
+ * Describes the message profilerequest.ProfileRequestId.
+ * Use `create(ProfileRequestIdSchema)` to create a new message.
+ */
+export const ProfileRequestIdSchema: GenMessage<ProfileRequestId> = /*@__PURE__*/
+  messageDesc(file_profilerequest_profilerequest, 0);
+
+/**
+ * @generated from message profilerequest.AgentData
+ */
+export type AgentData = Message<"profilerequest.AgentData"> & {
+  /**
+   * @generated from field: string agent_data_id = 1;
+   */
+  agentDataId: string;
+
+  /**
+   * @generated from field: optional string codename = 2;
+   */
+  codename?: string | undefined;
+
+  /**
+   * @generated from field: optional string academic_group = 3;
+   */
+  academicGroup?: string | undefined;
+
+  /**
+   * @generated from field: optional string academic_level = 4;
+   */
+  academicLevel?: string | undefined;
+
+  /**
+   * @generated from field: optional int64 course_number = 5;
+   */
+  courseNumber?: bigint | undefined;
+
+  /**
+   * @generated from field: optional string bachelor_track = 6;
+   */
+  bachelorTrack?: string | undefined;
+
+  /**
+   * @generated from field: optional string identification_name = 7;
+   */
+  identificationName?: string | undefined;
+
+  /**
+   * @generated from field: optional string identification_image_id = 8;
+   */
+  identificationImageId?: string | undefined;
+
+  /**
+   * @generated from field: bool physical_contact_allowed = 9;
+   */
+  physicalContactAllowed: boolean;
+
+  /**
+   * @generated from field: bool hugs_close_proximity_allowed = 10;
+   */
+  hugsCloseProximityAllowed: boolean;
+};
+
+/**
+ * Describes the message profilerequest.AgentData.
+ * Use `create(AgentDataSchema)` to create a new message.
+ */
+export const AgentDataSchema: GenMessage<AgentData> = /*@__PURE__*/
+  messageDesc(file_profilerequest_profilerequest, 1);
+
+/**
+ * что за царский нейминг сука
+ *
+ * @generated from message profilerequest.ProfileRequestResponse
+ */
+export type ProfileRequestResponse = Message<"profilerequest.ProfileRequestResponse"> & {
+  /**
+   * @generated from field: string profile_request_id = 1;
+   */
+  profileRequestId: string;
+
+  /**
+   * @generated from field: string user_id = 2;
+   */
+  userId: string;
+
+  /**
+   * @generated from field: profilerequest.AgentData requested_profile_data = 3;
+   */
+  requestedProfileData?: AgentData | undefined;
+
+  /**
+   * @generated from field: string status = 4;
+   */
+  status: string;
+
+  /**
+   * @generated from field: optional string reviewer_note = 5;
+   */
+  reviewerNote?: string | undefined;
+
+  /**
+   * @generated from field: optional string reviewed_at = 6;
+   */
+  reviewedAt?: string | undefined;
+};
+
+/**
+ * Describes the message profilerequest.ProfileRequestResponse.
+ * Use `create(ProfileRequestResponseSchema)` to create a new message.
+ */
+export const ProfileRequestResponseSchema: GenMessage<ProfileRequestResponse> = /*@__PURE__*/
+  messageDesc(file_profilerequest_profilerequest, 2);
 
 /**
  * @generated from message profilerequest.SubscribeRequest
@@ -27,7 +150,7 @@ export type SubscribeRequest = Message<"profilerequest.SubscribeRequest"> & {
  * Use `create(SubscribeRequestSchema)` to create a new message.
  */
 export const SubscribeRequestSchema: GenMessage<SubscribeRequest> = /*@__PURE__*/
-  messageDesc(file_profilerequest_profilerequest, 0);
+  messageDesc(file_profilerequest_profilerequest, 3);
 
 /**
  * @generated from message profilerequest.ProfileRequestEvent
@@ -49,19 +172,14 @@ export type ProfileRequestEvent = Message<"profilerequest.ProfileRequestEvent"> 
   status: string;
 
   /**
-   * @generated from field: string reviewer_note = 4;
+   * @generated from field: optional string reviewer_note = 4;
    */
-  reviewerNote: string;
+  reviewerNote?: string | undefined;
 
   /**
-   * @generated from field: string created_at = 5;
+   * @generated from field: optional string reviewed_at = 5;
    */
-  createdAt: string;
-
-  /**
-   * @generated from field: string updated_at = 6;
-   */
-  updatedAt: string;
+  reviewedAt?: string | undefined;
 };
 
 /**
@@ -69,7 +187,7 @@ export type ProfileRequestEvent = Message<"profilerequest.ProfileRequestEvent"> 
  * Use `create(ProfileRequestEventSchema)` to create a new message.
  */
 export const ProfileRequestEventSchema: GenMessage<ProfileRequestEvent> = /*@__PURE__*/
-  messageDesc(file_profilerequest_profilerequest, 1);
+  messageDesc(file_profilerequest_profilerequest, 4);
 
 /**
  * @generated from service profilerequest.ProfileRequest
@@ -82,6 +200,14 @@ export const ProfileRequest: GenService<{
     methodKind: "server_streaming";
     input: typeof SubscribeRequestSchema;
     output: typeof ProfileRequestEventSchema;
+  },
+  /**
+   * @generated from rpc profilerequest.ProfileRequest.GetProfileRequest
+   */
+  getProfileRequest: {
+    methodKind: "unary";
+    input: typeof ProfileRequestIdSchema;
+    output: typeof ProfileRequestResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_profilerequest_profilerequest, 0);

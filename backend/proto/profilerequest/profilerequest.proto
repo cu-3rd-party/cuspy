@@ -3,6 +3,34 @@ package profilerequest;
 
 service ProfileRequest {
   rpc Subscribe (SubscribeRequest) returns (stream ProfileRequestEvent);
+  rpc GetProfileRequest (ProfileRequestId) returns (ProfileRequestResponse);
+}
+
+message ProfileRequestId {
+  string profile_request_id = 1;
+}
+
+message AgentData {
+  string agent_data_id = 1;
+  optional string codename = 2;
+  optional string academic_group = 3;
+  optional string academic_level = 4;
+  optional int64 course_number = 5;
+  optional string bachelor_track = 6;
+  optional string identification_name = 7;
+  optional string identification_image_id = 8;
+  bool physical_contact_allowed = 9;
+  bool hugs_close_proximity_allowed = 10;
+}
+
+// что за царский нейминг сука
+message ProfileRequestResponse {
+  string profile_request_id = 1;
+  string user_id = 2;
+  AgentData requested_profile_data = 3;
+  string status = 4;
+  optional string reviewer_note = 5;
+  optional string reviewed_at = 6;
 }
 
 message SubscribeRequest {
@@ -13,7 +41,6 @@ message ProfileRequestEvent {
   string profile_request_id = 1;
   string user_id = 2;
   string status = 3;
-  string reviewer_note = 4;
-  string created_at = 5;
-  string updated_at = 6;
+  optional string reviewer_note = 4;
+  optional string reviewed_at = 5;
 }

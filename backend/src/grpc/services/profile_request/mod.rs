@@ -1,8 +1,15 @@
 use crate::grpc::RequestAuthExt;
-use crate::models::profile::ProfileRequestEvent;
+use crate::models::agent_data::AgentData as ModelAgentData;
+use crate::models::profile::{ProfileRequestEvent, ProfileRequestResponse};
+use crate::models::profile::ProfileRequestRecord;
 use log::info;
 use profilerequest::profile_request_server::ProfileRequest;
-use profilerequest::{ProfileRequestEvent as ProtoEvent, SubscribeRequest};
+use profilerequest::{
+    AgentData as ProtoAgentData, ProfileRequestEvent as ProtoEvent,
+    ProfileRequestId as ProtoProfileRequestId, ProfileRequestResponse as ProtoProfileRequestResponse,
+    SubscribeRequest,
+};
+use sqlx::PgPool;
 use tokio::sync::broadcast;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
@@ -14,12 +21,43 @@ pub mod profilerequest {
 
 #[derive(Clone)]
 pub struct ProfileRequestService {
+    pub db: PgPool,
     pub tx: broadcast::Sender<ProfileRequestEvent>,
 }
 
 impl ProfileRequestService {
-    pub fn new(tx: broadcast::Sender<ProfileRequestEvent>) -> Self {
-        Self { tx }
+    pub fn new(db: PgPool, tx: broadcast::Sender<ProfileRequestEvent>) -> Self {
+        Self { db, tx }
+    }
+}
+
+fn internal_error(error: impl std::fmt::Display) -> Status {
+    Status::internal(error.to_string())
+}
+
+fn to_proto_agent_data(agent_data: ModelAgentData) -> ProtoAgentData {
+    ProtoAgentData {
+        agent_data_id: agent_data.agent_data_id.to_string(),
+        codename: agent_data.codename,
+        academic_group: agent_data.academic_group,
+        academic_level: agent_data.academic_level.map(|value| value.to_string()),
+        course_number: agent_data.course_number,
+        bachelor_track: agent_data.bachelor_track.map(|value| value.to_string()),
+        identification_name: agent_data.identification_name,
+        identification_image_id: agent_data.identification_image_id.map(|value| value.to_string()),
+        physical_contact_allowed: agent_data.physical_contact_allowed,
+        hugs_close_proximity_allowed: agent_data.hugs_close_proximity_allowed,
+    }
+}
+
+fn to_proto_profile_request(response: ProfileRequestResponse) -> ProtoProfileRequestResponse {
+    ProtoProfileRequestResponse {
+        profile_request_id: response.profile_request_id.to_string(),
+        user_id: response.user_id.to_string(),
+        requested_profile_data: response.requested_profile_data.map(to_proto_agent_data),
+        status: response.status,
+        reviewer_note: response.reviewer_note,
+        reviewed_at: response.reviewed_at,
     }
 }
 
@@ -63,8 +101,7 @@ impl ProfileRequest for ProfileRequestService {
                                     user_id: event.user_id.to_string(),
                                     status: event.status,
                                     reviewer_note: event.reviewer_note,
-                                    created_at: event.created_at,
-                                    updated_at: event.updated_at,
+                                    reviewed_at: event.reviewed_at,
                                 }))
                                 .await
                                 .is_err()
@@ -85,12 +122,46 @@ impl ProfileRequest for ProfileRequestService {
 
         Ok(Response::new(ReceiverStream::new(rx)))
     }
+
+    async fn get_profile_request(
+        &self,
+        request: Request<ProtoProfileRequestId>,
+    ) -> Result<Response<ProtoProfileRequestResponse>, Status> {
+        let user = request
+            .auth_user_cloned()
+            .ok_or_else(|| Status::unauthenticated(""))?;
+        let req = request.into_inner();
+
+        let profile_request_id = Uuid::parse_str(&req.profile_request_id)
+            .map_err(|_| Status::invalid_argument("invalid profile_request_id"))?;
+
+        let mut tx = self.db.begin().await.map_err(internal_error)?;
+        let profile = ProfileRequestRecord::get_by_id(&mut *tx, profile_request_id)
+            .await
+            .ok_or_else(|| Status::not_found("profile request not found"))?;
+
+        if profile.user_id != user.user_id && !user.is_admin {
+            return Err(Status::permission_denied(
+                "cannot access other user's profile request",
+            ));
+        }
+
+        let response = profile
+            .into_response(&mut *tx)
+            .await
+            .map_err(internal_error)?;
+
+        tx.commit().await.map_err(internal_error)?;
+
+        Ok(Response::new(to_proto_profile_request(response)))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::user::User;
+    use sqlx::postgres::PgPoolOptions;
     use std::time::Duration;
     use tonic::Code;
 
@@ -111,14 +182,19 @@ mod tests {
             profile_request_id: Uuid::now_v7(),
             user_id,
             status: status.to_string(),
-            reviewer_note: String::new(),
-            created_at: String::new(),
-            updated_at: String::new(),
+            reviewer_note: None,
+            reviewed_at: None,
         }
     }
 
     const UID_A: Uuid = Uuid::nil();
     const UID_B: Uuid = Uuid::from_u128(1);
+
+    fn test_db() -> PgPool {
+        PgPoolOptions::new()
+            .connect_lazy("postgres://postgres:postgres@localhost/cukiller")
+            .expect("lazy test pool")
+    }
 
     async fn subscribe(
         svc: &ProfileRequestService,
@@ -151,7 +227,7 @@ mod tests {
     #[tokio::test]
     async fn user_receives_only_own_events() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let user = make_user(UID_A, false);
         let mut rx = subscribe(&svc, UID_A, user).await;
@@ -170,7 +246,7 @@ mod tests {
     #[tokio::test]
     async fn two_users_independent_filters() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let alice = make_user(UID_A, false);
         let bob = make_user(UID_B, false);
@@ -196,7 +272,7 @@ mod tests {
     #[tokio::test]
     async fn same_user_two_subscribers_both_get_events() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let user = make_user(UID_A, false);
         let mut rx1 = subscribe(&svc, UID_A, user.clone()).await;
@@ -216,7 +292,7 @@ mod tests {
     #[tokio::test]
     async fn admin_subscribes_to_arbitrary_user() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let admin = make_user(UID_A, true);
         let target = Uuid::from_u128(42);
@@ -238,7 +314,7 @@ mod tests {
     #[tokio::test]
     async fn unauthenticated_request_rejected() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let mut req = Request::new(SubscribeRequest {
             user_id: UID_A.to_string(),
@@ -252,7 +328,7 @@ mod tests {
     #[tokio::test]
     async fn non_admin_cannot_spy_on_other_user() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
         let user = make_user(UID_A, false);
 
         let mut req = Request::new(SubscribeRequest {
@@ -267,7 +343,7 @@ mod tests {
     #[tokio::test]
     async fn invalid_user_id_rejected() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
         let user = make_user(UID_A, false);
 
         let mut req = Request::new(SubscribeRequest {
@@ -284,7 +360,7 @@ mod tests {
     #[tokio::test]
     async fn stream_delivers_then_ends_when_senders_gone() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let user = make_user(UID_A, false);
         let mut rx = subscribe(&svc, UID_A, user).await;
@@ -300,7 +376,7 @@ mod tests {
     #[tokio::test]
     async fn no_events_immediate_end() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
 
         let user = make_user(UID_A, false);
         let mut rx = subscribe(&svc, UID_A, user).await;
@@ -313,7 +389,7 @@ mod tests {
     #[tokio::test]
     async fn lagged_receiver_logs_and_continues() {
         let (tx, _) = broadcast::channel(2);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
         let user = make_user(UID_A, false);
 
         let mut rx = subscribe(&svc, UID_A, user).await;
@@ -335,7 +411,7 @@ mod tests {
     #[tokio::test]
     async fn dropping_one_subscriber_does_not_affect_other() {
         let (tx, _) = broadcast::channel(256);
-        let svc = ProfileRequestService::new(tx.clone());
+        let svc = ProfileRequestService::new(test_db(), tx.clone());
         let user = make_user(UID_A, false);
 
         let mut rx1 = subscribe(&svc, UID_A, user.clone()).await;

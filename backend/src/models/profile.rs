@@ -15,9 +15,8 @@ pub struct ProfileRequestEvent {
     pub profile_request_id: Uuid,
     pub user_id: Uuid,
     pub status: String,
-    pub reviewer_note: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub reviewer_note: Option<String>,
+    pub reviewed_at: Option<String>,
 }
 
 pub struct ProfileRequestRecord {
