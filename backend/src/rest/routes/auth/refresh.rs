@@ -21,16 +21,17 @@ use crate::rest::helpers;
         (status = 403, description = "Forbidden", body = crate::models::ErrorResponse),
         (status = 500, description = "Internal server error", body = crate::models::ErrorResponse),
     ),
-    security(("bearer_auth" = []))
 )]
 pub async fn refresh_token_pair(
     State(state): State<ApiContext>,
     MaybeAuthUser(user): MaybeAuthUser,
     Json(req): Json<RefreshTokenRequest>,
 ) -> Result<Json<AuthTokenPair>, ApiError> {
+    let mut tx = state.db.begin().await?;
     if let Some(user) = user {
         // к нам пришел чел с валидным аксес токеном
-        let auth_user_records = AuthUserRecord::get_by_user_id(&state.db, user.user_id).await.ok_or(ApiError::NotFound)?;
+        let auth_user_records = AuthUserRecord::get_by_user_id(&mut *tx, user.user_id).await.ok_or(ApiError::NotFound)?;
+        tx.commit().await?;
         return Ok(Json(helpers::create_token_pair(&state, auth_user_records.get(0).ok_or(ApiError::NotFound)?, Some(user))?));
     }
     let decoded = decode::<RefreshClaims>(
@@ -40,9 +41,10 @@ pub async fn refresh_token_pair(
     )
         .map_err(|_| ApiError::Unauthorized)?
         .claims;
-    let auth_user_record = AuthUserRecord::get_by_id(&state.db, decoded.auth_user_id).await.ok_or(ApiError::NotFound)?;
-    let user = User::get_by_option_id(&state.db, auth_user_record.user_id).await;
+    let auth_user_record = AuthUserRecord::get_by_id(&mut *tx, decoded.auth_user_id).await.ok_or(ApiError::NotFound)?;
+    let user = User::get_by_option_id(&mut *tx, auth_user_record.user_id).await;
     let tokens = helpers::create_token_pair(&state, &auth_user_record, user)?;
+    tx.commit().await?;
 
     Ok(Json(tokens))
 }
