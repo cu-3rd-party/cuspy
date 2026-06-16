@@ -1,12 +1,12 @@
 use crate::ApiContext;
 use crate::models::ApiError;
 use crate::models::auth::{AuthTokenPair, AuthUserRecord, EmailRegisterRequest};
+use crate::notifier::notify_admins;
 use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
 use axum::Json;
 use axum::extract::State;
 use http::StatusCode;
-use crate::notifier::notify_admins;
 
 #[utoipa::path(
     post,
@@ -34,7 +34,7 @@ pub async fn register(
         AuthUserRecord::new_email_user(&mut *tx, None, payload.email, payload.password).await?;
 
     tx.commit().await?;
-    
+
     if let Some(email) = auth_user.email.clone() {
         notify_admins(&state, format!("new email user: {}", email)).await;
     }

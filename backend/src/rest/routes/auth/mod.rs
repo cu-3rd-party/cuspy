@@ -16,7 +16,6 @@ pub fn router() -> Router<ApiContext> {
         .route("/me", get(me::me))
         .route("/refresh", post(refresh::refresh_token_pair));
     #[cfg(feature = "telegram")]
-    let router = router
-        .route("/telegram", post(telegram::telegram_login_request));
+    let router = router.route("/telegram", post(telegram::telegram_login_request));
     router
 }

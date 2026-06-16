@@ -2,12 +2,12 @@ use crate::ApiContext;
 use crate::models::ApiError;
 use crate::models::auth::{AuthTokenPair, AuthUserRecord, TelegramInitDataRequest};
 use crate::models::user::User;
+use crate::notifier::notify_admins;
 use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
 use crate::telegram::TelegramInitData;
 use axum::Json;
 use axum::extract::State;
-use crate::notifier::notify_admins;
 
 #[utoipa::path(
     post,

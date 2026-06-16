@@ -1,4 +1,4 @@
-#![cfg(feature = "telegram-auth")]
+#![cfg(feature = "telegram")]
 
 mod common;
 

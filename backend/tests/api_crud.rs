@@ -3,7 +3,7 @@ mod common;
 use axum::http::StatusCode;
 use serde_json::{Value, json};
 
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 use common::telegram_init_data;
 use common::{
     TestContext, create_agent_data, fetch_latest_audit_actor, fetch_user_agent_data, register_user,
@@ -45,11 +45,11 @@ async fn backend_endpoints_work_end_to_end() {
     assert!(location.contains("test-bucket/"));
     assert!(location.contains("test/resource.txt"));
 
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     let user_init_data = telegram_init_data(1001);
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     let user_auth = Some(user_init_data.as_str());
-    #[cfg(not(feature = "telegram-auth"))]
+    #[cfg(not(feature = "telegram"))]
     let user_auth: Option<&str> = None;
 
     let (token, user) = register_user(&ctx, "agent@example.com", 1001, "Alpha", user_auth).await;
@@ -272,11 +272,11 @@ async fn backend_endpoints_work_end_to_end() {
     let updated_agent_data = fetch_user_agent_data(&ctx, &user_id).await;
     assert_eq!(updated_agent_data["codename"], "Kharkiv");
 
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     let other_init_data = telegram_init_data(3003);
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     let other_auth = Some(other_init_data.as_str());
-    #[cfg(not(feature = "telegram-auth"))]
+    #[cfg(not(feature = "telegram"))]
     let other_auth: Option<&str> = None;
 
     let (other_token, other_user) =
@@ -284,11 +284,11 @@ async fn backend_endpoints_work_end_to_end() {
     let other_user_id = other_user["user_id"].as_str().expect("other user id");
     let admin_token = seed_admin_user(&ctx, "admin@example.com", "Control").await;
 
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     let admin_init_data = telegram_init_data(4004);
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     let admin_auth = Some(admin_init_data.as_str());
-    #[cfg(not(feature = "telegram-auth"))]
+    #[cfg(not(feature = "telegram"))]
     let admin_auth: Option<&str> = None;
 
     let (pending_kills_status, pending_kills_body) = ctx

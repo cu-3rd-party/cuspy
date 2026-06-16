@@ -47,8 +47,16 @@ impl ProfileRequestRecord {
                     requested_profile_data_id,
                     status
                 )
-                values (cast($2 as uuid), cast($3 as uuid), $4)
-                returning *
+                values (cast($1 as uuid), cast($2 as uuid), $3)
+                returning
+                    cast(profile_request_id as text) as profile_request_id,
+                    cast(user_id as text) as user_id,
+                    cast(requested_profile_data_id as text) as requested_profile_data_id,
+                    status,
+                    reviewer_note,
+                    cast(reviewed_at as text) as reviewed_at,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
             "#,
         )
         .bind(db_uuid(user_id))
@@ -64,7 +72,15 @@ impl ProfileRequestRecord {
     {
         sqlx::query_as(
             r#"
-                select *
+                select
+                    cast(profile_request_id as text) as profile_request_id,
+                    cast(user_id as text) as user_id,
+                    cast(requested_profile_data_id as text) as requested_profile_data_id,
+                    status,
+                    reviewer_note,
+                    cast(reviewed_at as text) as reviewed_at,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
                 from profile_request
                 where profile_request_id = cast($1 as uuid)
                 limit 1
@@ -83,7 +99,15 @@ impl ProfileRequestRecord {
     {
         Ok(sqlx::query_as(
             r#"
-                select *
+                select
+                    cast(profile_request_id as text) as profile_request_id,
+                    cast(user_id as text) as user_id,
+                    cast(requested_profile_data_id as text) as requested_profile_data_id,
+                    status,
+                    reviewer_note,
+                    cast(reviewed_at as text) as reviewed_at,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
                 from profile_request
                 where cast(user_id as text) = $1
                 order by created_at desc
@@ -100,7 +124,15 @@ impl ProfileRequestRecord {
     {
         Ok(sqlx::query_as(
             r#"
-                select *
+                select
+                    cast(profile_request_id as text) as profile_request_id,
+                    cast(user_id as text) as user_id,
+                    cast(requested_profile_data_id as text) as requested_profile_data_id,
+                    status,
+                    reviewer_note,
+                    cast(reviewed_at as text) as reviewed_at,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
                 from profile_request
                 order by created_at desc
             "#,
@@ -118,7 +150,15 @@ impl ProfileRequestRecord {
                 update profile_request
                 set updated_at = now()
                 where profile_request_id = cast($1 as uuid)
-                returning *
+                returning
+                    cast(profile_request_id as text) as profile_request_id,
+                    cast(user_id as text) as user_id,
+                    cast(requested_profile_data_id as text) as requested_profile_data_id,
+                    status,
+                    reviewer_note,
+                    cast(reviewed_at as text) as reviewed_at,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
             "#,
         )
         .bind(db_uuid(self.profile_request_id))
@@ -144,7 +184,15 @@ impl ProfileRequestRecord {
                     reviewer_note = coalesce($3, reviewer_note),
                     reviewed_at = coalesce(cast($4 as timestamptz), reviewed_at)
                 where profile_request_id = cast($1 as uuid)
-                returning *
+                returning
+                    cast(profile_request_id as text) as profile_request_id,
+                    cast(user_id as text) as user_id,
+                    cast(requested_profile_data_id as text) as requested_profile_data_id,
+                    status,
+                    reviewer_note,
+                    cast(reviewed_at as text) as reviewed_at,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
             "#,
         )
         .bind(db_uuid(self.profile_request_id))

@@ -6,7 +6,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY migrations ./migrations
 
-RUN cargo build --release -F telegram-auth
+RUN cargo build --release -F telegram
 
 FROM debian:bookworm-slim
 

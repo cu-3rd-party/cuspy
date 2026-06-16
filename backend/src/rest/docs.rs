@@ -99,14 +99,8 @@ pub struct ApiDoc;
 #[cfg(feature = "telegram")]
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(
-        routes::auth::telegram::telegram_login_request,
-    ),
-    components(
-        schemas(
-            models::auth::TelegramInitDataRequest,
-        )
-    ),
+    paths(routes::auth::telegram::telegram_login_request,),
+    components(schemas(models::auth::TelegramInitDataRequest,))
 )]
 pub struct TelegramApiDoc;
 

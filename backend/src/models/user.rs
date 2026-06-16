@@ -1,4 +1,3 @@
-use std::fmt::{Display, Formatter};
 use crate::ApiContext;
 use crate::models::agent_data::AgentData;
 use crate::models::auth::AuthClaims;
@@ -13,6 +12,7 @@ use rand::distr::SampleString;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{Executor, FromRow, Postgres, Row, postgres::PgRow};
+use std::fmt::{Display, Formatter};
 use std::time::SystemTime;
 use tonic::metadata::MetadataMap;
 use utoipa::ToSchema;

@@ -67,11 +67,7 @@ pub async fn notify_admins(state: &ApiContext, message: String) {
         }
     }
 
-    info!(
-        "notification to {} admins: {}",
-        admins_table.len(),
-        message,
-    );
+    info!("notification to {} admins: {}", admins_table.len(), message,);
 }
 
 #[cfg(feature = "telegram")]

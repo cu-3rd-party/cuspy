@@ -61,9 +61,9 @@ pub fn telegram_init_data(user_id: i64) -> String {
 
 pub struct TestContext {
     pub app: Router,
-    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
+    #[cfg_attr(feature = "telegram", allow(dead_code))]
     pub db: sqlx::PgPool,
-    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
+    #[cfg_attr(feature = "telegram", allow(dead_code))]
     pub admin_secret: String,
     db_name: String,
     docker_container_name: Option<String>,
