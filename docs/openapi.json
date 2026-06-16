@@ -29,623 +29,6 @@
         }
       }
     },
-    "/api/admin/profile-requests/": {
-      "get": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_list_profile_requests",
-        "responses": {
-          "200": {
-            "description": "List all profile requests",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProfileRequestResponse"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/api/admin/profile-requests/{request_id}": {
-      "get": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_get_profile_request",
-        "parameters": [
-          {
-            "name": "request_id",
-            "in": "path",
-            "description": "Profile request id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Profile request details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProfileRequestResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Profile request not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_delete_profile_request",
-        "parameters": [
-          {
-            "name": "request_id",
-            "in": "path",
-            "description": "Profile request id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Profile request deleted"
-          },
-          "404": {
-            "description": "Profile request not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_update_profile_request",
-        "parameters": [
-          {
-            "name": "request_id",
-            "in": "path",
-            "description": "Profile request id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminUpdateProfileRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Profile request updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProfileRequestResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Profile request not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/api/admin/user/": {
-      "get": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_list_users",
-        "responses": {
-          "200": {
-            "description": "List users",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserResponse"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_create_user",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUserRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "User created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/api/admin/user/{user_id}": {
-      "get": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_get_user",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "description": "User id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "User details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_delete_user",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "description": "User id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "User deleted"
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "admin"
-        ],
-        "operationId": "admin_update_user",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "description": "User id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateUserRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Updated user",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "User not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
-    "/api/agent-data": {
-      "post": {
-        "tags": [
-          "agent-data"
-        ],
-        "operationId": "create_agent_data",
-        "requestBody": {
-          "description": "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file",
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAgentDataMultipartRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Agent data created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentData"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agent-data/{agent_data_id}": {
-      "get": {
-        "tags": [
-          "agent-data"
-        ],
-        "operationId": "get_agent_data",
-        "parameters": [
-          {
-            "name": "agent_data_id",
-            "in": "path",
-            "description": "Profile request id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Agent data",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AgentData"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Agent data not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      }
-    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -656,7 +39,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
+                "$ref": "#/components/schemas/EmailLoginRequest"
               }
             }
           },
@@ -668,7 +51,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
+                  "$ref": "#/components/schemas/AuthTokenPair"
                 }
               }
             }
@@ -776,6 +159,76 @@
         ]
       }
     },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "refresh_token_pair",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Login succeeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenPair"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": [
@@ -786,7 +239,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/EmailRegisterRequest"
               }
             }
           },
@@ -798,7 +251,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
+                  "$ref": "#/components/schemas/AuthTokenPair"
                 }
               }
             }
@@ -923,69 +376,6 @@
           },
           "401": {
             "description": "Unauthorized"
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "kill"
-        ],
-        "operationId": "report_kill",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReportKillRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Kill event reported",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/KillEventResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
           },
           "500": {
             "description": "Internal server error",
@@ -1175,6 +565,16 @@
           "profile-request"
         ],
         "operationId": "list_profile_requests",
+        "parameters": [
+          {
+            "name": "all",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Current user's profile requests",
@@ -1222,38 +622,29 @@
         ],
         "operationId": "create_profile_request",
         "requestBody": {
+          "description": "Multipart form with a `data` field containing JSON-encoded `AgentDataMetadata` and an optional `image` file",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateProfileRequest"
+                "$ref": "#/components/schemas/CreateProfileRequestMultipart"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "201": {
-            "description": "Profile request created",
+          "200": {
+            "description": "Profile data created",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileRequestResponse"
+                  "$ref": "#/components/schemas/AgentData"
                 }
               }
             }
           },
           "400": {
             "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -1272,12 +663,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "bearer_auth": []
-          }
-        ]
+        }
       }
     },
     "/api/profile-requests/{request_id}": {
@@ -1441,6 +827,9 @@
         "responses": {
           "204": {
             "description": "Profile request deleted"
+          },
+          "304": {
+            "description": "Profile request wasn't deleted (for some reason db returned 0 rows changed)"
           },
           "403": {
             "description": "Forbidden",
@@ -2007,18 +1396,18 @@
           }
         }
       },
-      "AuthResponse": {
+      "AuthTokenPair": {
         "type": "object",
         "required": [
           "access_token",
-          "user"
+          "refresh_token"
         ],
         "properties": {
           "access_token": {
             "type": "string"
           },
-          "user": {
-            "$ref": "#/components/schemas/UserResponse"
+          "refresh_token": {
+            "type": "string"
           }
         }
       },
@@ -2033,9 +1422,14 @@
       "ConfirmKillRequest": {
         "type": "object",
         "required": [
+          "kill_event_id",
           "confirmed"
         ],
         "properties": {
+          "kill_event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
           "confirmed": {
             "type": "boolean"
           },
@@ -2047,7 +1441,19 @@
           }
         }
       },
-      "CreateAgentDataMultipartRequest": {
+      "CreateProfileRequest": {
+        "type": "object",
+        "required": [
+          "agent_data_id"
+        ],
+        "properties": {
+          "agent_data_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CreateProfileRequestMultipart": {
         "type": "object",
         "required": [
           "data",
@@ -2064,26 +1470,14 @@
           }
         }
       },
-      "CreateProfileRequest": {
-        "type": "object",
-        "required": [
-          "agent_data_id"
-        ],
-        "properties": {
-          "agent_data_id": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
       "CreateUserRequest": {
         "type": "object",
-        "required": [
-          "telegram_id"
-        ],
         "properties": {
           "telegram_id": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "username": {
@@ -2092,10 +1486,53 @@
               "null"
             ]
           },
+          "agent_data_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
           "agent_data": {},
           "is_admin": {
             "type": [
               "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "EmailLoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailRegisterRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "type": [
+              "string",
               "null"
             ]
           }
@@ -2126,29 +1563,21 @@
       "KillEventResponse": {
         "type": "object",
         "required": [
-          "kill_event_id",
-          "killer_id",
-          "victim_id",
+          "killer",
+          "victim",
           "status",
-          "details",
           "reported_at",
           "created_at"
         ],
         "properties": {
-          "kill_event_id": {
-            "type": "string",
-            "format": "uuid"
+          "killer": {
+            "$ref": "#/components/schemas/UserResponse"
           },
-          "killer_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "victim_id": {
-            "type": "string",
-            "format": "uuid"
+          "victim": {
+            "$ref": "#/components/schemas/UserResponse"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/KillEventStatus"
           },
           "evidence_url": {
             "type": [
@@ -2156,7 +1585,6 @@
               "null"
             ]
           },
-          "details": {},
           "killer_confirmed_at": {
             "type": [
               "string",
@@ -2208,22 +1636,15 @@
           }
         }
       },
-      "LoginRequest": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "password": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
+      "KillEventStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "reported",
+          "confirmed",
+          "admin_approved",
+          "rejected"
+        ]
       },
       "ModerateKillRequest": {
         "type": "object",
@@ -2251,13 +1672,12 @@
       },
       "ProfileRequestResponse": {
         "type": "object",
+        "description": "блять че за нейминг говна сука",
         "required": [
           "profile_request_id",
           "user_id",
-          "requested_profile_data_id",
           "status",
-          "created_at",
-          "updated_at"
+          "created_at"
         ],
         "properties": {
           "profile_request_id": {
@@ -2268,9 +1688,15 @@
             "type": "string",
             "format": "uuid"
           },
-          "requested_profile_data_id": {
-            "type": "string",
-            "format": "uuid"
+          "requested_profile_data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentData"
+              }
+            ]
           },
           "status": {
             "type": "string"
@@ -2291,7 +1717,10 @@
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -2333,51 +1762,25 @@
           }
         }
       },
-      "RegisterRequest": {
+      "RefreshTokenRequest": {
         "type": "object",
+        "required": [
+          "refresh_token"
+        ],
         "properties": {
-          "email": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "password": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "telegram_id": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int64"
-          },
-          "username": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "refresh_token": {
+            "type": "string"
           }
         }
       },
       "ReportKillRequest": {
         "type": "object",
+        "required": [
+          "kill_event_id"
+        ],
         "properties": {
-          "killer_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid"
-          },
-          "victim_id": {
-            "type": [
-              "string",
-              "null"
-            ],
+          "kill_event_id": {
+            "type": "string",
             "format": "uuid"
           },
           "evidence_url": {
@@ -2385,8 +1788,7 @@
               "string",
               "null"
             ]
-          },
-          "details": {}
+          }
         }
       },
       "Resource": {
@@ -2435,7 +1837,18 @@
       "UpdateProfileRequest": {
         "type": "object",
         "properties": {
-          "requested_profile_data": {}
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reviewer_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       },
       "UpdateUserRequest": {
@@ -2454,6 +1867,13 @@
               "null"
             ]
           },
+          "agent_data_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
           "agent_data": {},
           "is_admin": {
             "type": [
@@ -2467,9 +1887,8 @@
         "type": "object",
         "required": [
           "user_id",
-          "telegram_id",
-          "is_admin",
           "rating",
+          "is_admin",
           "created_at"
         ],
         "properties": {
@@ -2477,29 +1896,28 @@
             "type": "string",
             "format": "uuid"
           },
-          "telegram_id": {
-            "type": "integer",
-            "format": "int64"
-          },
           "username": {
             "type": [
               "string",
               "null"
             ]
           },
-          "agent_data_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid"
-          },
-          "is_admin": {
-            "type": "boolean"
+          "agent_data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentData"
+              }
+            ]
           },
           "rating": {
             "type": "integer",
             "format": "int64"
+          },
+          "is_admin": {
+            "type": "boolean"
           },
           "created_at": {
             "type": "string"
