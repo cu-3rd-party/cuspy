@@ -74,7 +74,6 @@ pub enum ApiError {
     Database(#[from] sqlx::Error),
     #[error("internal")]
     Internal(String),
-    #[cfg_attr(feature = "telegram-auth", allow(dead_code))]
     #[error("password hash error")]
     PasswordHash,
     #[error("token error")]

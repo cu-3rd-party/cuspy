@@ -1,13 +1,12 @@
-use axum::extract::State;
-use axum::Json;
-use jsonwebtoken::{decode, DecodingKey, Validation};
 use crate::ApiContext;
 use crate::models::ApiError;
 use crate::models::auth::{AuthTokenPair, AuthUserRecord, RefreshClaims, RefreshTokenRequest};
 use crate::models::user::User;
 use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
-
+use axum::Json;
+use axum::extract::State;
+use jsonwebtoken::{DecodingKey, Validation, decode};
 
 #[utoipa::path(
     post,
@@ -30,18 +29,26 @@ pub async fn refresh_token_pair(
     let mut tx = state.db.begin().await?;
     if let Some(user) = user {
         // к нам пришел чел с валидным аксес токеном
-        let auth_user_records = AuthUserRecord::get_by_user_id(&mut *tx, user.user_id).await.ok_or(ApiError::NotFound)?;
+        let auth_user_records = AuthUserRecord::get_by_user_id(&mut *tx, user.user_id)
+            .await
+            .ok_or(ApiError::NotFound)?;
         tx.commit().await?;
-        return Ok(Json(helpers::create_token_pair(&state, auth_user_records.get(0).ok_or(ApiError::NotFound)?, Some(user))?));
+        return Ok(Json(helpers::create_token_pair(
+            &state,
+            auth_user_records.get(0).ok_or(ApiError::NotFound)?,
+            Some(user),
+        )?));
     }
     let decoded = decode::<RefreshClaims>(
         &req.refresh_token,
         &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
         &Validation::default(),
     )
-        .map_err(|_| ApiError::Unauthorized)?
-        .claims;
-    let auth_user_record = AuthUserRecord::get_by_id(&mut *tx, decoded.auth_user_id).await.ok_or(ApiError::NotFound)?;
+    .map_err(|_| ApiError::Unauthorized)?
+    .claims;
+    let auth_user_record = AuthUserRecord::get_by_id(&mut *tx, decoded.auth_user_id)
+        .await
+        .ok_or(ApiError::NotFound)?;
     let user = User::get_by_option_id(&mut *tx, auth_user_record.user_id).await;
     let tokens = helpers::create_token_pair(&state, &auth_user_record, user)?;
     tx.commit().await?;

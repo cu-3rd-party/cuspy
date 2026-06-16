@@ -1,9 +1,10 @@
 use crate::models::user::User;
-use crate::models::{db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid, ApiError};
+use crate::models::{ApiError, db_optional_uuid, db_uuid, parse_optional_uuid, parse_uuid};
 use crate::rest::helpers;
 use rand::distr::SampleString;
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgRow, Executor, FromRow, Postgres};
+use sqlx::{Executor, FromRow, Postgres, postgres::PgRow};
+use std::collections::HashMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -20,7 +21,7 @@ pub struct EmailLoginRequest {
     pub password: String,
 }
 
-#[derive(Deserialize, ToSchema)]
+#[derive(serde::Serialize, serde::Deserialize, ToSchema, Debug, Clone)]
 pub struct TelegramInitDataRequest {
     pub init_data: String,
 }
@@ -137,6 +138,24 @@ impl AuthUserRecord {
         .ok()
     }
 
+    pub async fn get_by_telegram_id<'c, E>(executor: E, telegram_id: i64) -> Option<Self>
+    where
+        E: Executor<'c, Database = Postgres>,
+    {
+        sqlx::query_as(
+            r#"
+                select *
+                from auth_user
+                where telegram_id = $1
+            "#,
+        )
+        .bind(telegram_id)
+        .fetch_optional(executor)
+        .await
+        .ok()
+        .flatten()
+    }
+
     pub async fn get_by_email<'c, E>(executor: E, email: String) -> Option<Self>
     where
         E: Executor<'c, Database = Postgres>,
@@ -153,6 +172,74 @@ impl AuthUserRecord {
         .await
         .ok()
         .flatten()
+    }
+
+    /// ВАЖНО: возвращает отношение auth_user_id -> AuthUserRecord
+    pub async fn get_by_user_ids<'c, E>(executor: E, ids: &[Uuid]) -> HashMap<Uuid, Self>
+    where
+        E: Executor<'c, Database = Postgres>,
+    {
+        if ids.is_empty() {
+            return HashMap::new();
+        }
+        let placeholders: Vec<String> = (1..=ids.len())
+            .map(|i| format!("cast(${i} as uuid)"))
+            .collect();
+        let query_str = format!(
+            r#"
+            select *
+            from auth_user
+            where user_id in ({})
+            "#,
+            placeholders.join(", ")
+        );
+
+        let mut query = sqlx::query_as::<_, Self>(&query_str);
+        for id in ids {
+            query = query.bind(db_uuid(*id));
+        }
+
+        query
+            .fetch_all(executor)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| (a.auth_user_id, a))
+            .collect()
+    }
+
+    /// ВАЖНО: возвращает отношение auth_user_id -> AuthUserRecord
+    pub async fn get_by_ids<'c, E>(executor: E, ids: &[Uuid]) -> HashMap<Uuid, Self>
+    where
+        E: Executor<'c, Database = Postgres>,
+    {
+        if ids.is_empty() {
+            return HashMap::new();
+        }
+        let placeholders: Vec<String> = (1..=ids.len())
+            .map(|i| format!("cast(${i} as uuid)"))
+            .collect();
+        let query_str = format!(
+            r#"
+            select *
+            from auth_user
+            where auth_user_id in ({})
+            "#,
+            placeholders.join(", ")
+        );
+
+        let mut query = sqlx::query_as::<_, Self>(&query_str);
+        for id in ids {
+            query = query.bind(db_uuid(*id));
+        }
+
+        query
+            .fetch_all(executor)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| (a.auth_user_id, a))
+            .collect()
     }
 
     pub async fn update_user_id<'c, E>(

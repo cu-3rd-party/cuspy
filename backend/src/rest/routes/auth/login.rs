@@ -6,6 +6,7 @@ use crate::rest::extractor::MaybeAuthUser;
 use crate::rest::helpers;
 use axum::Json;
 use axum::extract::State;
+use crate::notifier::notify_admins;
 
 #[utoipa::path(
     post,
@@ -42,8 +43,13 @@ pub async fn login(
     if let Some(user_id) = auth_user.user_id {
         user = User::get_by_id(&mut *tx, user_id).await;
     }
+    
+    if let Some(user) = user.clone() {
+        notify_admins(&state, format!("user logged in: {}", user)).await; // TODO: наверное убрать в проде
+    }
 
     let token_pair = helpers::create_token_pair(&state, &auth_user, user)?;
+
 
     Ok(Json(token_pair))
 }

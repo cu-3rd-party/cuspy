@@ -6,7 +6,6 @@ pub mod notifier;
 pub mod rest;
 
 mod r#const;
-#[cfg(feature = "telegram-auth")]
 pub mod telegram;
 
 use std::str::FromStr;
@@ -44,9 +43,9 @@ pub struct ApiContext {
     pub admin_secret: String,
     pub jwt_secret: String,
     pub profile_request_tx: broadcast::Sender<ProfileRequestEvent>,
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     pub telegram_bot_token: String,
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     pub public_webapp_url: String,
 }
 

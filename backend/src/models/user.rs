@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::ApiContext;
 use crate::models::agent_data::AgentData;
 use crate::models::auth::AuthClaims;
@@ -26,6 +27,12 @@ pub struct User {
     pub is_admin: bool,
     pub created_at: time::OffsetDateTime,
     pub updated_at: Option<time::OffsetDateTime>,
+}
+
+impl Display for User {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
 }
 
 impl Default for User {
@@ -115,7 +122,6 @@ impl User {
         Ok(())
     }
 
-
     pub async fn get_by_option_id<'c, E>(executor: E, user_id: Option<Uuid>) -> Option<Self>
     where
         E: Executor<'c, Database = Postgres>,
@@ -196,6 +202,30 @@ impl User {
                 order by created_at desc
             "#,
         )
+        .fetch_all(executor)
+        .await?)
+    }
+
+    pub async fn list_by_admin<'c, E>(executor: E, is_admin: bool) -> Result<Vec<Self>, ApiError>
+    where
+        E: Executor<'c, Database = Postgres>,
+    {
+        Ok(sqlx::query_as(
+            r#"
+                select
+                    cast(user_id as text) as user_id,
+                    username,
+                    cast(agent_data_id as text) as agent_data_id,
+                    rating,
+                    is_admin,
+                    cast(created_at as text) as created_at,
+                    cast(updated_at as text) as updated_at
+                from "user"
+                where is_admin = $1
+                order by created_at desc
+            "#,
+        )
+        .bind(is_admin)
         .fetch_all(executor)
         .await?)
     }

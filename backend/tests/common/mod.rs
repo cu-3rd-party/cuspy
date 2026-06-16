@@ -11,13 +11,13 @@ use axum::{
 use cukiller_backend::models::auth::{AuthTokenPair, AuthUserRecord};
 use cukiller_backend::rest::helpers;
 use cukiller_backend::{ApiContext, build_rest, config::Config};
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 use hmac::{Hmac, Mac};
 use http_body_util::BodyExt;
 use s3::creds::Credentials;
 use s3::{Bucket, Region};
 use serde_json::{Value, json};
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 use sqlx::postgres::PgPoolOptions;
@@ -26,10 +26,10 @@ use url::Url;
 
 pub const ADMIN_SECRET: &str = "test-admin-secret";
 pub const JWT_SECRET: &str = "test-jwt-secret";
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 pub const TELEGRAM_BOT_TOKEN: &str = "test-bot-token";
 
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 pub fn telegram_init_data(user_id: i64) -> String {
     type HmacSha256 = Hmac<Sha256>;
 
@@ -213,15 +213,15 @@ impl TestContext {
                 s3_endpoint: String::new(),
                 s3_region: "us-east-1".to_string(),
                 s3_bucket_name: "cukiller".to_string(),
-                #[cfg(feature = "telegram-auth")]
+                #[cfg(feature = "telegram")]
                 telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
-                #[cfg(feature = "telegram-auth")]
+                #[cfg(feature = "telegram")]
                 public_webapp_url: "https://test.example.com".to_string(),
             },
             profile_request_tx: tokio::sync::broadcast::channel(16).0,
-            #[cfg(feature = "telegram-auth")]
+            #[cfg(feature = "telegram")]
             telegram_bot_token: TELEGRAM_BOT_TOKEN.to_string(),
-            #[cfg(feature = "telegram-auth")]
+            #[cfg(feature = "telegram")]
             public_webapp_url: "https://test.example.com".to_string(),
         };
 
@@ -433,10 +433,10 @@ pub async fn create_agent_data(ctx: &TestContext, codename: &str) -> Value {
 #[allow(dead_code)]
 pub async fn seed_admin_user(ctx: &TestContext, email: &str, password: &str) -> AuthTokenPair {
     let mut tx = ctx.db.begin().await.expect("transaction");
-    let admin_auth_user =
+    let _admin_auth_user =
         AuthUserRecord::new_email_user(&mut *tx, None, email.to_string(), password.to_string())
             .await
-            .expect("admin_auth_user creation");
+            .expect("_admin_auth_user creation");
 
     let (status, body) = ctx
         .json(

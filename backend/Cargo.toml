@@ -5,7 +5,7 @@ edition = "2024"
 
 [features]
 default = []
-telegram-auth = ["dep:hmac", "dep:hex"]
+telegram = []
 
 [dependencies]
 axum = { version = "0.8.9", features = ["macros", "multipart", "tower-log"] }
@@ -24,9 +24,9 @@ thiserror = "2.0.17"
 argon2 = "0.5.3"
 jsonwebtoken = "9.3.1"
 time = { version = "0.3.44", features = ["parsing", "formatting", "serde"] }
-hmac = { version = "0.12.1", optional = true }
+hmac = { version = "0.12.1" }
 sha2 = "0.10.9"
-hex = { version = "0.4.3", optional = true }
+hex = { version = "0.4.3" }
 teloxide = { version = "0.17.0", features = ["macros"] }
 url = "2.5.7"
 utoipa = { version = "5.5.0", features = ["uuid", "yaml", "chrono", "preserve_order"] }

@@ -119,9 +119,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         admin_secret: config.admin_secret,
         jwt_secret: config.jwt_secret,
         profile_request_tx,
-        #[cfg(feature = "telegram-auth")]
+        #[cfg(feature = "telegram")]
         telegram_bot_token: config.telegram_bot_token.clone(),
-        #[cfg(feature = "telegram-auth")]
+        #[cfg(feature = "telegram")]
         public_webapp_url: config.public_webapp_url.clone(),
     };
     let service = build_service(state);
@@ -133,7 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         service.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     );
 
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     {
         tokio::select! {
             result = server => {
@@ -143,7 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    #[cfg(not(feature = "telegram-auth"))]
+    #[cfg(not(feature = "telegram"))]
     {
         server.await?;
     }

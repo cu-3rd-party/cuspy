@@ -31,10 +31,10 @@ pub struct Config {
     pub s3_bucket_name: String,
 
     #[clap(long, env)]
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     pub telegram_bot_token: String,
 
     #[clap(long, env)]
-    #[cfg(feature = "telegram-auth")]
+    #[cfg(feature = "telegram")]
     pub public_webapp_url: String,
 }

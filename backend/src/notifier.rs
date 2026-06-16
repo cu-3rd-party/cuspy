@@ -1,87 +1,80 @@
 use crate::ApiContext;
-use crate::models::db_uuid;
-#[cfg(not(feature = "telegram-auth"))]
-use log::info;
-#[cfg(feature = "telegram-auth")]
+use crate::models::auth::AuthUserRecord;
+use crate::models::user::User;
+#[cfg(feature = "telegram")]
 use log::warn;
-#[cfg(feature = "telegram-auth")]
+use log::{error, info};
+#[cfg(feature = "telegram")]
 use teloxide::{Bot, prelude::Requester, requests::ResponseResult, types::ChatId};
 use uuid::Uuid;
 
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 pub fn notify_telegram(telegram_id: i64, bot_token: String, message: String) {
     tokio::spawn(async move {
-        if let Err(error) = send_message(telegram_id, &bot_token, message).await {
-            warn!("telegram notification failed: {error}");
-        }
+        send_message(telegram_id, &bot_token, message.clone())
+            .await
+            .map_err(|e| {
+                warn!("telegram send message failed {e}");
+            })
     });
 }
 
-#[cfg(not(feature = "telegram-auth"))]
-pub fn notify_telegram(_telegram_id: i64, _bot_token: String, _message: String) {}
-
 // функция кидает пользователю
-pub async fn notify_user(state: &ApiContext, user_id: Uuid, message: impl Into<String>) {
-    #[allow(unused)]
-    let telegram_id = sqlx::query_scalar::<_, i64>(
-        r#"select telegram_id from "user" where user_id = cast($1 as uuid)"#,
-    )
-    .bind(db_uuid(user_id))
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten();
+pub async fn notify_user(state: &ApiContext, user_id: Uuid, message: String) {
+    let Some(_auth_user_records) = AuthUserRecord::get_by_user_id(&state.db, user_id).await else {
+        return;
+    };
 
-    #[cfg(feature = "telegram-auth")]
-    if let Some(telegram_id) = telegram_id {
-        notify_telegram(
-            telegram_id,
-            state.telegram_bot_token.clone(),
-            message.into(),
-        );
-    }
-
-    #[cfg(not(feature = "telegram-auth"))]
+    #[cfg(feature = "telegram")]
     {
-        info!(
-            "notification to user_id={}: {}",
-            user_id.to_string(),
-            message.into()
-        );
+        for telegram_id in _auth_user_records.into_iter().filter_map(|x| x.telegram_id) {
+            notify_telegram(
+                telegram_id,
+                state.telegram_bot_token.clone(),
+                message.clone(),
+            );
+        }
     }
+
+    info!(
+        "notification to user_id={}: {}",
+        user_id.to_string(),
+        message
+    );
 }
 
-pub async fn notify_admins(state: &ApiContext, message: impl Into<String>) {
-    let message = message.into();
-    let recipients = sqlx::query_scalar::<_, i64>(
-        r#"
-        select telegram_id
-        from "user"
-        where is_admin = true
-        "#,
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+pub async fn notify_admins(state: &ApiContext, message: String) {
+    let Ok(admins) = User::list_by_admin(&state.db, true).await else {
+        error!("failed to notify admins");
+        return;
+    };
 
-    #[cfg(feature = "telegram-auth")]
-    for telegram_id in recipients {
-        notify_telegram(
-            telegram_id,
-            state.telegram_bot_token.clone(),
-            message.clone(),
-        );
-    }
+    let admin_user_ids: Vec<Uuid> = admins.iter().map(|x1| x1.user_id).collect();
+    let admins_table = AuthUserRecord::get_by_user_ids(&state.db, &admin_user_ids).await;
+    let _admin_auth_users: Vec<&AuthUserRecord> = admins_table
+        .iter()
+        .map(|(_, auth_user_record)| auth_user_record)
+        .collect();
 
-    #[cfg(not(feature = "telegram-auth"))]
+    #[cfg(feature = "telegram")]
     {
-        let _ = state;
-        let _ = message;
-        let _ = recipients;
+        for telegram_id in _admin_auth_users.into_iter().filter_map(|x| x.telegram_id) {
+            notify_telegram(
+                telegram_id,
+                state.telegram_bot_token.clone(),
+                message.clone(),
+            );
+        }
     }
+
+    info!(
+        "notification to {} admins: {}",
+        admins_table.len(),
+        message,
+    );
 }
 
-#[cfg(feature = "telegram-auth")]
+#[cfg(feature = "telegram")]
 async fn send_message(telegram_id: i64, bot_token: &str, message: String) -> ResponseResult<()> {
     Bot::new(bot_token)
         .send_message(ChatId(telegram_id), message)

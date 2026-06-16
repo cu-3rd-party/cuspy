@@ -6,6 +6,7 @@ use crate::rest::helpers;
 use axum::Json;
 use axum::extract::State;
 use http::StatusCode;
+use crate::notifier::notify_admins;
 
 #[utoipa::path(
     post,
@@ -33,6 +34,10 @@ pub async fn register(
         AuthUserRecord::new_email_user(&mut *tx, None, payload.email, payload.password).await?;
 
     tx.commit().await?;
+    
+    if let Some(email) = auth_user.email.clone() {
+        notify_admins(&state, format!("new email user: {}", email)).await;
+    }
 
     let token_pair = helpers::create_token_pair(&state, &auth_user, user)?;
     Ok((StatusCode::CREATED, Json(token_pair)))

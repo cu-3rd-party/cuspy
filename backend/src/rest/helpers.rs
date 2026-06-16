@@ -166,13 +166,11 @@ fn create_access_token(state: &ApiContext, user: Option<User>) -> Result<String,
 mod tests {
     use super::*;
     use clap::Parser;
-    #[cfg(feature = "telegram-auth")]
     use hmac::{Hmac, Mac};
     use http::{HeaderMap, HeaderValue, header};
     use s3::creds::Credentials;
     use s3::{Bucket, Region};
     use serde_json::json;
-    #[cfg(feature = "telegram-auth")]
     use sha2::{Digest, Sha256};
     use sqlx::postgres::PgPoolOptions;
     use std::sync::Arc;
@@ -206,9 +204,9 @@ mod tests {
             config: crate::config::Config::parse_from([""]),
             jwt_secret: "jwt-secret".into(),
             profile_request_tx: tokio::sync::broadcast::channel(16).0,
-            #[cfg(feature = "telegram-auth")]
+            #[cfg(feature = "telegram")]
             telegram_bot_token: "bot-token".into(),
-            #[cfg(feature = "telegram-auth")]
+            #[cfg(feature = "telegram")]
             public_webapp_url: "https://example.com".into(),
         }
     }

@@ -96,8 +96,29 @@ impl utoipa::Modify for SecurityAddon {
 )]
 pub struct ApiDoc;
 
+#[cfg(feature = "telegram")]
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(
+        routes::auth::telegram::telegram_login_request,
+    ),
+    components(
+        schemas(
+            models::auth::TelegramInitDataRequest,
+        )
+    ),
+)]
+pub struct TelegramApiDoc;
+
 pub fn docs_router() -> Router<ApiContext> {
+    #[allow(unused)] // потому что mut нужен если telegram feature включен
+    let mut openapi = ApiDoc::openapi();
+    #[cfg(feature = "telegram")]
+    {
+        let telegram_doc = TelegramApiDoc::openapi();
+        openapi.merge(telegram_doc);
+    }
     SwaggerUi::new("/api/docs")
-        .url("/api/docs/openapi.json", ApiDoc::openapi())
+        .url("/api/docs/openapi.json", openapi)
         .into()
 }
